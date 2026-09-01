@@ -1,0 +1,20 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python cache & build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Audio temporary files
+backend/audio/input/*
+backend/audio/output/*
+!backend/audio/input/.gitkeep
+!backend/audio/output/.gitkeep
+
+# Database
+data/conversations.db

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Butterfly AI</title>
+    <meta name="description" content="Butterfly AI: Realtime Multilingual AI Voice & Input System.">
+    
+    <!-- Google Fonts for Indian Languages & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Favicon Links -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+    <link rel="stylesheet" href="style.css?v=80.0">
+</head>
+<body class="dark-theme">
+    <div class="app-layout">
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- App Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="brand-title-group" style="display: flex; align-items: center; gap: 8px;">
+                        <img src="logo.png" alt="Butterfly AI" class="brand-logo-small" style="width: 28px; height: 28px; object-fit: contain;">
+                        <h1 class="chat-title" id="chatTitle" style="font-size: 1.1rem; font-weight: 700; margin: 0;">Butterfly AI</h1>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button class="btn-stop-speech" id="headerStopAudioBtn" style="display: none;" title="Stop Voice Playback">
+                        <i data-lucide="square"></i> <span>Stop Audio</span>
+                    </button>
+                    <button class="btn-icon" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+                        <i data-lucide="sun" id="themeIcon"></i>
+                    </button>
+                    <button class="btn-icon" id="settingsBtn" title="Settings">
+                        <i data-lucide="settings"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Workspace (100vh Flex Viewport Layout) -->
+            <div class="keyboard-workspace" id="chatContainer">
+                
+                <!-- Brand Hero -->
+                <div class="vk-brand-hero">
+                    <img src="logo.png" alt="Butterfly AI Logo" class="hero-logo">
+                    <h2 class="hero-title">Butterfly AI</h2>
+                </div>
+
+                <!-- SINGLE MAIN SEARCH BAR CARD -->
+                <div class="vk-card vk-main-search-card">
+                    <div class="vk-main-search-wrapper">
+                        <input type="text" id="mainSearchInput" class="vk-main-search-field voice-target-input" placeholder="Search, type, or speak..." autocomplete="off">
+                        <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput" title="Click to Speak (or press Ctrl+Shift+Space)">
+                            <i data-lucide="mic" id="mainSearchMicIcon"></i>
+                        </button>
+                        <button class="search-submit-btn" id="mainSearchActionBtn" title="Search">
+                            <i data-lucide="search"></i>
+                        </button>
+                    </div>
+                <!-- Temporary Voice Status Indicator (Shown only during active recording/transcribing) -->
+                <div class="vk-status-indicator-bar" id="micStatusIndicator" style="display: none;">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="micStatusText">Ready</span>
+                    <canvas id="mainWaveformCanvas" class="vk-waveform-mini" width="120" height="20" style="display: none; margin: 0 8px;"></canvas>
+                    <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
+                </div>
+
+
+
+                <!-- SEARCH RESULTS OVERLAY CONTAINER -->
+                <div class="vk-card" id="searchResultsCard" style="display: none; max-height: 200px; overflow-y: auto;">
+                    <div class="vk-card-header">
+                        <div class="vk-card-title">
+                            <i data-lucide="search"></i>
+                            <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle" style="color: var(--primary-color);">""</strong></span>
+                        </div>
+                        <button class="btn-text-action" id="closeSearchResultsBtn"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="vk-card-body" id="searchResultsContainer"></div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Voice Input & AI Voice Keyboard Modal -->
+    <div class="modal-backdrop" id="voiceModal">
+        <div class="modal-card voice-modal-card">
+            <div class="modal-header">
+                <div class="voice-card-header-left">
+                    <span class="voice-card-badge-icon" id="modalHeaderBadgeIcon">🎤</span>
+                    <h3 id="modalCardTitle">AI Voice Keyboard</h3>
+                </div>
+                <button class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body voice-modal-body">
+                <!-- Source Language & Status Info Bar -->
+                <div class="voice-info-bar">
+                    <div class="voice-info-item">
+                        <span class="voice-info-label">Source Language:</span>
+                        <span class="voice-info-val" id="voiceLangIndicator">Auto Detect</span>
+                    </div>
+                    <div class="voice-info-item">
+                        <span class="voice-info-label">Status:</span>
+                        <span class="voice-status-badge" id="voiceStatusBadge">Ready</span>
+                    </div>
+                </div>
+
+                <!-- Language Selector Row -->
+                <div class="voice-setting-row" id="voiceLangSelectRow">
+                    <label><i data-lucide="globe"></i> Source Language</label>
+                    <select id="sourceLangSelect" class="vk-select voice-select">
+                        <option value="auto">✨ Auto Detect</option>
+                        <option value="en">English</option>
+                        <option value="te">Telugu (తెలుగు)</option>
+                        <option value="hi">Hindi (हिन्दी)</option>
+                        <option value="ta">Tamil (தமிழ்)</option>
+                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                        <option value="ml">Malayalam (മലയാളം)</option>
+                        <option value="mr">Marathi (मराठी)</option>
+                        <option value="bn">Bengali (বাংলা)</option>
+                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                        <option value="ur">Urdu (اردو)</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ar">Arabic</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ru">Russian</option>
+                    </select>
+                </div>
+
+                <!-- Translation Toggle Row -->
+                <div class="voice-setting-row voice-toggle-row" id="voiceToggleRow">
+                    <label><i data-lucide="languages"></i> Translation</label>
+                    <button class="vk-toggle-btn" id="translationToggleBtn" title="Toggle Translation Mode">
+                        <span class="toggle-track"></span>
+                        <span class="toggle-text" id="toggleText">OFF</span>
+                    </button>
+                </div>
+
+                <!-- Target Language Selector Row -->
+                <div class="voice-setting-row" id="translateToGroup" style="opacity: 0.6; pointer-events: none;">
+                    <label><i data-lucide="arrow-right-left"></i> Target Language</label>
+                    <select id="targetLangSelect" class="vk-select voice-select" disabled>
+                        <option value="en">English</option>
+                        <option value="te">Telugu (తెలుగు)</option>
+                        <option value="hi">Hindi (हिन्दी)</option>
+                        <option value="ta">Tamil (தமிழ்)</option>
+                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                        <option value="ml">Malayalam (മലയാളം)</option>
+                        <option value="mr">Marathi (मराठी)</option>
+                        <option value="bn">Bengali (বাংলা)</option>
+                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                        <option value="ur">Urdu (اردو)</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ar">Arabic</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ru">Russian</option>
+                    </select>
+                </div>
+
+                <!-- Voice Recording Center Visual (Idle / Recording / Processing / Error) -->
+                <div class="voice-record-center" id="voiceCenterVisual">
+                    <button class="voice-record-circle" id="modalMicRecordBtn">
+                        <i data-lucide="mic" id="modalMicIcon"></i>
+                    </button>
+                    <div class="voice-status-title" id="modalMicStatus">Ready to record</div>
+                    <canvas id="modalWaveformCanvas" class="voice-waveform-canvas" width="180" height="24" style="display: none;"></canvas>
+                    <div class="voice-record-timer" id="modalRecordTimer" style="display: none;">00:00</div>
+                    <div class="voice-live-text" id="liveSpeechPreview" style="display: none;"></div>
+                </div>
+
+                <!-- Editable Transcription Area (State 4 - Success) -->
+                <div class="transcription-result-container" id="transcriptionResultContainer" style="display: none;">
+                    <label class="transcription-label">
+                        <i data-lucide="edit-3"></i> Transcribed Text
+                    </label>
+                    <textarea id="voiceTranscriptionTextarea" class="voice-transcription-textarea" rows="4" placeholder="Your transcribed text will appear here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer Controls -->
+            <div class="modal-footer voice-modal-footer">
+                <button class="btn-secondary" id="cancelVoiceBtn">Cancel</button>
+                <button class="btn-primary btn-record-start" id="startVoiceRecordBtn">
+                    <i data-lucide="mic" id="startBtnIcon"></i> <span id="startBtnText">Start Recording</span>
+                </button>
+                <button class="btn-primary" id="insertTextVoiceBtn" style="display: none;">
+                    <i data-lucide="corner-down-left"></i> Insert Text
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="settingsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="settings"></i> Keyboard Settings</h3>
+                <button class="btn-icon" id="closeSettingsBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Voice Output (Text-to-Speech)</label>
+                        <p>Automatically generate and play audio responses</p>
+                    </div>
+                    <input type="checkbox" id="ttsToggle" class="toggle-checkbox" checked>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Global Hotkey Insertion</label>
+                        <p>Ctrl + Shift + Space for desktop typing</p>
+                    </div>
+                    <input type="checkbox" id="hotkeyToggle" class="toggle-checkbox" checked>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info" style="width: 100%;">
+                        <label><i data-lucide="key"></i> OpenAI API Key</label>
+                        <p>Enter your OpenAI Key to enable Whisper STT & OpenAI TTS</p>
+                        <input type="password" id="apiKeyInput" class="select-input" placeholder="sk-..." style="width: 100%; margin-top: 6px; font-family: monospace; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info" style="width: 100%;">
+                        <label><i data-lucide="activity"></i> OpenAI API Status</label>
+                        <div id="openaiStatusBadge" style="margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; background: rgba(255,255,255,0.05);">
+                            <span id="openaiStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+                            <span id="openaiStatusText">Checking connection...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=300.0"></script>
+</body>
+</html>

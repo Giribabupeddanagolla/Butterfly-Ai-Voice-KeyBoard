@@ -1,0 +1,13 @@
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+gTTS>=2.3.2
+aiofiles>=23.1.0
+SpeechRecognition>=3.10.0
+pydub>=0.25.1
+soundfile>=0.14.0
+imageio-ffmpeg>=0.5.0
+deep-translator>=1.11.0
+
