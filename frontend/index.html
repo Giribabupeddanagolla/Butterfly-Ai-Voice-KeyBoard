@@ -100,12 +100,14 @@
     <!-- Voice Input & AI Voice Keyboard Modal -->
     <div class="modal-backdrop" id="voiceModal">
         <div class="modal-card voice-modal-card">
-            <div class="modal-header">
-                <div class="voice-card-header-left">
+            <div class="modal-header voice-header-centered">
+                <div class="voice-header-icon-container">
                     <span class="voice-card-badge-icon" id="modalHeaderBadgeIcon">🎤</span>
-                    <h3 id="modalCardTitle">AI Voice Keyboard</h3>
                 </div>
-                <button class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
+                <h3 id="modalCardTitle" class="voice-header-title-centered">AI Voice Keyboard</h3>
+                <div class="voice-header-close-container">
+                    <button class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
+                </div>
             </div>
             <div class="modal-body voice-modal-body">
                 <!-- Source Language & Status Info Bar -->
@@ -418,6 +420,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=400.0"></script>
+    <script src="script.js?v=503.0"></script>
 </body>
 </html>

@@ -2724,6 +2724,85 @@ body.light-theme .search-result-title {
     line-height: 1.5;
 }
 
+/* Base Modal Container & Layout (Zero Overflow / Scrollable Body) */
+.modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.modal-backdrop.active {
+    display: flex;
+}
+
+.modal-card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    width: 480px;
+    max-width: 92vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden !important;
+    padding: 16px 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 210, 255, 0.15);
+}
+
+.modal-card .modal-header {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-card .modal-body {
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 210, 255, 0.4) transparent;
+}
+
+.modal-card .modal-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.modal-card .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 210, 255, 0.4);
+    border-radius: 4px;
+}
+
+.modal-card .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-card .modal-footer {
+    flex-shrink: 0;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 /* Voice Keyboard Speech Cards & Fixed Header/Footer with Scrollable Body */
 .modal-card.voice-modal-card {
     width: 460px;
@@ -2738,11 +2817,41 @@ body.light-theme .search-result-title {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 210, 255, 0.15);
 }
 
-.voice-modal-card .modal-header {
+.voice-modal-card .modal-header.voice-header-centered {
     flex-shrink: 0;
     margin-bottom: 10px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.voice-header-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 36px;
+    flex-shrink: 0;
+}
+
+.voice-header-title-centered {
+    flex: 1;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.voice-header-close-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 36px;
+    flex-shrink: 0;
 }
 
 .modal-body.voice-modal-body {

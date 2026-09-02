@@ -562,11 +562,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     voiceStatusBadge.textContent = 'Translating...';
                     voiceStatusBadge.className = 'voice-status-badge processing';
                 }
-                if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
-                if (voiceToggleRow) voiceToggleRow.style.display = 'none';
-                if (translateToGroup) translateToGroup.style.display = 'none';
-                if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
-                if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
+                if (voiceLangSelectRow) voiceLangSelectRow.style.setProperty('display', 'none', 'important');
+                if (voiceToggleRow) voiceToggleRow.style.setProperty('display', 'none', 'important');
+                if (translateToGroup) translateToGroup.style.setProperty('display', 'none', 'important');
+                if (voiceCenterVisual) voiceCenterVisual.style.setProperty('display', 'flex', 'important');
+                if (transcriptionResultContainer) transcriptionResultContainer.style.setProperty('display', 'none', 'important');
                 if (modalMicStatus) modalMicStatus.textContent = 'Translating text...';
             }
             else if (state === 'completed') {
@@ -585,33 +585,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     voiceStatusBadge.className = 'voice-status-badge completed';
                 }
 
-                // Hide all top setting rows & center mic visual so speech cards fit without scrolling
-                if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
-                if (voiceToggleRow) voiceToggleRow.style.display = 'none';
-                if (translateToGroup) translateToGroup.style.display = 'none';
-                if (voiceCenterVisual) voiceCenterVisual.style.display = 'none';
+                // Hide all top setting rows & center mic visual so ONLY speech result cards show!
+                if (voiceLangSelectRow) voiceLangSelectRow.style.setProperty('display', 'none', 'important');
+                if (voiceToggleRow) voiceToggleRow.style.setProperty('display', 'none', 'important');
+                if (translateToGroup) translateToGroup.style.setProperty('display', 'none', 'important');
+                if (voiceCenterVisual) voiceCenterVisual.style.setProperty('display', 'none', 'important');
 
                 const modalBody = document.querySelector('.voice-modal-body');
                 if (modalBody) modalBody.scrollTop = 0;
 
                 if (transcriptionResultContainer) {
-                    transcriptionResultContainer.style.display = 'flex';
+                    transcriptionResultContainer.style.setProperty('display', 'flex', 'important');
                     
                     if (originalSpeechCard && voiceOriginalTextarea) {
-                        originalSpeechCard.style.display = 'block';
+                        originalSpeechCard.style.setProperty('display', 'block', 'important');
                         voiceOriginalTextarea.value = extraData.originalText || '';
                         if (originalLangTag) originalLangTag.textContent = srcLangDisplay.toUpperCase();
                     }
 
                     if (isTranslationOn && extraData.translatedText) {
                         if (translationSpeechCard && voiceTranslatedTextarea) {
-                            translationSpeechCard.style.display = 'block';
+                            translationSpeechCard.style.setProperty('display', 'block', 'important');
                             voiceTranslatedTextarea.value = extraData.translatedText;
                             const tgtLangDisplay = getLangDisplayName(latestTargetLang);
                             if (translationLangTag) translationLangTag.textContent = tgtLangDisplay.toUpperCase();
                         }
                     } else {
-                        if (translationSpeechCard) translationSpeechCard.style.display = 'none';
+                        if (translationSpeechCard) translationSpeechCard.style.setProperty('display', 'none', 'important');
                     }
                 }
 
