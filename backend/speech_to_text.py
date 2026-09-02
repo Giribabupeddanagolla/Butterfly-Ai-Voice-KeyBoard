@@ -36,14 +36,27 @@ def detect_language_from_text(text: str) -> str:
     
     return "en"
 
+_translation_cache = {}
+_mymemory_blocked_until = 0.0
+
 def perform_single_translation(text: str, source_lang: str, target_lang: str) -> str:
     """Perform faithful single-step translation between source and target language."""
     if not text or not text.strip() or not target_lang or target_lang == "auto":
         return text.strip() if text else ""
         
-    detected = detect_language_from_text(text)
+    text_clean = text.strip()
+    detected = detect_language_from_text(text_clean)
     effective_source = source_lang if (source_lang and source_lang != "auto") else detected
     
+    if effective_source == target_lang:
+        return text_clean
+
+    cache_key = (text_clean, effective_source, target_lang)
+    if cache_key in _translation_cache:
+        return _translation_cache[cache_key]
+
+    translated_result = None
+
     # 1. Try OpenAI if client is available
     client = stt_service.get_client()
     if client:
@@ -58,12 +71,8 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
                 f"- Do not summarize.\n"
                 f"- Do not explain.\n"
                 f"- Do not invent sentences.\n"
-                f"- Preserve names.\n"
-                f"- Preserve numbers.\n"
-                f"- Preserve dates.\n"
-                f"- Preserve places.\n"
-                f"- Preserve the original meaning.\n\n"
-                f"Text:\n{text}"
+                f"- Preserve names, numbers, dates, and original meaning.\n\n"
+                f"Text:\n{text_clean}"
             )
             response = client.chat.completions.create(
                 model=config.AI_MODEL,
@@ -72,52 +81,67 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
             )
             translated = response.choices[0].message.content.strip()
             if translated and not translated.startswith("⚠️") and not translated.startswith("PLEASE SELECT"):
-                return translated
+                translated_result = translated
         except Exception as e:
-            logger.warning(f"OpenAI translation unavailable: {e}")
+            logger.debug(f"OpenAI translation unavailable: {e}")
             if "429" in str(e) or "quota" in str(e).lower():
                 stt_service.openai_stt_failed = True
 
-    # 2. Try MyMemory API
-    try:
-        pair_source = effective_source if effective_source != target_lang else "autodetect"
-        langpair = f"{pair_source}|{target_lang}"
-        url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(text)}&langpair={langpair}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if data and "responseData" in data and "translatedText" in data["responseData"]:
-                status = str(data.get("responseStatus", "200"))
-                translated = data["responseData"]["translatedText"].strip()
-                if status == "200" and translated and not translated.startswith("PLEASE SELECT") and not translated.startswith("MYMEMORY WARNING"):
-                    return translated
-    except Exception as e:
-        logger.warning(f"MyMemory translation failed: {e}")
+    # 2. Try Google Translate API (Primary fast & free provider)
+    if not translated_result:
+        try:
+            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={effective_source}&tl={target_lang}&dt=t&q={urllib.parse.quote(text_clean)}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=4) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                if data and isinstance(data, list) and len(data) > 0 and data[0]:
+                    translated_parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
+                    translated_text = "".join(translated_parts).strip()
+                    if translated_text and not translated_text.startswith("PLEASE SELECT"):
+                        translated_result = translated_text
+        except Exception as e:
+            logger.debug(f"Google Translate endpoint failed: {e}")
 
-    # 3. Fallback to free Google Translate API
-    try:
-        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={effective_source}&tl={target_lang}&dt=t&q={urllib.parse.quote(text)}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if data and isinstance(data, list) and len(data) > 0 and data[0]:
-                translated_parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
-                translated_text = "".join(translated_parts).strip()
-                if translated_text and not translated_text.startswith("PLEASE SELECT"):
-                    return translated_text
-    except Exception as e:
-        logger.warning(f"Google Translate endpoint failed: {e}")
+    # 3. Try deep_translator library
+    if not translated_result:
+        try:
+            from deep_translator import GoogleTranslator
+            translated = GoogleTranslator(source=effective_source, target=target_lang).translate(text_clean)
+            if translated and "error" not in translated.lower() and "please select" not in translated.lower():
+                translated_result = translated.strip()
+        except Exception as e:
+            logger.debug(f"deep_translator failed: {e}")
 
-    # 4. Fallback to deep_translator
-    try:
-        from deep_translator import GoogleTranslator
-        translated = GoogleTranslator(source=effective_source, target=target_lang).translate(text)
-        if translated and "error" not in translated.lower() and "please select" not in translated.lower():
-            return translated.strip()
-    except Exception as e:
-        logger.warning(f"deep_translator failed: {e}")
+    # 4. Try MyMemory API (with circuit breaker on HTTP 429)
+    global _mymemory_blocked_until
+    import time
+    if not translated_result and time.time() > _mymemory_blocked_until:
+        try:
+            pair_source = effective_source if effective_source != target_lang else "autodetect"
+            langpair = f"{pair_source}|{target_lang}"
+            url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(text_clean)}&langpair={langpair}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=4) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                if data and "responseData" in data and "translatedText" in data["responseData"]:
+                    status = str(data.get("responseStatus", "200"))
+                    translated = data["responseData"]["translatedText"].strip()
+                    if status == "200" and translated and not translated.startswith("PLEASE SELECT") and not translated.startswith("MYMEMORY WARNING"):
+                        translated_result = translated
+        except Exception as e:
+            if "429" in str(e):
+                _mymemory_blocked_until = time.time() + 600 # Backoff 10 mins on 429 Rate Limit
+                logger.info("MyMemory API rate-limited (HTTP 429). Pausing MyMemory requests for 10 minutes.")
+            else:
+                logger.debug(f"MyMemory translation failed: {e}")
 
-    return text.strip()
+    if translated_result:
+        _translation_cache[cache_key] = translated_result
+        if len(_translation_cache) > 2000:
+            _translation_cache.clear()
+        return translated_result
+
+    return text_clean
 
 def translate_text(text: str, target_language: str = "en", source_language: str = "auto", text_language: str = None) -> str:
     """Multi-stage translation pipeline supporting source, translation, and text display languages."""
@@ -165,7 +189,10 @@ def convert_audio_to_pcm_wav(input_path: str) -> str:
                 
         if ffmpeg_bin:
             cmd = [ffmpeg_bin, "-y", "-i", input_path, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", output_wav]
-            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+            sub_kwargs = {}
+            if hasattr(subprocess, "CREATE_NO_WINDOW"):
+                sub_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, **sub_kwargs)
             if res.returncode == 0 and os.path.exists(output_wav):
                 logger.info(f"Successfully converted audio {input_path} to WAV: {output_wav}")
                 return output_wav
@@ -228,6 +255,10 @@ class SpeechToTextService:
                             
                         response = self.client.audio.transcriptions.create(**kwargs)
                         transcribed_text = response.text.strip()
+                        if transcribed_text:
+                            transcribed_text = re.sub(r'[♪♫🎵🎶♭♮♯]', '', transcribed_text)
+                            transcribed_text = re.sub(r'\[(music|singing|background music)\]', '', transcribed_text, flags=re.IGNORECASE)
+                            transcribed_text = re.sub(r'\((music|singing|background music)\)', '', transcribed_text, flags=re.IGNORECASE).strip()
                         if transcribed_text:
                             detected_lang = detect_language_from_text(transcribed_text)
                             final_lang = language if (language and language != "auto") else detected_lang

@@ -65,6 +65,83 @@ body.light-theme {
     --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
 }
 
+/* Light Theme Component & Search Card Overrides */
+body.light-theme .vk-main-search-card {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(0, 150, 255, 0.25) !important;
+    box-shadow: 0 10px 30px rgba(0, 150, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .vk-main-search-wrapper {
+    background: #F8FAFC !important;
+    border: 1px solid rgba(0, 150, 255, 0.2) !important;
+}
+
+body.light-theme .vk-main-search-field {
+    color: #0F172A !important;
+}
+
+body.light-theme .vk-main-search-field::placeholder {
+    color: #64748B !important;
+}
+
+body.light-theme .vk-control-card,
+body.light-theme .vk-preview-compact {
+    background: #F1F5F9 !important;
+    border: 1px solid rgba(0, 150, 255, 0.15) !important;
+    color: #0F172A !important;
+}
+
+body.light-theme .vk-status-indicator-bar {
+    background: #F1F5F9 !important;
+    color: #334155 !important;
+    border: 1px solid rgba(0, 150, 255, 0.15) !important;
+}
+
+body.light-theme .modal-card,
+body.light-theme .voice-modal-card {
+    background: #FFFFFF !important;
+    border-color: rgba(0, 150, 255, 0.25) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+    color: #0F172A !important;
+}
+
+body.light-theme .voice-record-center {
+    background: #F8FAFC !important;
+    border-color: rgba(0, 150, 255, 0.2) !important;
+}
+
+body.light-theme .vk-key {
+    background: #F1F5F9 !important;
+    border-color: rgba(0, 150, 255, 0.2) !important;
+    color: #0F172A !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+body.light-theme .vk-key:hover {
+    background: rgba(0, 150, 255, 0.15) !important;
+    border-color: #0284C7 !important;
+    color: #0284C7 !important;
+}
+
+body.light-theme .btn-bottom-action {
+    background: #F1F5F9 !important;
+    border-color: rgba(0, 150, 255, 0.2) !important;
+    color: #0F172A !important;
+}
+
+body.light-theme button.inline-mic-btn {
+    background: rgba(0, 150, 255, 0.12) !important;
+    border-color: rgba(0, 150, 255, 0.3) !important;
+    color: #0284C7 !important;
+}
+
+body.light-theme button.search-submit-btn {
+    background: rgba(0, 150, 255, 0.12) !important;
+    border-color: rgba(0, 150, 255, 0.3) !important;
+    color: #0284C7 !important;
+}
+
 /* Completely Hide All Scrollbars & Scroll Buttons while keeping smooth scrolling */
 * {
     margin: 0;
@@ -1662,10 +1739,10 @@ textarea.voice-target-input::placeholder {
 
 /* Sleek Glowing Circle Buttons for Inline Microphone */
 button.inline-mic-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
     border-radius: 50% !important;
     background: rgba(0, 210, 255, 0.15) !important;
     border: 1px solid rgba(0, 210, 255, 0.35) !important;
@@ -1675,10 +1752,19 @@ button.inline-mic-btn {
     justify-content: center !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
-    margin: 0 4px !important;
+    margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     transition: all var(--transition-fast) !important;
+}
+
+button.inline-mic-btn i,
+button.inline-mic-btn svg,
+button.search-submit-btn i,
+button.search-submit-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 2px !important;
 }
 
 button.inline-mic-btn:hover {
@@ -1717,10 +1803,10 @@ button.inline-mic-btn.success {
 button.search-icon-btn, 
 button.action-icon-btn, 
 button.search-submit-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
     border-radius: 50% !important;
     background: rgba(255, 255, 255, 0.08) !important;
     border: 1px solid var(--border-color) !important;
@@ -1730,7 +1816,7 @@ button.search-submit-btn {
     justify-content: center !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
-    margin: 0 2px !important;
+    margin: 0 !important;
     padding: 0 !important;
     transition: all var(--transition-fast) !important;
 }
@@ -1901,24 +1987,25 @@ html, body {
 }
 
 .vk-main-search-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(10, 15, 30, 0.95);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-full);
-    padding: 2px 6px 2px 14px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: rgba(10, 15, 30, 0.95) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-full) !important;
+    padding: 6px 10px 6px 16px !important;
+    box-sizing: border-box !important;
 }
 
 .vk-main-search-field {
-    flex: 1;
+    flex: 1 !important;
     background: transparent !important;
     border: none !important;
     outline: none !important;
     color: var(--text-primary) !important;
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
     font-family: inherit;
-    padding: 6px 0 !important;
+    padding: 4px 0 !important;
 }
 
 /* Toolbar Control Card */
@@ -1997,7 +2084,9 @@ html, body {
 }
 
 /* Voice Input Modal Styling (Compact & Sleek) */
-/* Old voice modal overrides removed for clean compact system */    align-items: center;
+/* Old voice modal overrides removed for clean compact system */    
+.voice-input-modal, .voice-modal-card {
+    align-items: center;
     justify-content: center;
     gap: 6px;
 }
@@ -2403,6 +2492,16 @@ html, body {
     cursor: wait;
 }
 
+.voice-record-circle.error {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.6) !important;
+}
+
+.btn-primary.btn-record-start.error {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5) !important;
+}
+
 .voice-status-title {
     font-size: 0.82rem !important;
     font-weight: 600 !important;
@@ -2530,6 +2629,322 @@ html, body {
     transform: translateY(-1px);
     box-shadow: 0 0 20px rgba(0, 210, 255, 0.6) !important;
 }
+
+/* Global Hyperlink Styling & Dark Contrast Fix */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-fast), text-decoration var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+body.light-theme a {
+    color: var(--primary-color);
+}
+
+/* Search Results UI Card System */
+#searchResultsCard {
+    margin-top: 16px;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+    backdrop-filter: blur(12px);
+    max-height: 380px !important;
+    overflow-y: auto !important;
+    transition: all var(--transition-smooth);
+}
+
+#searchResultsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+}
+
+.search-result-item {
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+body.light-theme .search-result-item {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.search-result-item:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--border-glowing);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 210, 255, 0.12);
+}
+
+.search-result-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #00D2FF !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    line-height: 1.4;
+    transition: color var(--transition-fast);
+}
+
+body.light-theme .search-result-title {
+    color: #0284C7 !important;
+}
+
+.search-result-title:hover {
+    color: #E024C3 !important;
+    text-decoration: underline !important;
+}
+
+.search-result-url {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.search-result-snippet {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Voice Keyboard Speech Cards & Fixed Header/Footer with Scrollable Body */
+.modal-card.voice-modal-card {
+    width: 460px;
+    max-width: 92vw;
+    max-height: 85vh;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden !important;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 210, 255, 0.15);
+}
+
+.voice-modal-card .modal-header {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body.voice-modal-body {
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 210, 255, 0.4) transparent;
+}
+
+.modal-body.voice-modal-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.modal-body.voice-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 210, 255, 0.4);
+    border-radius: 4px;
+}
+
+.modal-body.voice-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.voice-modal-footer {
+    flex-shrink: 0;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* --- Modern Glassmorphism Speech Result Cards --- */
+.transcription-result-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.voice-speech-card {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 210, 255, 0.2);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 210, 255, 0.05);
+    transition: all var(--transition-fast);
+}
+
+.voice-speech-card:hover {
+    border-color: rgba(0, 210, 255, 0.35);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 210, 255, 0.1);
+}
+
+/* Original Speech Card Specific Styling */
+#originalSpeechCard {
+    background: rgba(10, 22, 38, 0.75);
+    border: 1px solid rgba(0, 210, 255, 0.25);
+}
+
+#originalSpeechCard .speech-card-title {
+    color: #00D2FF;
+    font-weight: 700;
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+}
+
+#originalSpeechCard .speech-lang-tag {
+    background: rgba(0, 210, 255, 0.15);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    color: #00D2FF;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+/* Translation Speech Card Specific Styling */
+#translationSpeechCard {
+    background: rgba(26, 12, 36, 0.75);
+    border: 1px solid rgba(224, 36, 195, 0.3);
+}
+
+#translationSpeechCard .speech-card-title {
+    color: #E024C3;
+    font-weight: 700;
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+}
+
+#translationSpeechCard .speech-lang-tag {
+    background: rgba(224, 36, 195, 0.15);
+    border: 1px solid rgba(224, 36, 195, 0.35);
+    color: #E024C3;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+/* Textareas inside cards */
+.voice-speech-card .voice-transcription-textarea {
+    min-height: 42px;
+    max-height: 70px;
+    height: 48px;
+    padding: 6px 10px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    resize: vertical;
+    background: rgba(5, 10, 20, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #F8FAFC;
+    transition: border-color var(--transition-fast);
+}
+
+#originalSpeechCard .voice-transcription-textarea:focus {
+    border-color: #00D2FF;
+    outline: none;
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
+}
+
+#translationSpeechCard .voice-transcription-textarea:focus {
+    border-color: #E024C3;
+    outline: none;
+    box-shadow: 0 0 8px rgba(224, 36, 195, 0.25);
+}
+
+/* Action Buttons Pills */
+.speech-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.btn-action-pill {
+    padding: 4px 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #E2E8F0;
+    font-size: 0.74rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-action-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+/* Original Card Action Buttons */
+#originalSpeechCard .btn-action-pill:hover {
+    border-color: rgba(0, 210, 255, 0.5);
+    color: #00D2FF;
+}
+
+#originalSpeechCard .btn-primary-pill {
+    background: linear-gradient(135deg, #00D2FF 0%, #0072FF 100%);
+    border: none;
+    color: #FFFFFF;
+    box-shadow: 0 2px 10px rgba(0, 210, 255, 0.35);
+}
+
+#originalSpeechCard .btn-primary-pill:hover {
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.55);
+    color: #FFFFFF;
+}
+
+/* Translation Card Action Buttons */
+#translationSpeechCard .btn-action-pill:hover {
+    border-color: rgba(224, 36, 195, 0.5);
+    color: #E024C3;
+}
+
+#translationSpeechCard .btn-primary-pill {
+    background: linear-gradient(135deg, #E024C3 0%, #7928CA 100%);
+    border: none;
+    color: #FFFFFF;
+    box-shadow: 0 2px 10px rgba(224, 36, 195, 0.35);
+}
+
+#translationSpeechCard .btn-primary-pill:hover {
+    box-shadow: 0 4px 15px rgba(224, 36, 195, 0.55);
+    color: #FFFFFF;
+}
+
 
 
 

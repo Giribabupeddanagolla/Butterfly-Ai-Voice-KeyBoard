@@ -206,23 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         handleBackspace() {
-            const inputEl = TextInsertionService.getActiveInput();
-            if (!inputEl) return;
-            if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA') {
-                inputEl.focus();
-                const start = inputEl.selectionStart || 0;
-                const end = inputEl.selectionEnd || 0;
-                const val = inputEl.value || '';
-                if (start > 0 || start !== end) {
-                    const deleteStart = (start === end) ? start - 1 : start;
-                    inputEl.value = val.substring(0, deleteStart) + val.substring(end);
-                    inputEl.selectionStart = inputEl.selectionEnd = deleteStart;
-                    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            } else if (inputEl.isContentEditable) {
-                inputEl.innerText = inputEl.innerText.slice(0, -1);
-                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            TextInsertionService.handleBackspace();
         }
     };
 
@@ -388,9 +372,36 @@ document.addEventListener('DOMContentLoaded', () => {
         function showVirtualKeyboard() {}
         function hideVirtualKeyboard() {}
 
+        const LANG_DISPLAY_NAMES = {
+            'auto': 'Auto Detect', 'en': 'English', 'te': 'Telugu', 'hi': 'Hindi',
+            'ta': 'Tamil', 'kn': 'Kannada', 'ml': 'Malayalam', 'mr': 'Marathi',
+            'bn': 'Bengali', 'gu': 'Gujarati', 'pa': 'Punjabi', 'ur': 'Urdu',
+            'es': 'Spanish', 'fr': 'French', 'de': 'German', 'it': 'Italian',
+            'pt': 'Portuguese', 'ar': 'Arabic', 'ja': 'Japanese', 'ko': 'Korean',
+            'zh': 'Chinese', 'ru': 'Russian'
+        };
+
+        function getLangDisplayName(code) {
+            if (!code) return 'Auto Detect';
+            const clean = code.toLowerCase().trim();
+            return LANG_DISPLAY_NAMES[clean] || code.toUpperCase();
+        }
+
+        function cleanMusicSymbols(str) {
+            if (!str) return '';
+            return str
+                .replace(/[♪♫🎵🎶♭♮♯]/g, '')
+                .replace(/\[(music|singing|background music)\]/gi, '')
+                .replace(/\((music|singing|background music)\)/gi, '')
+                .trim();
+        }
+
+        let latestSourceLang = 'en';
+        let latestTargetLang = 'en';
+
         // --- AI Voice Keyboard UI State Machine ---
         function setVoiceState(state, extraData = {}) {
-            voiceState = state; // 'idle' | 'recording' | 'processing' | 'completed' | 'error'
+            voiceState = state; // 'idle' | 'recording' | 'transcribing' | 'translating' | 'completed' | 'error'
             window.setVoiceState = setVoiceState;
             window.setVoiceStateImpl = setVoiceState;
 
@@ -409,17 +420,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalRecordTimer = document.getElementById('modalRecordTimer');
             const liveSpeechPreview = document.getElementById('liveSpeechPreview');
             const transcriptionResultContainer = document.getElementById('transcriptionResultContainer');
-            const voiceTranscriptionTextarea = document.getElementById('voiceTranscriptionTextarea');
+
+            const originalSpeechCard = document.getElementById('originalSpeechCard');
+            const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
+            const originalLangTag = document.getElementById('originalLangTag');
+
+            const translationSpeechCard = document.getElementById('translationSpeechCard');
+            const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
+            const translationLangTag = document.getElementById('translationLangTag');
 
             const cancelVoiceBtn = document.getElementById('cancelVoiceBtn');
             const startVoiceRecordBtn = document.getElementById('startVoiceRecordBtn');
             const startBtnIcon = document.getElementById('startBtnIcon');
             const startBtnText = document.getElementById('startBtnText');
             const rerecordVoiceBtn = document.getElementById('rerecordVoiceBtn');
-            const insertTextVoiceBtn = document.getElementById('insertTextVoiceBtn');
 
             const selectedLangCode = getSourceLang();
-            const langDisplayName = selectedLangCode === 'auto' ? 'Auto Detect' : (getLangTag(selectedLangCode) || selectedLangCode.toUpperCase());
+            const langDisplayName = selectedLangCode === 'auto' ? 'Auto Detect' : getLangDisplayName(selectedLangCode);
 
             if (state === 'idle') {
                 isRecording = false;
@@ -432,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'flex';
                 if (voiceToggleRow) voiceToggleRow.style.display = 'flex';
-                if (translateToGroup) translateToGroup.style.display = 'flex';
+                if (translateToGroup) translateToGroup.style.display = isTranslationOn ? 'flex' : 'none';
                 if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
                 
                 if (modalMicRecordBtn) {
@@ -452,7 +469,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
 
-                if (cancelVoiceBtn) cancelVoiceBtn.style.display = 'inline-flex';
+                if (cancelVoiceBtn) {
+                    cancelVoiceBtn.style.display = 'inline-flex';
+                    cancelVoiceBtn.textContent = 'Cancel';
+                }
+                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
+
                 if (startVoiceRecordBtn) {
                     startVoiceRecordBtn.style.display = 'inline-flex';
                     startVoiceRecordBtn.disabled = false;
@@ -460,8 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'mic');
                     if (startBtnText) startBtnText.textContent = 'Start Recording';
                 }
-                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
-                if (insertTextVoiceBtn) insertTextVoiceBtn.style.display = 'none';
             }
             else if (state === 'recording') {
                 isRecording = true;
@@ -488,7 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (liveSpeechPreview) liveSpeechPreview.style.display = 'block';
                 if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
 
-                if (cancelVoiceBtn) cancelVoiceBtn.style.display = 'inline-flex';
+                if (cancelVoiceBtn) {
+                    cancelVoiceBtn.style.display = 'inline-flex';
+                    cancelVoiceBtn.textContent = 'Cancel';
+                }
+                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
+
                 if (startVoiceRecordBtn) {
                     startVoiceRecordBtn.style.display = 'inline-flex';
                     startVoiceRecordBtn.disabled = false;
@@ -496,16 +521,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'square');
                     if (startBtnText) startBtnText.textContent = 'Stop Recording';
                 }
-                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
-                if (insertTextVoiceBtn) insertTextVoiceBtn.style.display = 'none';
             }
-            else if (state === 'processing') {
+            else if (state === 'transcribing' || state === 'processing') {
                 isRecording = false;
                 if (modalHeaderBadgeIcon) modalHeaderBadgeIcon.textContent = '⏳';
                 if (modalCardTitle) modalCardTitle.textContent = 'AI Voice Keyboard';
                 if (voiceLangIndicator) voiceLangIndicator.textContent = extraData.language || langDisplayName;
                 if (voiceStatusBadge) {
-                    voiceStatusBadge.textContent = 'Processing...';
+                    voiceStatusBadge.textContent = 'Transcribing...';
                     voiceStatusBadge.className = 'voice-status-badge processing';
                 }
                 if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
@@ -518,52 +541,91 @@ document.addEventListener('DOMContentLoaded', () => {
                     modalMicRecordBtn.disabled = true;
                 }
                 if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'loader');
-                if (modalMicStatus) modalMicStatus.textContent = 'Converting your speech to text...';
+                if (modalMicStatus) modalMicStatus.textContent = 'Transcribing your speech...';
                 if (modalWaveformCanvas) modalWaveformCanvas.style.display = 'none';
                 if (modalRecordTimer) modalRecordTimer.style.display = 'none';
                 if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
 
                 if (cancelVoiceBtn) cancelVoiceBtn.style.display = 'none';
+                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
+
                 if (startVoiceRecordBtn) {
                     startVoiceRecordBtn.style.display = 'inline-flex';
                     startVoiceRecordBtn.disabled = true;
                     startVoiceRecordBtn.className = 'btn-primary btn-record-start processing';
                     if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'loader');
-                    if (startBtnText) startBtnText.textContent = 'Processing...';
+                    if (startBtnText) startBtnText.textContent = 'Transcribing...';
                 }
-                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
-                if (insertTextVoiceBtn) insertTextVoiceBtn.style.display = 'none';
+            }
+            else if (state === 'translating') {
+                if (voiceStatusBadge) {
+                    voiceStatusBadge.textContent = 'Translating...';
+                    voiceStatusBadge.className = 'voice-status-badge processing';
+                }
+                if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
+                if (voiceToggleRow) voiceToggleRow.style.display = 'none';
+                if (translateToGroup) translateToGroup.style.display = 'none';
+                if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
+                if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
+                if (modalMicStatus) modalMicStatus.textContent = 'Translating text...';
             }
             else if (state === 'completed') {
                 isRecording = false;
                 if (modalHeaderBadgeIcon) modalHeaderBadgeIcon.textContent = '✓';
                 if (modalCardTitle) modalCardTitle.textContent = 'Transcription Complete';
-                if (voiceLangIndicator) voiceLangIndicator.textContent = extraData.language || 'Detected';
+
+                latestSourceLang = extraData.sourceLang || 'en';
+                latestTargetLang = extraData.targetLang || getTargetLang();
+
+                const srcLangDisplay = getLangDisplayName(latestSourceLang);
+                if (voiceLangIndicator) voiceLangIndicator.textContent = srcLangDisplay;
+
                 if (voiceStatusBadge) {
-                    voiceStatusBadge.textContent = 'Transcription complete';
+                    voiceStatusBadge.textContent = 'Detected: ' + srcLangDisplay;
                     voiceStatusBadge.className = 'voice-status-badge completed';
                 }
+
+                // Hide all top setting rows & center mic visual so speech cards fit without scrolling
                 if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
+                if (voiceToggleRow) voiceToggleRow.style.display = 'none';
+                if (translateToGroup) translateToGroup.style.display = 'none';
                 if (voiceCenterVisual) voiceCenterVisual.style.display = 'none';
+
+                const modalBody = document.querySelector('.voice-modal-body');
+                if (modalBody) modalBody.scrollTop = 0;
+
                 if (transcriptionResultContainer) {
                     transcriptionResultContainer.style.display = 'flex';
-                    if (voiceTranscriptionTextarea) {
-                        voiceTranscriptionTextarea.value = extraData.text || '';
-                        voiceTranscriptionTextarea.focus();
+                    
+                    if (originalSpeechCard && voiceOriginalTextarea) {
+                        originalSpeechCard.style.display = 'block';
+                        voiceOriginalTextarea.value = extraData.originalText || '';
+                        if (originalLangTag) originalLangTag.textContent = srcLangDisplay.toUpperCase();
+                    }
+
+                    if (isTranslationOn && extraData.translatedText) {
+                        if (translationSpeechCard && voiceTranslatedTextarea) {
+                            translationSpeechCard.style.display = 'block';
+                            voiceTranslatedTextarea.value = extraData.translatedText;
+                            const tgtLangDisplay = getLangDisplayName(latestTargetLang);
+                            if (translationLangTag) translationLangTag.textContent = tgtLangDisplay.toUpperCase();
+                        }
+                    } else {
+                        if (translationSpeechCard) translationSpeechCard.style.display = 'none';
                     }
                 }
 
-                if (cancelVoiceBtn) cancelVoiceBtn.style.setProperty('display', 'none', 'important');
-                if (rerecordVoiceBtn) rerecordVoiceBtn.style.setProperty('display', 'none', 'important');
-                if (startVoiceRecordBtn) {
-                    startVoiceRecordBtn.style.setProperty('display', 'inline-flex', 'important');
-                    startVoiceRecordBtn.disabled = false;
-                    startVoiceRecordBtn.className = 'btn-secondary btn-record-start';
-                    if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'mic');
-                    if (startBtnText) startBtnText.textContent = 'Start Recording';
+                if (cancelVoiceBtn) {
+                    cancelVoiceBtn.style.display = 'inline-flex';
+                    cancelVoiceBtn.textContent = 'Close';
                 }
-                if (insertTextVoiceBtn) {
-                    insertTextVoiceBtn.style.setProperty('display', 'inline-flex', 'important');
+
+                if (rerecordVoiceBtn) {
+                    rerecordVoiceBtn.style.display = 'inline-flex';
+                }
+
+                if (startVoiceRecordBtn) {
+                    startVoiceRecordBtn.style.display = 'none';
                 }
             }
             else if (state === 'error') {
@@ -578,26 +640,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
 
                 if (modalMicRecordBtn) {
-                    modalMicRecordBtn.className = 'voice-record-circle';
+                    modalMicRecordBtn.className = 'voice-record-circle error';
                     modalMicRecordBtn.disabled = false;
                 }
-                if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'alert-circle');
+                if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'alert-triangle');
                 if (modalMicStatus) modalMicStatus.textContent = extraData.error || 'Unable to transcribe audio. Please try again.';
                 if (modalWaveformCanvas) modalWaveformCanvas.style.display = 'none';
                 if (modalRecordTimer) modalRecordTimer.style.display = 'none';
                 if (liveSpeechPreview) liveSpeechPreview.style.display = 'none';
                 if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
 
-                if (cancelVoiceBtn) cancelVoiceBtn.style.display = 'inline-flex';
+                if (cancelVoiceBtn) {
+                    cancelVoiceBtn.style.display = 'inline-flex';
+                    cancelVoiceBtn.textContent = 'Close';
+                }
+                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'inline-flex';
+
                 if (startVoiceRecordBtn) {
                     startVoiceRecordBtn.style.display = 'inline-flex';
                     startVoiceRecordBtn.disabled = false;
-                    startVoiceRecordBtn.className = 'btn-primary btn-record-start';
+                    startVoiceRecordBtn.className = 'btn-primary btn-record-start error';
                     if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'refresh-cw');
                     if (startBtnText) startBtnText.textContent = 'Try Again';
                 }
-                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
-                if (insertTextVoiceBtn) insertTextVoiceBtn.style.display = 'none';
             }
 
             if (window.lucide) lucide.createIcons();
@@ -643,6 +708,20 @@ document.addEventListener('DOMContentLoaded', () => {
         function closeVoiceModal() {
             resetToIdleState();
             if (voiceModal) voiceModal.classList.remove('active');
+
+            const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
+            if (targetEl && (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA')) {
+                setTimeout(() => {
+                    try {
+                        targetEl.disabled = false;
+                        targetEl.readOnly = false;
+                        targetEl.style.pointerEvents = 'auto';
+                        targetEl.focus();
+                        const len = targetEl.value ? targetEl.value.length : 0;
+                        targetEl.setSelectionRange(len, len);
+                    } catch (e) {}
+                }, 50);
+            }
         }
 
         if (mainMicBtn) {
@@ -673,10 +752,168 @@ document.addEventListener('DOMContentLoaded', () => {
                 resetToIdleState();
             });
         }
-        if (insertTextVoiceBtn) {
-            insertTextVoiceBtn.addEventListener('click', (e) => {
+
+        // Speech Card Action Event Handlers
+        let activeTTSAudio = null;
+
+        async function handleTTSPlay(text, lang, btnEl, iconEl, textEl, label) {
+            console.log("handleTTSPlay triggered for text:", text, "language:", lang);
+            if (!text || !text.trim()) {
+                alert('No text available to speak.');
+                return;
+            }
+
+            if (activeTTSAudio && !activeTTSAudio.paused) {
+                activeTTSAudio.pause();
+                activeTTSAudio.currentTime = 0;
+                activeTTSAudio = null;
+                if (textEl) textEl.textContent = label;
+                if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            if (textEl) textEl.textContent = 'Speaking...';
+            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-x');
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/voice/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text.trim(),
+                        language: lang || 'en',
+                        voice: 'nova',
+                        speed: 1.0
+                    })
+                });
+
+                console.log("TTS API response status:", res.status);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log("TTS API response data:", data);
+                    if (data.success && data.audio_url) {
+                        const audio = new Audio(data.audio_url);
+                        activeTTSAudio = audio;
+
+                        audio.onended = () => {
+                            activeTTSAudio = null;
+                            if (textEl) textEl.textContent = label;
+                            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                            if (window.lucide) lucide.createIcons();
+                        };
+                        audio.onerror = (err) => {
+                            console.error("Audio element error during playback:", err);
+                            activeTTSAudio = null;
+                            if (textEl) textEl.textContent = label;
+                            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                            if (window.lucide) lucide.createIcons();
+                        };
+
+                        await audio.play();
+                    } else {
+                        throw new Error(data.error || 'TTS audio generation failed');
+                    }
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || errData.error || ('TTS HTTP failure: ' + res.status));
+                }
+            } catch (err) {
+                console.warn('TTS playback error:', err);
+                alert('Audio playback notice: ' + err.message);
+                if (textEl) textEl.textContent = label;
+                if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        const speakOriginalBtn = document.getElementById('speakOriginalBtn');
+        const speakOriginalIcon = document.getElementById('speakOriginalIcon');
+        const speakOriginalText = document.getElementById('speakOriginalText');
+        const copyOriginalBtn = document.getElementById('copyOriginalBtn');
+        const copyOriginalText = document.getElementById('copyOriginalText');
+        const insertOriginalBtn = document.getElementById('insertOriginalBtn');
+        const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
+
+        const speakTranslationBtn = document.getElementById('speakTranslationBtn');
+        const speakTranslationIcon = document.getElementById('speakTranslationIcon');
+        const speakTranslationText = document.getElementById('speakTranslationText');
+        const copyTranslationBtn = document.getElementById('copyTranslationBtn');
+        const copyTranslationText = document.getElementById('copyTranslationText');
+        const insertTranslationBtn = document.getElementById('insertTranslationBtn');
+        const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
+
+        if (speakOriginalBtn) {
+            speakOriginalBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                handleInsertTextClick();
+                e.stopPropagation();
+                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value : '';
+                handleTTSPlay(text, latestSourceLang, speakOriginalBtn, speakOriginalIcon, speakOriginalText, 'Speak Original');
+            });
+        }
+
+        if (copyOriginalBtn) {
+            copyOriginalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value : '';
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        if (copyOriginalText) copyOriginalText.textContent = '✓ Copied!';
+                        setTimeout(() => { if (copyOriginalText) copyOriginalText.textContent = 'Copy Original'; }, 1500);
+                    });
+                }
+            });
+        }
+
+        if (insertOriginalBtn) {
+            insertOriginalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value.trim() : '';
+                if (text) {
+                    const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
+                    TextInsertionService.insertText(text, targetEl);
+                }
+                closeVoiceModal();
+            });
+        }
+
+        if (speakTranslationBtn) {
+            speakTranslationBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = voiceTranslatedTextarea ? voiceTranslatedTextarea.value : '';
+                handleTTSPlay(text, latestTargetLang, speakTranslationBtn, speakTranslationIcon, speakTranslationText, 'Speak Translation');
+            });
+        }
+
+        if (copyTranslationBtn) {
+            copyTranslationBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = voiceTranslatedTextarea ? voiceTranslatedTextarea.value : '';
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        if (copyTranslationText) copyTranslationText.textContent = '✓ Copied!';
+                        setTimeout(() => { if (copyTranslationText) copyTranslationText.textContent = 'Copy Translation'; }, 1500);
+                    });
+                }
+            });
+        }
+
+        if (insertTranslationBtn) {
+            insertTranslationBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = voiceTranslatedTextarea ? voiceTranslatedTextarea.value.trim() : '';
+                if (text) {
+                    const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
+                    TextInsertionService.insertText(text, targetEl);
+                }
+                closeVoiceModal();
             });
         }
 
@@ -687,25 +924,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('No transcribed text to insert.');
                 return;
             }
-            const targetEl = lastActiveInput || currentTargetInput || TextInsertionService.getActiveInput();
+            const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
             console.log("Inserting text into target element:", targetEl ? (targetEl.id || targetEl.tagName) : "None");
+            
+            // Insert text into search bar
             TextInsertionService.insertText(textToInsert, targetEl, insertTextVoiceBtn);
             
-            // Auto-save voice record entry for history CRUD
-            fetch(`${API_BASE}/api/records`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: textToInsert,
-                    source_language: getSourceLang(),
-                    target_language: getTargetLang(),
-                    translated_text: textToInsert
-                })
-            }).catch(e => console.warn('Record save error:', e));
 
-            setTimeout(() => {
-                closeVoiceModal();
-            }, 300);
+            closeVoiceModal();
         }
 
         // Hide keyboard on outside click
@@ -739,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (originalTextEditor && originalTextEditor !== mainSearchInput) {
                     originalTextEditor.value = mainSearchInput.value;
                 }
-                if (isTranslationOn) triggerTranslation();
+                if (isTranslationOn) triggerTranslationDebounced();
             });
         }
 
@@ -984,8 +1210,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voiceState !== 'recording' && !isRecording) return;
 
         console.log("Recording stopped");
-        // 1. Transition State to 'processing'
-        setVoiceState('processing');
+        // 1. Transition State to 'transcribing'
+        setVoiceState('transcribing');
 
         // 2. Stop Realtime WebSpeech Recognizer
         if (speechRecognizer) {
@@ -1009,79 +1235,97 @@ document.addEventListener('DOMContentLoaded', () => {
                 const audioBlob = new Blob(audioChunks, { type: mimeType });
                 console.log("Audio blob:", audioBlob.size, "bytes, MIME type:", audioBlob.type);
 
-                if (!audioBlob || audioBlob.size === 0) {
-                    console.error("Audio recording failed: audioBlob size is 0");
-                    setVoiceState('error', { error: 'No audio was recorded. Please try speaking again.' });
-                    return;
-                }
+                const liveFallbackText = ((finalText || '') + ' ' + (partialText || '')).trim();
 
-                const sourceLang = getSourceLang();
-                let transcribedText = '';
-                let detectedLanguage = sourceLang;
+                let originalSpokenText = '';
+                let detectedLanguage = getSourceLang();
 
-                const formData = new FormData();
-                formData.append('session_id', currentSessionId);
-                formData.append('source_language', sourceLang);
-                formData.append('audio', audioBlob, 'recording.webm');
+                if (audioBlob && audioBlob.size > 0) {
+                    const formData = new FormData();
+                    formData.append('session_id', currentSessionId);
+                    formData.append('source_language', getSourceLang());
+                    formData.append('audio', audioBlob, 'recording.webm');
+                    if (liveFallbackText) {
+                        formData.append('fallback_text', liveFallbackText);
+                    }
 
-                console.log("Sending audio for transcription");
+                    console.log("Sending audio for transcription");
 
-                try {
-                    const res = await fetch(`${API_BASE}/api/voice/transcribe`, {
-                        method: 'POST',
-                        body: formData
-                    });
+                    try {
+                        const res = await fetch('/api/voice/transcribe', {
+                            method: 'POST',
+                            body: formData
+                        });
 
-                    console.log("Transcription API status:", res.status);
+                        console.log("Transcription API status:", res.status);
 
-                    if (res.ok) {
-                        const data = await res.json();
-                        console.log("Transcription API response:", data);
-                        if (data.success && (data.text || data.transcription || data.original_text)) {
-                            transcribedText = data.text || data.transcription || data.original_text;
-                            detectedLanguage = data.language || sourceLang;
-                            console.log("Final transcription:", transcribedText);
-                        } else if (data.error) {
-                            console.warn("Transcription API returned error:", data.error);
-                            setVoiceState('error', { error: data.error });
+                        if (res.ok) {
+                            const data = await res.json();
+                            console.log("Transcription API response:", data);
+                            if (data.success && (data.text || data.transcription || data.original_text)) {
+                                originalSpokenText = cleanMusicSymbols(data.text || data.transcription || data.original_text);
+                                detectedLanguage = data.language || getSourceLang();
+                                console.log("Final transcription:", originalSpokenText);
+                            } else if (data.error) {
+                                if (liveFallbackText) {
+                                    originalSpokenText = liveFallbackText;
+                                } else {
+                                    console.warn("Transcription API returned error:", data.error);
+                                    setVoiceState('error', { error: data.error });
+                                    return;
+                                }
+                            }
+                        } else {
+                            if (liveFallbackText) {
+                                originalSpokenText = liveFallbackText;
+                            } else {
+                                console.error("Transcription API request failed with status:", res.status);
+                                setVoiceState('error', { error: 'Unable to transcribe audio. Please try again.' });
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        if (liveFallbackText) {
+                            originalSpokenText = liveFallbackText;
+                        } else {
+                            console.error('Backend Whisper STT fetch error:', err);
+                            setVoiceState('error', { error: 'Unable to transcribe audio. Connection issue.' });
                             return;
                         }
-                    } else {
-                        console.error("Transcription API request failed with status:", res.status);
-                        setVoiceState('error', { error: 'Unable to transcribe audio. Please try again.' });
-                        return;
                     }
-                } catch (err) {
-                    console.error('Backend Whisper STT fetch error:', err);
-                    setVoiceState('error', { error: 'Unable to transcribe audio. Connection issue.' });
+                } else if (liveFallbackText) {
+                    originalSpokenText = liveFallbackText;
+                } else {
+                    setVoiceState('error', { error: 'No audio recorded. Please try speaking again.' });
                     return;
                 }
 
-                if (!transcribedText || !transcribedText.trim()) {
-                    console.warn("No transcription text returned from backend");
+                if (!originalSpokenText || !originalSpokenText.trim()) {
                     setVoiceState('error', { error: 'No speech detected. Please speak again.' });
                     return;
                 }
 
+                let translatedTextResult = '';
+                const targetLang = getTargetLang();
+
                 // If Translation toggle is ON, perform translation into target language
-                if (isTranslationOn && transcribedText) {
-                    const targetLang = getTargetLang();
+                if (isTranslationOn && originalSpokenText) {
+                    setVoiceState('translating');
                     try {
-                        const transRes = await fetch(`${API_BASE}/api/translate`, {
+                        const transRes = await fetch('/api/translate', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 session_id: currentSessionId,
-                                text: transcribedText,
-                                source_language: detectedLanguage || sourceLang,
+                                text: originalSpokenText,
+                                source_language: detectedLanguage || getSourceLang(),
                                 target_language: targetLang
                             })
                         });
                         if (transRes.ok) {
                             const transData = await transRes.json();
-                            if (transData.success && transData.translated_text) {
-                                transcribedText = transData.translated_text;
-                                detectedLanguage = `${detectedLanguage || 'Auto'} ➔ ${targetLang.toUpperCase()}`;
+                            if (transData.success && (transData.translated_text || transData.translation)) {
+                                translatedTextResult = transData.translated_text || transData.translation;
                             }
                         }
                     } catch (e) {
@@ -1091,8 +1335,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Transition to 'completed' State displaying text
                 setVoiceState('completed', {
-                    text: transcribedText,
-                    language: detectedLanguage
+                    originalText: originalSpokenText,
+                    translatedText: translatedTextResult,
+                    sourceLang: detectedLanguage,
+                    targetLang: targetLang
                 });
             };
 
@@ -1136,26 +1382,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainMicBtn) mainMicBtn.classList.remove('recording', 'processing');
         if (window.lucide) lucide.createIcons();
 
-        // Save Record via CRUD API (CREATE)
-        const mainSearchInput = document.getElementById('mainSearchInput');
-        const currentText = mainSearchInput ? mainSearchInput.value.trim() : '';
-        if (currentText) {
-            fetch(`${API_BASE}/api/records`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: currentText,
-                    source_language: getSourceLang(),
-                    target_language: getTargetLang(),
-                    translated_text: currentText
-                })
-            }).catch(e => console.warn('Record auto-save failed:', e));
-        }
     }
 
     function handleTranslatedOutput(translatedText) {
         if (!translatedText) return;
-        const mainSearchInput = document.getElementById('mainSearchInput');
         const previewTranslatedText = document.getElementById('previewTranslatedText');
 
         if (previewTranslatedText) {
@@ -1165,21 +1395,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (translatedTextEditor) {
             translatedTextEditor.value = translatedText;
         }
-
-        if (mainSearchInput && isTranslationOn) {
-            mainSearchInput.value = translatedText;
-            mainSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
     }
 
-    // --- Translation Logic ---
+    // --- Translation Logic with Debouncing & Request Deduplication ---
+    let translationDebounceTimer = null;
+    let lastTranslationKey = '';
+
+    function triggerTranslationDebounced() {
+        if (translationDebounceTimer) clearTimeout(translationDebounceTimer);
+        translationDebounceTimer = setTimeout(() => {
+            triggerTranslation();
+        }, 600);
+    }
+
     async function triggerTranslation() {
-        const target = currentTargetInput || TextInsertionService.getActiveInput();
-        const text = target ? (target.value || target.innerText || '').trim() : (originalTextEditor ? originalTextEditor.value.trim() : '');
-        if (!text || !isTranslationOn) {
-            if (!isTranslationOn && translatedTextEditor) translatedTextEditor.value = '';
+        if (!isTranslationOn) {
+            if (translatedTextEditor) translatedTextEditor.value = '';
+            lastTranslationKey = '';
             return;
         }
+
+        const target = currentTargetInput || TextInsertionService.getActiveInput();
+        const text = target ? (target.value || target.innerText || '').trim() : (originalTextEditor ? originalTextEditor.value.trim() : '');
+        if (!text) {
+            if (translatedTextEditor) translatedTextEditor.value = '';
+            lastTranslationKey = '';
+            return;
+        }
+
+        const srcLang = getSourceLang();
+        const tgtLang = getTargetLang();
+
+        // Skip translation API network call if source language matches target language
+        if (srcLang !== 'auto' && srcLang === tgtLang) {
+            handleTranslatedOutput(text);
+            lastTranslationKey = `${srcLang}:${tgtLang}:${text}`;
+            return;
+        }
+
+        const translationKey = `${srcLang}:${tgtLang}:${text}`;
+        if (translationKey === lastTranslationKey) return;
+        lastTranslationKey = translationKey;
 
         try {
             const res = await fetch(`${API_BASE}/api/translate`, {
@@ -1188,9 +1444,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     session_id: currentSessionId,
                     text: text,
-                    source_language: getSourceLang(),
-                    translation_language: getTargetLang(),
-                    target_language: getTargetLang()
+                    source_language: srcLang,
+                    translation_language: tgtLang,
+                    target_language: tgtLang
                 })
             });
 
@@ -1283,15 +1539,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TextInsertionService Architecture ---
     const TextInsertionService = {
         activeInput: null,
-        lastSelectionStart: 0,
-        lastSelectionEnd: 0,
+        lastSelectionStart: null,
+        lastSelectionEnd: null,
 
         setActiveInput(el) {
             if (!el) return;
             this.activeInput = el;
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                this.lastSelectionStart = el.selectionStart || 0;
-                this.lastSelectionEnd = el.selectionEnd || 0;
+                if (el.selectionStart !== null && el.selectionStart !== undefined) {
+                    this.lastSelectionStart = el.selectionStart;
+                    this.lastSelectionEnd = (el.selectionEnd !== null && el.selectionEnd !== undefined) ? el.selectionEnd : el.selectionStart;
+                }
             }
         },
 
@@ -1306,6 +1564,65 @@ document.addEventListener('DOMContentLoaded', () => {
             return document.getElementById('mainSearchInput') || document.getElementById('originalTextEditor') || document.getElementById('globalSearchInput');
         },
 
+        handleBackspace(targetEl = null) {
+            const inputEl = targetEl || this.getActiveInput();
+            if (!inputEl) return;
+
+            if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA') {
+                try {
+                    inputEl.disabled = false;
+                    inputEl.readOnly = false;
+                    inputEl.style.pointerEvents = 'auto';
+                    inputEl.focus();
+                } catch (e) {}
+
+                const val = inputEl.value || '';
+                if (!val) return;
+
+                let start = inputEl.selectionStart;
+                let end = inputEl.selectionEnd;
+
+                // Fallback to end of text if selectionStart is null/undefined
+                if (start === null || start === undefined) {
+                    start = val.length;
+                    end = val.length;
+                }
+
+                // If cursor is at position 0 with no text selected, backspace cannot delete before index 0
+                if (start === 0 && end === 0) {
+                    return;
+                }
+
+                const deleteStart = (start === end) ? Math.max(0, start - 1) : start;
+                const newVal = val.substring(0, deleteStart) + val.substring(end);
+                inputEl.value = newVal;
+                const newCursorPos = deleteStart;
+
+                try {
+                    inputEl.setSelectionRange(newCursorPos, newCursorPos);
+                } catch (e) {
+                    inputEl.selectionStart = inputEl.selectionEnd = newCursorPos;
+                }
+
+                this.setActiveInput(inputEl);
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            } else if (inputEl.isContentEditable) {
+                inputEl.focus();
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                    const range = sel.getRangeAt(0);
+                    range.deleteContents();
+                } else {
+                    const text = inputEl.innerText || inputEl.textContent || '';
+                    if (text.length > 0) {
+                        inputEl.innerText = text.slice(0, -1);
+                    }
+                }
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        },
+
         insertText(text, targetEl = null, btnElement = null) {
             if (!text) return;
             const inputEl = targetEl || this.getActiveInput();
@@ -1316,21 +1633,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Ensure input element is enabled, editable, and unblocked
+            try {
+                inputEl.disabled = false;
+                inputEl.readOnly = false;
+                inputEl.style.pointerEvents = 'auto';
+            } catch (e) {}
+
             // 1. Handle HTML Input / Textarea (Cursor position & selection replacement)
             if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA') {
                 try {
                     inputEl.focus();
-                    const start = (inputEl.selectionStart !== null && inputEl.selectionStart !== undefined) ? inputEl.selectionStart : inputEl.value.length;
-                    const end = (inputEl.selectionEnd !== null && inputEl.selectionEnd !== undefined) ? inputEl.selectionEnd : inputEl.value.length;
                     const val = inputEl.value || '';
+                    const start = (inputEl.selectionStart !== null && inputEl.selectionStart !== undefined) ? inputEl.selectionStart : val.length;
+                    const end = (inputEl.selectionEnd !== null && inputEl.selectionEnd !== undefined) ? inputEl.selectionEnd : val.length;
                     
-                    inputEl.value = val.substring(0, start) + text + val.substring(end);
+                    const newVal = val.substring(0, start) + text + val.substring(end);
+                    inputEl.value = newVal;
                     const newCursorPos = start + text.length;
-                    inputEl.selectionStart = inputEl.selectionEnd = newCursorPos;
+
+                    try {
+                        inputEl.setSelectionRange(newCursorPos, newCursorPos);
+                    } catch (e) {
+                        inputEl.selectionStart = inputEl.selectionEnd = newCursorPos;
+                    }
+
                     inputEl.dispatchEvent(new Event('input', { bubbles: true }));
                     inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    this.setActiveInput(inputEl);
+
+                    // Ensure focus & cursor placement are preserved after event dispatch
+                    setTimeout(() => {
+                        try {
+                            inputEl.disabled = false;
+                            inputEl.readOnly = false;
+                            inputEl.focus();
+                            inputEl.setSelectionRange(newCursorPos, newCursorPos);
+                        } catch (e) {}
+                    }, 40);
                 } catch (e) {
                     inputEl.value = text;
+                    inputEl.focus();
                 }
             } 
             // 2. Handle ContentEditable Elements
@@ -1389,7 +1733,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Global Focus & Cursor Selection Listeners to track active target input
+    document.addEventListener('focusin', (e) => {
+        const target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+            TextInsertionService.setActiveInput(target);
+        }
+    });
 
+    document.addEventListener('selectionchange', () => {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            TextInsertionService.setActiveInput(activeEl);
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            TextInsertionService.setActiveInput(activeEl);
+        }
+    });
+
+    document.addEventListener('mouseup', (e) => {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            TextInsertionService.setActiveInput(activeEl);
+        }
+    });
 
     // --- Search Execution ---
     async function performSearch(queryText = null) {
@@ -1412,6 +1783,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         try {
             const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
             if (res.ok) {
@@ -1419,10 +1800,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.results && data.results.length > 0) {
                     searchContainer.innerHTML = data.results.map(item => `
                         <div class="search-result-item">
-                            <a href="${item.url}" target="_blank" class="search-result-title">${item.title}</a>
-                            <div class="search-result-snippet">${item.snippet}</div>
+                            <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
+                                <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> ${escapeHtml(item.title)}
+                            </a>
+                            <div class="search-result-url">${escapeHtml(item.url)}</div>
+                            <div class="search-result-snippet">${escapeHtml(item.snippet)}</div>
                         </div>
                     `).join('');
+                    if (window.lucide) lucide.createIcons();
                     searchCard.scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
@@ -1434,10 +1819,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchContainer) {
             searchContainer.innerHTML = `
                 <div class="search-result-item">
-                    <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" class="search-result-title">Search Google for "${query}"</a>
-                    <div class="search-result-snippet">Click to view web search results for "${query}".</div>
+                    <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
+                        <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> Search Google for "${escapeHtml(query)}"
+                    </a>
+                    <div class="search-result-url">https://www.google.com/search?q=${encodeURIComponent(query)}</div>
+                    <div class="search-result-snippet">Click to view web search results for "${escapeHtml(query)}".</div>
                 </div>
             `;
+            if (window.lucide) lucide.createIcons();
             searchCard.scrollIntoView({ behavior: 'smooth' });
         }
     }

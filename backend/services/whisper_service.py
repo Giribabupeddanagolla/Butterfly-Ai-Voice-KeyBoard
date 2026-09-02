@@ -9,8 +9,11 @@ class WhisperService:
     def __init__(self):
         self.api_key = None
         self.client = None
+        self.whisper_failed = False
 
     def get_client(self):
+        if self.whisper_failed:
+            return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key and (not self.client or self.api_key != current_key):
             try:
@@ -86,6 +89,12 @@ class WhisperService:
                         detected_lang = response.get("language")
 
                     if transcribed_text:
+                        import re
+                        transcribed_text = re.sub(r'[♪♫🎵🎶♭♮♯]', '', transcribed_text)
+                        transcribed_text = re.sub(r'\[(music|singing|background music)\]', '', transcribed_text, flags=re.IGNORECASE)
+                        transcribed_text = re.sub(r'\((music|singing|background music)\)', '', transcribed_text, flags=re.IGNORECASE).strip()
+
+                    if transcribed_text:
                         from languages import normalize_language_code
                         from speech_to_text import detect_language_from_text
                         norm_lang = normalize_language_code(detected_lang)
@@ -99,7 +108,13 @@ class WhisperService:
                             "language": norm_lang
                         }
             except Exception as e:
-                logger.warning(f"Whisper API error ({e}). Falling back to STT service.")
+                err_str = str(e)
+                if "429" in err_str or "quota" in err_str.lower() or "credit_balance_exhausted" in err_str.lower():
+                    if not self.whisper_failed:
+                        logger.info("Whisper API quota/credit exhausted (HTTP 429). Switching to free fallback STT.")
+                    self.whisper_failed = True
+                else:
+                    logger.warning(f"Whisper API error ({e}). Falling back to STT service.")
 
         # 2. Fallback to local STT service (SpeechRecognition / Google STT / client transcript)
         try:
@@ -118,9 +133,19 @@ class WhisperService:
         except Exception as e:
             logger.error(f"Fallback STT error: {e}")
 
+        if fallback_text and fallback_text.strip():
+            from speech_to_text import detect_language_from_text
+            text = fallback_text.strip()
+            det_lang = detect_language_from_text(text)
+            return {
+                "success": True,
+                "text": text,
+                "language": language if (language and language != "auto") else det_lang
+            }
+
         return {
             "success": False,
-            "error": "Transcription failed. Please try again.",
+            "error": "Transcription failed. Please try speaking again.",
             "text": "",
             "language": language or "en"
         }

@@ -23,7 +23,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
-    <link rel="stylesheet" href="style.css?v=80.0">
+    <link rel="stylesheet" href="style.css?v=400.0">
 </head>
 <body class="dark-theme">
     <div class="app-layout">
@@ -197,23 +197,72 @@
                     <div class="voice-live-text" id="liveSpeechPreview" style="display: none;"></div>
                 </div>
 
-                <!-- Editable Transcription Area (State 4 - Success) -->
-                <div class="transcription-result-container" id="transcriptionResultContainer" style="display: none;">
-                    <label class="transcription-label">
-                        <i data-lucide="edit-3"></i> Transcribed Text
-                    </label>
-                    <textarea id="voiceTranscriptionTextarea" class="voice-transcription-textarea" rows="4" placeholder="Your transcribed text will appear here..."></textarea>
+                <!-- Voice Command Notification Badge -->
+                <div class="voice-command-badge" id="voiceCommandBadge" style="display: none;">
+                    <i data-lucide="command"></i> <span id="voiceCommandText">Voice Command Detected</span>
+                </div>
+
+                <!-- AI Assistant Answer Display Box -->
+                <div class="assistant-result-card" id="assistantResultContainer" style="display: none;">
+                    <div class="assistant-card-header">
+                        <i data-lucide="bot"></i> <span>AI Assistant Response</span>
+                    </div>
+                    <div class="assistant-card-body" id="assistantAnswerBody"></div>
+                </div>
+
+                <!-- Voice Keyboard Result Cards (Original Speech & Optional Translation) -->
+                <div class="transcription-result-container" id="transcriptionResultContainer" style="display: none; flex-direction: column; gap: 14px; margin-top: 10px;">
+                    
+                    <!-- ORIGINAL SPEECH CARD -->
+                    <div class="voice-speech-card" id="originalSpeechCard">
+                        <div class="speech-card-header">
+                            <span class="speech-card-title"><i data-lucide="mic"></i> ORIGINAL SPEECH</span>
+                            <span class="speech-lang-tag" id="originalLangTag">AUTO</span>
+                        </div>
+                        <textarea id="voiceOriginalTextarea" class="voice-transcription-textarea" rows="2" placeholder="Original speech text will appear here..."></textarea>
+                        <div class="speech-card-actions">
+                            <button class="btn-action-pill" id="speakOriginalBtn" title="Play Original Voice Audio">
+                                <i data-lucide="volume-2" id="speakOriginalIcon"></i> <span id="speakOriginalText">Speak Original</span>
+                            </button>
+                            <button class="btn-action-pill" id="copyOriginalBtn" title="Copy Original Text">
+                                <i data-lucide="copy" id="copyOriginalIcon"></i> <span id="copyOriginalText">Copy Original</span>
+                            </button>
+                            <button class="btn-action-pill btn-primary-pill" id="insertOriginalBtn" title="Insert Original Text into Input">
+                                <i data-lucide="corner-down-left"></i> Insert Original
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TRANSLATION CARD (Shown when Translation Toggle = ON) -->
+                    <div class="voice-speech-card" id="translationSpeechCard" style="display: none;">
+                        <div class="speech-card-header">
+                            <span class="speech-card-title"><i data-lucide="languages"></i> TRANSLATION</span>
+                            <span class="speech-lang-tag" id="translationLangTag">ENGLISH</span>
+                        </div>
+                        <textarea id="voiceTranslatedTextarea" class="voice-transcription-textarea" rows="2" placeholder="Translated text will appear here..."></textarea>
+                        <div class="speech-card-actions">
+                            <button class="btn-action-pill" id="speakTranslationBtn" title="Play Translated Voice Audio">
+                                <i data-lucide="volume-2" id="speakTranslationIcon"></i> <span id="speakTranslationText">Speak Translation</span>
+                            </button>
+                            <button class="btn-action-pill" id="copyTranslationBtn" title="Copy Translated Text">
+                                <i data-lucide="copy" id="copyTranslationIcon"></i> <span id="copyTranslationText">Copy Translation</span>
+                            </button>
+                            <button class="btn-action-pill btn-primary-pill" id="insertTranslationBtn" title="Insert Translated Text into Input">
+                                <i data-lucide="corner-down-left"></i> Insert Translation
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Modal Footer Controls -->
             <div class="modal-footer voice-modal-footer">
-                <button class="btn-secondary" id="cancelVoiceBtn">Cancel</button>
+                <button class="btn-secondary" id="cancelVoiceBtn">Close</button>
+                <button class="btn-secondary" id="rerecordVoiceBtn" style="display: none;">
+                    <i data-lucide="rotate-ccw"></i> Record Again
+                </button>
                 <button class="btn-primary btn-record-start" id="startVoiceRecordBtn">
                     <i data-lucide="mic" id="startBtnIcon"></i> <span id="startBtnText">Start Recording</span>
-                </button>
-                <button class="btn-primary" id="insertTextVoiceBtn" style="display: none;">
-                    <i data-lucide="corner-down-left"></i> Insert Text
                 </button>
             </div>
         </div>
@@ -233,6 +282,40 @@
                         <p>Automatically generate and play audio responses</p>
                     </div>
                     <input type="checkbox" id="ttsToggle" class="toggle-checkbox" checked>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Auto-Speak Answers</label>
+                        <p>Read AI responses and dictation automatically</p>
+                    </div>
+                    <input type="checkbox" id="autoSpeakToggle" class="toggle-checkbox">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info" style="width: 100%;">
+                        <label><i data-lucide="mic"></i> TTS Voice Accent</label>
+                        <select id="ttsVoiceSelect" class="vk-select" style="width: 100%; margin-top: 6px;">
+                            <option value="nova">Nova (Default Warm)</option>
+                            <option value="alloy">Alloy (Balanced Neutral)</option>
+                            <option value="echo">Echo (Male Crisp)</option>
+                            <option value="fable">Fable (British Expressive)</option>
+                            <option value="onyx">Onyx (Male Deep)</option>
+                            <option value="shimmer">Shimmer (Female Clear)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info" style="width: 100%;">
+                        <label><i data-lucide="gauge"></i> Speech Playback Speed</label>
+                        <select id="ttsSpeedSelect" class="vk-select" style="width: 100%; margin-top: 6px;">
+                            <option value="0.75">0.75x (Slower)</option>
+                            <option value="1.0" selected>1.0x (Normal)</option>
+                            <option value="1.25">1.25x (Faster)</option>
+                            <option value="1.5">1.5x (Fast)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="setting-item">
@@ -262,11 +345,79 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+                <button class="btn-primary" id="saveSettingsBtn"><i data-lucide="save"></i> Save Settings</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=300.0"></script>
+    <!-- Audio File Upload Modal -->
+    <div class="modal-backdrop" id="uploadAudioModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="file-audio"></i> Upload Audio File</h3>
+                <button class="btn-icon" id="closeAudioUploadBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-dropzone" id="audioDropzone">
+                    <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+                    <p class="dropzone-text">Drag & drop your audio file here or <span class="dropzone-browse">browse</span></p>
+                    <span class="upload-hint">Supports .mp3, .wav, .m4a, .webm, .ogg (Max 25MB)</span>
+                    <input type="file" id="audioFileInput" accept=".mp3,.wav,.m4a,.webm,.ogg,audio/*" style="display: none;">
+                </div>
+
+                <div class="uploaded-file-info" id="uploadedFileInfo" style="display: none;">
+                    <div class="file-icon"><i data-lucide="file-audio"></i></div>
+                    <div class="file-meta">
+                        <div class="file-name" id="uploadFileName">audio.mp3</div>
+                        <div class="file-size" id="uploadFileSize">0 KB</div>
+                    </div>
+                    <button class="btn-icon-sm" id="removeUploadFileBtn" title="Remove File"><i data-lucide="trash-2"></i></button>
+                </div>
+
+                <div class="upload-progress-box" id="uploadProgressBox" style="display: none;">
+                    <div class="progress-status" id="uploadProgressText">Transcribing audio file...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelAudioUploadBtn">Cancel</button>
+                <button class="btn-primary" id="startTranscribeUploadBtn" disabled>
+                    <i data-lucide="file-text"></i> Transcribe Audio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Snippets & Voice Triggers Modal -->
+    <div class="modal-backdrop" id="snippetsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="bookmark"></i> Custom Snippets & Voice Triggers</h3>
+                <button class="btn-icon" id="closeSnippetsBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="snippet-create-form">
+                    <label class="setting-label">Snippet Name</label>
+                    <input type="text" id="snippetNameInput" class="select-input" placeholder="e.g. Email Closing" style="width:100%; box-sizing:border-box;">
+                    
+                    <label class="setting-label" style="margin-top:8px;">Snippet Text</label>
+                    <textarea id="snippetTextInput" class="voice-transcription-textarea" rows="2" placeholder="e.g. Thank you for your time. Best regards, Giribabu" style="width:100%; box-sizing:border-box;"></textarea>
+                    
+                    <label class="setting-label" style="margin-top:8px;">Optional Voice Trigger</label>
+                    <input type="text" id="snippetTriggerInput" class="select-input" placeholder="e.g. insert email closing" style="width:100%; box-sizing:border-box;">
+                    
+                    <button class="btn-primary btn-sm" id="saveSnippetBtn" style="margin-top:10px; width:100%;">
+                        <i data-lucide="save"></i> Save Snippet
+                    </button>
+                </div>
+
+                <div class="snippets-list-header" style="margin-top:14px; font-weight:600; font-size:0.85rem; color:var(--text-secondary);">
+                    Saved Snippets
+                </div>
+                <div class="snippets-list" id="snippetsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=400.0"></script>
 </body>
 </html>

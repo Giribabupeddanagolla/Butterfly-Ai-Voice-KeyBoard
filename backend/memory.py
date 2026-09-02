@@ -69,6 +69,17 @@ class MemoryManager:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages (session_id)
             """)
+
+            # Snippets table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS snippets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    voice_trigger TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             conn.commit()
 
     def get_or_create_session(self, session_id: str, title: Optional[str] = None) -> Dict[str, Any]:
@@ -172,17 +183,44 @@ class MemoryManager:
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
 
-    def get_all_sessions(self) -> List[Dict[str, Any]]:
+    def get_all_sessions(self, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT s.session_id, s.title, s.created_at, s.updated_at,
-                       (SELECT content FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as last_message
-                FROM sessions s
-                ORDER BY s.updated_at DESC
-            """)
+            if search_query and search_query.strip():
+                q = f"%{search_query.strip()}%"
+                cursor.execute("""
+                    SELECT s.session_id, s.title, s.created_at, s.updated_at,
+                           m.content as last_message, m.original_text, m.translated_text,
+                           m.source_language, m.translation_language
+                    FROM sessions s
+                    JOIN messages m ON s.session_id = m.session_id
+                    WHERE s.title LIKE ? OR m.content LIKE ? OR m.original_text LIKE ? OR m.translated_text LIKE ?
+                    GROUP BY s.session_id
+                    ORDER BY s.updated_at DESC
+                """, (q, q, q, q))
+            else:
+                cursor.execute("""
+                    SELECT s.session_id, s.title, s.created_at, s.updated_at,
+                           (SELECT content FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as last_message,
+                           (SELECT original_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as original_text,
+                           (SELECT translated_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translated_text,
+                           (SELECT source_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as source_language,
+                           (SELECT translation_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translation_language
+                    FROM sessions s
+                    ORDER BY s.updated_at DESC
+                """)
             rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+            results = []
+            for r in rows:
+                d = dict(r)
+                text_content = d.get("original_text") or d.get("last_message") or ""
+                words = len(text_content.split()) if text_content else 0
+                chars = len(text_content) if text_content else 0
+                d["word_count"] = words
+                d["character_count"] = chars
+                d["duration"] = f"{max(2, words * 1.2):.0f}s"
+                results.append(d)
+            return results
 
     def delete_session(self, session_id: str) -> bool:
         with self.get_connection() as conn:
@@ -203,66 +241,32 @@ class MemoryManager:
             conn.commit()
             return cursor.rowcount > 0
 
-    # --- VOICE RECORD CRUD OPERATIONS ---
-    def create_record(self, text: str, source_language: str = "auto", target_language: str = "en", translated_text: Optional[str] = None) -> Dict[str, Any]:
-        session_id = f"session_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        return self.save_message(
-            session_id=session_id,
-            role="user",
-            content=text,
-            language=target_language,
-            original_text=text,
-            source_language=source_language,
-            translation_language=target_language,
-            translated_text=translated_text or text,
-            input_type="voice"
-        )
-
-    def get_all_records(self, limit: int = 100) -> List[Dict[str, Any]]:
+    # --- SNIPPETS CRUD METHODS ---
+    def get_all_snippets(self) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, session_id, role, content, language,
-                       original_text, source_language, translation_language, text_language, translated_text, input_type,
-                       created_at
-                FROM messages ORDER BY id DESC LIMIT ?
-                """,
-                (limit,)
-            )
-            return [dict(row) for row in cursor.fetchall()]
+            cursor.execute("SELECT * FROM snippets ORDER BY id DESC")
+            return [dict(r) for r in cursor.fetchall()]
 
-    def get_record_by_id(self, record_id: int) -> Optional[Dict[str, Any]]:
+    def create_snippet(self, name: str, text: str, voice_trigger: Optional[str] = None) -> Dict[str, Any]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            now = datetime.datetime.now().isoformat()
+            trigger = (voice_trigger or name).strip().lower()
             cursor.execute(
-                """
-                SELECT id, session_id, role, content, language,
-                       original_text, source_language, translation_language, text_language, translated_text, input_type,
-                       created_at
-                FROM messages WHERE id = ?
-                """,
-                (record_id,)
+                "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
+                (name.strip(), text.strip(), trigger, now)
             )
-            row = cursor.fetchone()
-            return dict(row) if row else None
-
-    def update_record(self, record_id: int, text: str, translated_text: Optional[str] = None) -> bool:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            trans = translated_text if translated_text is not None else text
-            cursor.execute(
-                "UPDATE messages SET content = ?, original_text = ?, translated_text = ? WHERE id = ?",
-                (text, text, trans, record_id)
-            )
+            snippet_id = cursor.lastrowid
             conn.commit()
-            return cursor.rowcount > 0
+            return {"id": snippet_id, "name": name.strip(), "text": text.strip(), "voice_trigger": trigger, "created_at": now}
 
-    def delete_record_by_id(self, record_id: int) -> bool:
+    def delete_snippet(self, snippet_id: int) -> bool:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM messages WHERE id = ?", (record_id,))
+            cursor.execute("DELETE FROM snippets WHERE id = ?", (snippet_id,))
             conn.commit()
             return cursor.rowcount > 0
 
 memory_manager = MemoryManager()
+

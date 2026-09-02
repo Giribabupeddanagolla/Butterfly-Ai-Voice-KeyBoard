@@ -9,8 +9,11 @@ class OpenAIService:
     def __init__(self):
         self.api_key = None
         self.client = None
+        self.openai_failed = False
 
     def get_client(self):
+        if self.openai_failed:
+            return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key and (not self.client or self.api_key != current_key):
             try:
@@ -68,7 +71,13 @@ class OpenAIService:
                     "language": language or "auto"
                 }
         except Exception as e:
-            logger.error(f"OpenAI transcription error: {e}")
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower():
+                if not self.openai_failed:
+                    logger.info("OpenAI API quota exhausted. Switching to free fallback STT.")
+                self.openai_failed = True
+            else:
+                logger.warning(f"OpenAI transcription error: {e}")
             return {
                 "success": False,
                 "error": f"Speech transcription failed: {e}",
@@ -116,7 +125,13 @@ class OpenAIService:
                 "target_language": target_language
             }
         except Exception as e:
-            logger.error(f"OpenAI translation error: {e}")
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "credit_balance_exhausted" in err_str.lower() or "insufficient_quota" in err_str.lower():
+                if not self.openai_failed:
+                    logger.info("OpenAI API quota exhausted. Switching to free fallback translation.")
+                self.openai_failed = True
+            else:
+                logger.warning(f"OpenAI translation error: {e}")
             return {
                 "success": False,
                 "error": f"Translation failed: {e}",
