@@ -12,21 +12,21 @@ class OpenAIService:
         self.openai_failed = False
 
     def get_client(self):
-        if self.openai_failed:
-            return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
-        if current_key and (not self.client or self.api_key != current_key):
-            try:
-                from openai import OpenAI
-                self.api_key = current_key
-                self.client = OpenAI(api_key=current_key, max_retries=0)
-            except Exception as e:
-                logger.warning(f"Could not initialize OpenAI client: {e}")
-                self.client = None
-        elif not current_key:
+        if current_key:
+            if not self.client or self.api_key != current_key:
+                try:
+                    from openai import OpenAI
+                    self.api_key = current_key
+                    self.client = OpenAI(api_key=current_key, max_retries=0)
+                except Exception as e:
+                    logger.warning(f"Could not initialize OpenAI client: {e}")
+                    self.client = None
+        else:
             self.client = None
             self.api_key = None
         return self.client
+
 
     def is_configured(self) -> bool:
         client = self.get_client()
@@ -141,4 +141,57 @@ class OpenAIService:
                 "target_language": target_language
             }
 
+    def generate_chat_response(self, prompt: str, language: Optional[str] = None) -> Dict[str, Any]:
+        """Generate AI response using OpenAI Chat API preserving prompt language."""
+        client = self.get_client()
+        if not client:
+            return {
+                "success": False,
+                "error": "OpenAI API key is not configured. Please add your OPENAI_API_KEY in Settings or backend/.env."
+            }
+
+        try:
+            sys_msg = (
+                "You are Butterfly AI, an intelligent, helpful voice and text assistant. "
+                "Answer the user's question accurately, clearly, and concisely. "
+                "CRITICAL: Always answer in the exact same language that the user used in their question "
+                "(e.g., if asked in Telugu, answer in Telugu; if asked in English, answer in English; "
+                "if asked in Hindi, answer in Hindi, etc.). Do not translate or change the language unless explicitly requested."
+            )
+            model_name = getattr(config, "AI_MODEL", "gpt-4o-mini")
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": sys_msg},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=600
+            )
+            answer = response.choices[0].message.content.strip()
+            return {
+                "success": True,
+                "answer": answer,
+                "model": model_name
+            }
+        except Exception as e:
+            err_str = str(e)
+            logger.warning(f"OpenAI chat completion error: {e}")
+            if "429" in err_str or "quota" in err_str.lower() or "credit_balance_exhausted" in err_str.lower() or "insufficient_quota" in err_str.lower():
+                return {
+                    "success": False,
+                    "error": "OpenAI API quota exhausted. Please check your OpenAI billing plan or update your API key in Settings."
+                }
+            elif "401" in err_str or "invalid_api_key" in err_str.lower() or "incorrect api key" in err_str.lower():
+                return {
+                    "success": False,
+                    "error": "Invalid OpenAI API key. Please check and update your API key in Settings."
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"OpenAI API request failed: {err_str}"
+                }
+
 openai_service = OpenAIService()
+

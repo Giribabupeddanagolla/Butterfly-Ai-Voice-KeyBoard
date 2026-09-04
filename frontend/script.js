@@ -3,7 +3,7 @@
  */
 
 // Global function reference for state machine
-var setVoiceState = function(state, extraData = {}) {
+var setVoiceState = function (state, extraData = {}) {
     if (window.setVoiceStateImpl) {
         return window.setVoiceStateImpl(state, extraData);
     }
@@ -25,12 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let analyser = null;
     let animFrameId = null;
     let currentAudioElement = null;
+    let activeRecordingSessionToken = 0;
+    let recordedMimeType = 'audio/webm;codecs=opus';
+    let recordedFileExt = 'webm';
 
     // Realtime Speech State
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let speechRecognizer = null;
     let finalText = '';
     let partialText = '';
+    let accumulatedTextPrefix = '';
     let isTranslationOn = false;
 
     // Undo / Redo Stack
@@ -210,11 +214,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Keyboard Settings Management ---
+    const DEFAULT_SETTINGS = {
+        ttsEnabled: true,
+        autoSpeak: false,
+        ttsVoice: 'nova',
+        ttsSpeed: 1.0,
+        hotkeyEnabled: true
+    };
+
+    function getAppSettings() {
+        try {
+            const saved = localStorage.getItem('butterfly_keyboard_settings');
+            if (saved) {
+                return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+            }
+        } catch (e) {
+            console.warn('Failed to parse saved keyboard settings:', e);
+        }
+        return { ...DEFAULT_SETTINGS };
+    }
+
+    function saveAppSettings(settings) {
+        try {
+            localStorage.setItem('butterfly_keyboard_settings', JSON.stringify(settings));
+        } catch (e) {
+            console.warn('Failed to save keyboard settings to localStorage:', e);
+        }
+    }
+
+    function updateDependentSettingsState() {
+        const ttsToggle = document.getElementById('ttsToggle');
+        const autoSpeakToggle = document.getElementById('autoSpeakToggle');
+        const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
+        const ttsSpeedSelect = document.getElementById('ttsSpeedSelect');
+
+        const isTTSEnabled = ttsToggle ? ttsToggle.checked : true;
+
+        [autoSpeakToggle, ttsVoiceSelect, ttsSpeedSelect].forEach(el => {
+            if (!el) return;
+            const container = el.closest('.setting-item');
+            if (container) {
+                if (isTTSEnabled) {
+                    container.classList.remove('disabled-setting');
+                    el.disabled = false;
+                } else {
+                    container.classList.add('disabled-setting');
+                    el.disabled = true;
+                }
+            }
+        });
+    }
+
+    function syncSettingsUI() {
+        const settings = getAppSettings();
+        const ttsToggle = document.getElementById('ttsToggle');
+        const autoSpeakToggle = document.getElementById('autoSpeakToggle');
+        const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
+        const ttsSpeedSelect = document.getElementById('ttsSpeedSelect');
+        const hotkeyToggle = document.getElementById('hotkeyToggle');
+
+        if (ttsToggle) ttsToggle.checked = !!settings.ttsEnabled;
+        if (autoSpeakToggle) autoSpeakToggle.checked = !!settings.autoSpeak;
+        if (ttsVoiceSelect) {
+            const savedVoice = (settings.ttsVoice || 'nova').toLowerCase();
+            const matchedVoice = Array.from(ttsVoiceSelect.options).find(opt => opt.value.toLowerCase() === savedVoice);
+            ttsVoiceSelect.value = matchedVoice ? matchedVoice.value : (ttsVoiceSelect.options[0] ? ttsVoiceSelect.options[0].value : 'nova');
+        }
+        if (ttsSpeedSelect) {
+            const rawSpeed = settings.ttsSpeed !== undefined ? settings.ttsSpeed : (settings.speechPlaybackSpeed !== undefined ? settings.speechPlaybackSpeed : 1.0);
+            const speedNum = parseFloat(rawSpeed) || 1.0;
+            const matchedSpeed = Array.from(ttsSpeedSelect.options).find(opt => Math.abs(parseFloat(opt.value) - speedNum) < 0.01);
+            if (matchedSpeed) {
+                ttsSpeedSelect.value = matchedSpeed.value;
+            } else {
+                const defaultOpt = Array.from(ttsSpeedSelect.options).find(opt => Math.abs(parseFloat(opt.value) - 1.0) < 0.01) || ttsSpeedSelect.options[0];
+                if (defaultOpt) ttsSpeedSelect.value = defaultOpt.value;
+            }
+        }
+        if (hotkeyToggle) hotkeyToggle.checked = !!settings.hotkeyEnabled;
+
+        updateDependentSettingsState();
+    }
+
     // --- Core Initialization ---
     initApp();
 
     function initApp() {
         setupEventListeners();
+        syncSettingsUI();
         VirtualKeyboard.init();
         loadVoiceHistoryList();
         pushHistoryState();
@@ -278,19 +366,113 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const apiKeyInput = document.getElementById('apiKeyInput');
+        const ttsToggleEl = document.getElementById('ttsToggle');
+        const autoSpeakToggleEl = document.getElementById('autoSpeakToggle');
 
-        // Settings Modal
+        if (ttsToggleEl) {
+            ttsToggleEl.addEventListener('change', () => {
+                updateDependentSettingsState();
+            });
+        }
+
+        if (autoSpeakToggleEl) {
+            autoSpeakToggleEl.addEventListener('change', () => {
+                if (autoSpeakToggleEl.checked && ttsToggleEl && !ttsToggleEl.checked) {
+                    ttsToggleEl.checked = true;
+                    updateDependentSettingsState();
+                }
+            });
+        }
+
+        // Allow clicking anywhere on a setting card row to toggle its checkbox
+        document.querySelectorAll('.setting-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'LABEL' || e.target.tagName === 'A') {
+                    return;
+                }
+                const chk = item.querySelector('input[type="checkbox"]');
+                if (chk && !chk.disabled) {
+                    chk.checked = !chk.checked;
+                    chk.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        // Settings Modal Handlers
+        const confirmSettingsBtn = document.getElementById('confirmSettingsBtn');
+
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => {
+                syncSettingsUI();
+                const modalBody = settingsModal ? settingsModal.querySelector('.modal-body') : null;
+                if (modalBody) modalBody.scrollTop = 0;
+                if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
+                if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
                 if (settingsModal) settingsModal.classList.add('active');
                 checkOpenAIStatus();
             });
         }
-        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
-            if (settingsModal) settingsModal.classList.remove('active');
+
+        if (closeSettingsBtn) {
+            closeSettingsBtn.addEventListener('click', () => {
+                if (settingsModal) settingsModal.classList.remove('active');
+            });
+        }
+
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    settingsModal.classList.remove('active');
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && settingsModal && settingsModal.classList.contains('active')) {
+                settingsModal.classList.remove('active');
+            }
         });
+
+        const testVoiceBtn = document.getElementById('testVoiceBtn');
+        if (testVoiceBtn) {
+            testVoiceBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                speakText("This is a Butterfly AI voice test.", "en", testVoiceBtn);
+            });
+        }
+
         if (saveSettingsBtn) {
-            saveSettingsBtn.addEventListener('click', async () => {
+            saveSettingsBtn.addEventListener('click', () => {
+                if (confirmSettingsBtn) {
+                    saveSettingsBtn.style.display = 'none';
+                    confirmSettingsBtn.style.display = 'inline-flex';
+                    confirmSettingsBtn.innerHTML = '<i data-lucide="check-circle"></i> Confirm Settings';
+                    if (window.lucide) lucide.createIcons();
+                }
+            });
+        }
+
+        if (confirmSettingsBtn) {
+            confirmSettingsBtn.addEventListener('click', async () => {
+                const ttsToggle = document.getElementById('ttsToggle');
+                const autoSpeakToggle = document.getElementById('autoSpeakToggle');
+                const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
+                const ttsSpeedSelect = document.getElementById('ttsSpeedSelect');
+                const hotkeyToggle = document.getElementById('hotkeyToggle');
+
+                const newSettings = {
+                    ttsEnabled: ttsToggle ? ttsToggle.checked : true,
+                    autoSpeak: autoSpeakToggle ? autoSpeakToggle.checked : false,
+                    autoSpeakAnswers: autoSpeakToggle ? autoSpeakToggle.checked : false,
+                    ttsVoice: ttsVoiceSelect ? ttsVoiceSelect.value : 'nova',
+                    ttsSpeed: ttsSpeedSelect ? parseFloat(ttsSpeedSelect.value) : 1.0,
+                    speechPlaybackSpeed: ttsSpeedSelect ? parseFloat(ttsSpeedSelect.value) : 1.0,
+                    hotkeyEnabled: hotkeyToggle ? hotkeyToggle.checked : true
+                };
+
+                saveAppSettings(newSettings);
+
                 if (apiKeyInput && apiKeyInput.value.trim()) {
                     const keyVal = apiKeyInput.value.trim();
                     try {
@@ -300,22 +482,35 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: JSON.stringify({ api_key: keyVal })
                         });
                         if (res.ok) {
-                            alert('OpenAI API Key updated successfully!');
                             checkOpenAIStatus();
                         }
                     } catch (e) {
                         console.warn('Failed to update API key:', e);
                     }
                 }
-                if (settingsModal) settingsModal.classList.remove('active');
+
+                confirmSettingsBtn.innerHTML = '<i data-lucide="check"></i> ✓ Confirmed!';
+                if (window.lucide) lucide.createIcons();
+
+                setTimeout(() => {
+                    if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
+                    if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
+                    if (settingsModal) settingsModal.classList.remove('active');
+                }, 500);
             });
         }
 
         // Global Shortcut: Ctrl + Shift + Space
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.shiftKey && e.code === 'Space') {
-                e.preventDefault();
-                toggleRecording();
+                const settings = getAppSettings();
+                if (settings.hotkeyEnabled !== false) {
+                    e.preventDefault();
+                    if (voiceModal && !voiceModal.classList.contains('active')) {
+                        openVoiceModal();
+                    }
+                    toggleRecording();
+                }
             }
         });
 
@@ -369,8 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rerecordVoiceBtn = document.getElementById('rerecordVoiceBtn');
         const insertTextVoiceBtn = document.getElementById('insertTextVoiceBtn');
 
-        function showVirtualKeyboard() {}
-        function hideVirtualKeyboard() {}
+        function showVirtualKeyboard() { }
+        function hideVirtualKeyboard() { }
 
         const LANG_DISPLAY_NAMES = {
             'auto': 'Auto Detect', 'en': 'English', 'te': 'Telugu', 'hi': 'Hindi',
@@ -449,9 +644,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'flex';
                 if (voiceToggleRow) voiceToggleRow.style.display = 'flex';
-                if (translateToGroup) translateToGroup.style.display = isTranslationOn ? 'flex' : 'none';
+                if (translateToGroup) {
+                    translateToGroup.style.display = 'flex';
+                    translateToGroup.style.opacity = isTranslationOn ? '1' : '0.5';
+                    translateToGroup.style.pointerEvents = isTranslationOn ? 'auto' : 'none';
+                    if (targetLangSelect) targetLangSelect.disabled = !isTranslationOn;
+                }
                 if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
-                
+
                 if (modalMicRecordBtn) {
                     modalMicRecordBtn.className = 'voice-record-circle';
                     modalMicRecordBtn.disabled = false;
@@ -500,10 +700,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (modalMicRecordBtn) {
                     modalMicRecordBtn.className = 'voice-record-circle recording';
                     modalMicRecordBtn.disabled = false;
+                    modalMicRecordBtn.setAttribute('title', 'Click to Pause Recording');
                 }
-                if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'square');
+                if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'pause');
                 if (modalMicStatus) modalMicStatus.textContent = 'Listening... Speak naturally';
                 if (modalWaveformCanvas) modalWaveformCanvas.style.display = 'block';
+                if (modalRecordTimer) modalRecordTimer.style.display = 'block';
+                if (liveSpeechPreview) liveSpeechPreview.style.display = 'block';
+                if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
+
+                if (cancelVoiceBtn) {
+                    cancelVoiceBtn.style.display = 'inline-flex';
+                    cancelVoiceBtn.textContent = 'Cancel';
+                }
+                if (rerecordVoiceBtn) rerecordVoiceBtn.style.display = 'none';
+
+                if (startVoiceRecordBtn) {
+                    startVoiceRecordBtn.style.display = 'inline-flex';
+                    startVoiceRecordBtn.disabled = false;
+                    startVoiceRecordBtn.className = 'btn-primary btn-record-start recording';
+                    if (startBtnIcon) startBtnIcon.setAttribute('data-lucide', 'square');
+                    if (startBtnText) startBtnText.textContent = 'Stop Recording';
+                }
+            }
+            else if (state === 'paused') {
+                isRecording = true;
+                if (modalHeaderBadgeIcon) modalHeaderBadgeIcon.textContent = '⏸️';
+                if (modalCardTitle) modalCardTitle.textContent = 'AI Voice Keyboard';
+                if (voiceLangIndicator) voiceLangIndicator.textContent = extraData.language || langDisplayName;
+                if (voiceStatusBadge) {
+                    voiceStatusBadge.textContent = 'Paused...';
+                    voiceStatusBadge.className = 'voice-status-badge processing';
+                }
+                if (voiceLangSelectRow) voiceLangSelectRow.style.display = 'none';
+                if (voiceToggleRow) voiceToggleRow.style.display = 'none';
+                if (translateToGroup) translateToGroup.style.display = 'none';
+                if (voiceCenterVisual) voiceCenterVisual.style.display = 'flex';
+
+                if (modalMicRecordBtn) {
+                    modalMicRecordBtn.className = 'voice-record-circle paused';
+                    modalMicRecordBtn.disabled = false;
+                    modalMicRecordBtn.setAttribute('title', 'Click to Resume Recording');
+                }
+                if (modalMicIcon) modalMicIcon.setAttribute('data-lucide', 'play');
+                if (modalMicStatus) modalMicStatus.textContent = 'Paused (Click button to Resume)';
+                if (modalWaveformCanvas) modalWaveformCanvas.style.display = 'none';
                 if (modalRecordTimer) modalRecordTimer.style.display = 'block';
                 if (liveSpeechPreview) liveSpeechPreview.style.display = 'block';
                 if (transcriptionResultContainer) transcriptionResultContainer.style.display = 'none';
@@ -596,23 +837,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (transcriptionResultContainer) {
                     transcriptionResultContainer.style.setProperty('display', 'flex', 'important');
-                    
+
                     if (originalSpeechCard && voiceOriginalTextarea) {
                         originalSpeechCard.style.setProperty('display', 'block', 'important');
                         voiceOriginalTextarea.value = extraData.originalText || '';
                         if (originalLangTag) originalLangTag.textContent = srcLangDisplay.toUpperCase();
                     }
 
-                    if (isTranslationOn && extraData.translatedText) {
+                    if (isTranslationOn) {
                         if (translationSpeechCard && voiceTranslatedTextarea) {
                             translationSpeechCard.style.setProperty('display', 'block', 'important');
-                            voiceTranslatedTextarea.value = extraData.translatedText;
+                            if (extraData.translatedText) {
+                                voiceTranslatedTextarea.value = extraData.translatedText;
+                            } else if (extraData.translationErrorText) {
+                                voiceTranslatedTextarea.value = extraData.translationErrorText;
+                            } else {
+                                voiceTranslatedTextarea.value = '';
+                            }
                             const tgtLangDisplay = getLangDisplayName(latestTargetLang);
                             if (translationLangTag) translationLangTag.textContent = tgtLangDisplay.toUpperCase();
                         }
                     } else {
                         if (translationSpeechCard) translationSpeechCard.style.setProperty('display', 'none', 'important');
                     }
+
+                    const savedVoiceSetting = getAppSettings().ttsVoice || 'nova';
+                    const origVoiceSelect = document.getElementById('originalVoiceAccentSelect');
+                    const transVoiceSelect = document.getElementById('translationVoiceAccentSelect');
+                    if (origVoiceSelect) origVoiceSelect.value = savedVoiceSetting;
+                    if (transVoiceSelect) transVoiceSelect.value = savedVoiceSetting;
                 }
 
                 if (cancelVoiceBtn) {
@@ -626,6 +879,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (startVoiceRecordBtn) {
                     startVoiceRecordBtn.style.display = 'none';
+                }
+
+                // Auto-Speak Answers if enabled in Keyboard Settings
+                const appSettings = getAppSettings();
+                if (appSettings.autoSpeak && appSettings.ttsEnabled) {
+                    const textToSpeak = (isTranslationOn && extraData.translatedText) ? extraData.translatedText : (extraData.originalText || '');
+                    const langToSpeak = (isTranslationOn && extraData.translatedText) ? latestTargetLang : latestSourceLang;
+                    if (textToSpeak) {
+                        setTimeout(() => {
+                            if (voiceState === 'completed') {
+                                handleTTSPlay(textToSpeak, langToSpeak, null, null, null, '');
+                            }
+                        }, 400);
+                    }
                 }
             }
             else if (state === 'error') {
@@ -669,44 +936,127 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function resetToIdleState() {
+            stopSpeaking();
             clearInterval(recordTimerInterval);
-            cancelAnimationFrame(animFrameId);
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
 
             if (speechRecognizer) {
-                try { speechRecognizer.stop(); } catch (e) {}
+                try {
+                    speechRecognizer.onresult = null;
+                    speechRecognizer.onerror = null;
+                    speechRecognizer.onend = null;
+                    speechRecognizer.stop();
+                } catch (e) { }
+                speechRecognizer = null;
             }
             if (mediaRecorder) {
                 try {
+                    mediaRecorder.onstop = null;
+                    mediaRecorder.ondataavailable = null;
                     if (mediaRecorder.stream) {
-                        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                        mediaRecorder.stream.getTracks().forEach(track => {
+                            try { track.stop(); } catch (err) { }
+                        });
                     }
                     if (mediaRecorder.state !== 'inactive') {
                         mediaRecorder.stop();
                     }
-                } catch (e) {}
+                } catch (e) { }
+                mediaRecorder = null;
             }
             if (audioContext && audioContext.state !== 'closed') {
-                try { audioContext.close(); } catch (e) {}
+                try { audioContext.close(); } catch (e) { }
+                audioContext = null;
             }
 
             finalText = '';
             partialText = '';
+            isPaused = false;
+            totalPausedMs = 0;
+            pauseStartTime = 0;
             audioChunks = [];
 
             setVoiceState('idle');
         }
 
-        let lastActiveInput = null;
+        function cancelRecordingSession(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
 
-        function openVoiceModal(targetEl = null) {
-            lastActiveInput = targetEl || currentTargetInput || TextInsertionService.getActiveInput();
-            hideVirtualKeyboard();
-            resetToIdleState();
-            if (voiceModal) voiceModal.classList.add('active');
+            activeRecordingSessionToken++;
+            stopSpeaking();
+            clearInterval(recordTimerInterval);
+            recordTimerInterval = null;
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+
+            if (speechRecognizer) {
+                try {
+                    speechRecognizer.onresult = null;
+                    speechRecognizer.onerror = null;
+                    speechRecognizer.onend = null;
+                    speechRecognizer.stop();
+                } catch (err) { }
+                speechRecognizer = null;
+            }
+
+            if (mediaRecorder) {
+                try {
+                    // Detach onstop callback so MediaRecorder.stop() does not trigger transcription
+                    mediaRecorder.onstop = null;
+                    mediaRecorder.ondataavailable = null;
+                    if (mediaRecorder.stream) {
+                        mediaRecorder.stream.getTracks().forEach(track => {
+                            try { track.stop(); } catch (err) { }
+                        });
+                    }
+                    if (mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                } catch (err) { }
+                mediaRecorder = null;
+            }
+
+            if (audioContext && audioContext.state !== 'closed') {
+                try { audioContext.close(); } catch (e) { }
+                audioContext = null;
+            }
+
+            finalText = '';
+            partialText = '';
+            accumulatedTextPrefix = '';
+            isPaused = false;
+            totalPausedMs = 0;
+            pauseStartTime = 0;
+            audioChunks = [];
+
+            const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
+            const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
+            const liveSpeechPreview = document.getElementById('liveSpeechPreview');
+            if (voiceOriginalTextarea) voiceOriginalTextarea.value = '';
+            if (voiceTranslatedTextarea) voiceTranslatedTextarea.value = '';
+            if (liveSpeechPreview) {
+                liveSpeechPreview.textContent = '';
+                liveSpeechPreview.style.display = 'none';
+            }
+
+            setVoiceState('idle');
+        }
+
+        function cancelRecording(e) {
+            cancelRecordingSession(e);
+            closeVoiceModal();
         }
 
         function closeVoiceModal() {
-            resetToIdleState();
+            cancelRecordingSession();
             if (voiceModal) voiceModal.classList.remove('active');
 
             const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
@@ -719,9 +1069,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         targetEl.focus();
                         const len = targetEl.value ? targetEl.value.length : 0;
                         targetEl.setSelectionRange(len, len);
-                    } catch (e) {}
+                    } catch (e) { }
                 }, 50);
             }
+        }
+
+        let lastActiveInput = null;
+
+        function openVoiceModal(targetEl = null) {
+            lastActiveInput = targetEl || currentTargetInput || TextInsertionService.getActiveInput();
+            hideVirtualKeyboard();
+            resetToIdleState();
+            const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
+            if (lastActiveInput && (lastActiveInput.tagName === 'INPUT' || lastActiveInput.tagName === 'TEXTAREA') && lastActiveInput.value.trim()) {
+                if (voiceOriginalTextarea) voiceOriginalTextarea.value = lastActiveInput.value.trim();
+            }
+            if (voiceModal) voiceModal.classList.add('active');
+        }
+
+        if (voiceModal) {
+            voiceModal.addEventListener('click', (e) => {
+                if (e.target === voiceModal) {
+                    closeVoiceModal();
+                }
+            });
         }
 
         if (mainMicBtn) {
@@ -731,19 +1102,38 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (closeVoiceModalBtn) closeVoiceModalBtn.addEventListener('click', closeVoiceModal);
-        if (cancelVoiceBtn) cancelVoiceBtn.addEventListener('click', closeVoiceModal);
+        if (closeVoiceModalBtn) {
+            closeVoiceModalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeVoiceModal();
+            });
+        }
+
+        if (cancelVoiceBtn) {
+            cancelVoiceBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeVoiceModal();
+            });
+        }
 
         if (startVoiceRecordBtn) {
             startVoiceRecordBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                toggleRecording();
+                if (voiceState === 'recording' || voiceState === 'paused' || isRecording) {
+                    stopRecordingFlow();
+                } else if (voiceState === 'completed') {
+                    resetToIdleState();
+                } else {
+                    startRecordingFlow();
+                }
             });
         }
         if (modalMicRecordBtn) {
             modalMicRecordBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                toggleRecording();
+                togglePauseRecording();
             });
         }
         if (rerecordVoiceBtn) {
@@ -753,41 +1143,89 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Speech Card Action Event Handlers
+        // --- Central Audio & TTS Manager ---
         let activeTTSAudio = null;
+        let activeTTSFetchController = null;
 
-        async function handleTTSPlay(text, lang, btnEl, iconEl, textEl, label) {
-            console.log("handleTTSPlay triggered for text:", text, "language:", lang);
-            if (!text || !text.trim()) {
-                alert('No text available to speak.');
-                return;
+        function stopSpeaking() {
+            if (activeTTSFetchController) {
+                try {
+                    activeTTSFetchController.abort();
+                } catch (e) { }
+                activeTTSFetchController = null;
             }
-
-            if (activeTTSAudio && !activeTTSAudio.paused) {
-                activeTTSAudio.pause();
-                activeTTSAudio.currentTime = 0;
+            if (activeTTSAudio) {
+                try {
+                    activeTTSAudio.pause();
+                    activeTTSAudio.currentTime = 0;
+                } catch (e) { }
                 activeTTSAudio = null;
-                if (textEl) textEl.textContent = label;
+            }
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                } catch (e) { }
+            }
+            // Reset speech button indicators across UI
+            const speakButtons = document.querySelectorAll('#speakOriginalBtn, #speakTranslationBtn, #speakAiAnswerBtn, .btn-audio-play, #testVoiceBtn');
+            speakButtons.forEach(btn => {
+                const iconEl = btn.querySelector('i') || btn.querySelector('[data-lucide]');
+                const textEl = btn.querySelector('span');
                 if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
-                if (window.lucide) lucide.createIcons();
+                if (btn.id === 'speakOriginalBtn' && textEl) textEl.textContent = 'Speak Original';
+                if (btn.id === 'speakTranslationBtn' && textEl) textEl.textContent = 'Speak Translation';
+                if (btn.id === 'speakAiAnswerBtn' && textEl) textEl.textContent = 'Speak Answer';
+                if (btn.id === 'testVoiceBtn' && textEl) textEl.textContent = 'Test Voice';
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function speakText(text, language = 'en', btnEl = null, iconEl = null, textEl = null, label = '', voiceOverride = null) {
+            console.log("speakText triggered for text:", text, "language:", language, "voiceOverride:", voiceOverride);
+            if (!text || !text.trim()) {
+                console.warn("speakText called with empty text");
                 return;
             }
 
-            if (textEl) textEl.textContent = 'Speaking...';
-            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-x');
+            const settings = getAppSettings();
+            if (!settings.ttsEnabled) {
+                console.warn('Voice Output (TTS) is turned off in Keyboard Settings.');
+                return;
+            }
+
+            // Stop any currently playing audio or pending request first (toggle behavior)
+            const isCurrentlySpeaking = (activeTTSAudio && !activeTTSAudio.paused) || activeTTSFetchController !== null || (window.speechSynthesis && window.speechSynthesis.speaking);
+            if (isCurrentlySpeaking) {
+                stopSpeaking();
+                return;
+            }
+            stopSpeaking();
+
+            const targetIconEl = iconEl || (btnEl ? (btnEl.querySelector('i') || btnEl.querySelector('[data-lucide]')) : null);
+            const targetTextEl = textEl || (btnEl ? btnEl.querySelector('span') : null);
+            const defaultLabel = label || (targetTextEl ? targetTextEl.textContent : 'Speak');
+
+            if (targetTextEl) targetTextEl.textContent = 'Speaking...';
+            if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-x');
             if (window.lucide) lucide.createIcons();
 
             try {
+                const ttsVoiceVal = voiceOverride || settings.ttsVoice || 'nova';
+                const speedVal = parseFloat(settings.speechPlaybackSpeed || settings.ttsSpeed) || 1.0;
+
+                activeTTSFetchController = new AbortController();
                 const res = await fetch('/api/voice/speak', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: text.trim(),
-                        language: lang || 'en',
-                        voice: 'nova',
-                        speed: 1.0
-                    })
+                        language: language || 'en',
+                        voice: ttsVoiceVal,
+                        speed: speedVal
+                    }),
+                    signal: activeTTSFetchController.signal
                 });
+                activeTTSFetchController = null;
 
                 console.log("TTS API response status:", res.status);
 
@@ -795,38 +1233,97 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await res.json();
                     console.log("TTS API response data:", data);
                     if (data.success && data.audio_url) {
-                        const audio = new Audio(data.audio_url);
+                        const fullUrl = data.audio_url.startsWith('http') ? data.audio_url : `${window.location.origin}${data.audio_url}?t=${Date.now()}`;
+                        const audio = new Audio(fullUrl);
+                        audio.playbackRate = speedVal;
                         activeTTSAudio = audio;
 
                         audio.onended = () => {
                             activeTTSAudio = null;
-                            if (textEl) textEl.textContent = label;
-                            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                            if (targetTextEl) targetTextEl.textContent = defaultLabel;
+                            if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-2');
                             if (window.lucide) lucide.createIcons();
                         };
                         audio.onerror = (err) => {
                             console.error("Audio element error during playback:", err);
                             activeTTSAudio = null;
-                            if (textEl) textEl.textContent = label;
-                            if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
+                            if (targetTextEl) targetTextEl.textContent = defaultLabel;
+                            if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-2');
                             if (window.lucide) lucide.createIcons();
                         };
 
                         await audio.play();
-                    } else {
-                        throw new Error(data.error || 'TTS audio generation failed');
+                        return;
                     }
-                } else {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.detail || errData.error || ('TTS HTTP failure: ' + res.status));
                 }
             } catch (err) {
-                console.warn('TTS playback error:', err);
-                alert('Audio playback notice: ' + err.message);
-                if (textEl) textEl.textContent = label;
-                if (iconEl) iconEl.setAttribute('data-lucide', 'volume-2');
-                if (window.lucide) lucide.createIcons();
+                activeTTSFetchController = null;
+                if (err.name === 'AbortError') {
+                    console.log('TTS fetch aborted');
+                    return;
+                }
+                console.warn('Backend TTS endpoint error, falling back to Web Speech API:', err);
             }
+
+            // Web Speech API Fallback
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text.trim());
+                    utterance.lang = getLangTag(language);
+                    const speedVal = parseFloat(settings.speechPlaybackSpeed || settings.ttsSpeed) || 1.0;
+                    utterance.rate = speedVal;
+
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        const vName = (voiceOverride || settings.ttsVoice || 'nova').toLowerCase();
+                        const isMale = ['echo', 'onyx', 'fable'].includes(vName);
+                        const isFemale = ['nova', 'shimmer'].includes(vName);
+
+                        let matched = voices.find(v => {
+                            const nameLower = v.name.toLowerCase();
+                            const matchesLang = v.lang.toLowerCase().startsWith(getLangTag(language).toLowerCase().split('-')[0]);
+                            if (!matchesLang) return false;
+                            if (isMale && (nameLower.includes('male') || nameLower.includes('david') || nameLower.includes('mark') || nameLower.includes('george') || nameLower.includes('guy'))) return true;
+                            if (isFemale && (nameLower.includes('female') || nameLower.includes('zira') || nameLower.includes('hazel') || nameLower.includes('susan') || nameLower.includes('aria'))) return true;
+                            return false;
+                        });
+                        if (!matched) {
+                            matched = voices.find(v => v.lang.toLowerCase().startsWith(getLangTag(language).toLowerCase().split('-')[0]));
+                        }
+                        if (matched) utterance.voice = matched;
+                    }
+
+                    utterance.onend = () => {
+                        if (targetTextEl) targetTextEl.textContent = defaultLabel;
+                        if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-2');
+                        if (window.lucide) lucide.createIcons();
+                    };
+                    utterance.onerror = () => {
+                        if (targetTextEl) targetTextEl.textContent = defaultLabel;
+                        if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-2');
+                        if (window.lucide) lucide.createIcons();
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                    return;
+                } catch (synthErr) {
+                    console.error('SpeechSynthesis error:', synthErr);
+                }
+            }
+
+            if (targetTextEl) targetTextEl.textContent = defaultLabel;
+            if (targetIconEl) targetIconEl.setAttribute('data-lucide', 'volume-2');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Compatibility Aliases
+        function handleTTSPlay(text, lang, btnEl, iconEl, textEl, label, voiceOverride = null) {
+            return speakText(text, lang, btnEl, iconEl, textEl, label, voiceOverride);
+        }
+
+        function playTextToSpeech(text, lang, btnEl) {
+            return speakText(text, lang, btnEl);
         }
 
         const speakOriginalBtn = document.getElementById('speakOriginalBtn');
@@ -837,6 +1334,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const insertOriginalBtn = document.getElementById('insertOriginalBtn');
         const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
 
+        if (voiceOriginalTextarea) {
+            voiceOriginalTextarea.addEventListener('input', () => {
+                if (isTranslationOn) triggerTranslationDebounced();
+            });
+        }
+
         const speakTranslationBtn = document.getElementById('speakTranslationBtn');
         const speakTranslationIcon = document.getElementById('speakTranslationIcon');
         const speakTranslationText = document.getElementById('speakTranslationText');
@@ -845,12 +1348,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const insertTranslationBtn = document.getElementById('insertTranslationBtn');
         const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
 
+        const originalVoiceAccentSelect = document.getElementById('originalVoiceAccentSelect');
+        const translationVoiceAccentSelect = document.getElementById('translationVoiceAccentSelect');
+
+        if (originalVoiceAccentSelect) {
+            originalVoiceAccentSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const currentSettings = getAppSettings();
+                currentSettings.ttsVoice = val;
+                saveAppSettings(currentSettings);
+                if (translationVoiceAccentSelect) translationVoiceAccentSelect.value = val;
+                const globalSelect = document.getElementById('ttsVoiceSelect');
+                if (globalSelect) globalSelect.value = val;
+            });
+        }
+
+        if (translationVoiceAccentSelect) {
+            translationVoiceAccentSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const currentSettings = getAppSettings();
+                currentSettings.ttsVoice = val;
+                saveAppSettings(currentSettings);
+                if (originalVoiceAccentSelect) originalVoiceAccentSelect.value = val;
+                const globalSelect = document.getElementById('ttsVoiceSelect');
+                if (globalSelect) globalSelect.value = val;
+            });
+        }
+
         if (speakOriginalBtn) {
             speakOriginalBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value : '';
-                handleTTSPlay(text, latestSourceLang, speakOriginalBtn, speakOriginalIcon, speakOriginalText, 'Speak Original');
+                const origArea = document.getElementById('voiceOriginalTextarea');
+                const text = origArea ? origArea.value.trim() : '';
+                const selectedVoice = document.getElementById('originalVoiceAccentSelect')?.value || getAppSettings().ttsVoice || 'nova';
+                console.log("Speak Original clicked, text:", text, "voice:", selectedVoice);
+                handleTTSPlay(text, latestSourceLang || 'en', speakOriginalBtn, speakOriginalIcon, speakOriginalText, 'Speak Original', selectedVoice);
             });
         }
 
@@ -858,7 +1391,8 @@ document.addEventListener('DOMContentLoaded', () => {
             copyOriginalBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value : '';
+                const origArea = document.getElementById('voiceOriginalTextarea');
+                const text = origArea ? origArea.value : '';
                 if (text) {
                     navigator.clipboard.writeText(text).then(() => {
                         if (copyOriginalText) copyOriginalText.textContent = '✓ Copied!';
@@ -872,7 +1406,8 @@ document.addEventListener('DOMContentLoaded', () => {
             insertOriginalBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const text = voiceOriginalTextarea ? voiceOriginalTextarea.value.trim() : '';
+                const origArea = document.getElementById('voiceOriginalTextarea');
+                const text = origArea ? origArea.value.trim() : '';
                 if (text) {
                     const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
                     TextInsertionService.insertText(text, targetEl);
@@ -885,8 +1420,11 @@ document.addEventListener('DOMContentLoaded', () => {
             speakTranslationBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const text = voiceTranslatedTextarea ? voiceTranslatedTextarea.value : '';
-                handleTTSPlay(text, latestTargetLang, speakTranslationBtn, speakTranslationIcon, speakTranslationText, 'Speak Translation');
+                const transArea = document.getElementById('voiceTranslatedTextarea');
+                const text = transArea ? transArea.value.trim() : '';
+                const selectedVoice = document.getElementById('translationVoiceAccentSelect')?.value || getAppSettings().ttsVoice || 'nova';
+                console.log("Speak Translation clicked, text:", text, "voice:", selectedVoice);
+                handleTTSPlay(text, latestTargetLang || 'en', speakTranslationBtn, speakTranslationIcon, speakTranslationText, 'Speak Translation', selectedVoice);
             });
         }
 
@@ -926,10 +1464,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const targetEl = lastActiveInput || currentTargetInput || document.getElementById('mainSearchInput');
             console.log("Inserting text into target element:", targetEl ? (targetEl.id || targetEl.tagName) : "None");
-            
+
             // Insert text into search bar
             TextInsertionService.insertText(textToInsert, targetEl, insertTextVoiceBtn);
-            
+
 
             closeVoiceModal();
         }
@@ -984,24 +1522,385 @@ document.addEventListener('DOMContentLoaded', () => {
             hideVirtualKeyboard();
         });
 
+        let isSearchInProgress = false;
+
         const closeSearchResultsBtn = document.getElementById('closeSearchResultsBtn');
         if (closeSearchResultsBtn) {
             closeSearchResultsBtn.addEventListener('click', () => {
-                const card = document.getElementById('searchResultsCard');
-                if (card) card.style.display = 'none';
+                const searchCard = document.getElementById('searchResultsCard');
+                if (searchCard) searchCard.style.display = 'none';
+                stopSpeaking();
             });
         }
 
-        // Action Buttons
-        if (copyOriginalBtn) copyOriginalBtn.addEventListener('click', () => copyToClipboard(mainSearchInput ? mainSearchInput.value : (originalTextEditor ? originalTextEditor.value : ''), copyOriginalBtn));
-        if (copyTranslationBtn) copyTranslationBtn.addEventListener('click', () => copyToClipboard(translatedTextEditor ? translatedTextEditor.value : '', copyTranslationBtn));
+        async function performSearch(queryText = null) {
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const globalSearchInput = document.getElementById('globalSearchInput');
+            const query = (queryText || (mainSearchInput ? mainSearchInput.value : '') || (globalSearchInput ? globalSearchInput.value : '')).trim();
 
-        if (speakOriginalBtn) speakOriginalBtn.addEventListener('click', () => playTextToSpeech(mainSearchInput ? mainSearchInput.value : (originalTextEditor ? originalTextEditor.value : ''), getSourceLang(), speakOriginalBtn));
-        if (speakTranslationBtn) speakTranslationBtn.addEventListener('click', () => playTextToSpeech(translatedTextEditor ? translatedTextEditor.value : '', getTargetLang(), speakTranslationBtn));
+            if (!query) {
+                alert('Please type a question to search.');
+                return;
+            }
 
-        if (clearBtn) clearBtn.addEventListener('click', clearEditors);
-        if (undoBtn) undoBtn.addEventListener('click', undoState);
-        if (redoBtn) redoBtn.addEventListener('click', redoState);
+            if (isSearchInProgress) return;
+            isSearchInProgress = true;
+
+            const mainSearchActionBtn = document.getElementById('mainSearchActionBtn');
+            if (mainSearchActionBtn) mainSearchActionBtn.disabled = true;
+
+            const searchCard = document.getElementById('searchResultsCard');
+            const searchContainer = document.getElementById('searchResultsContainer');
+            const queryTitle = document.getElementById('searchQueryTitle');
+
+            if (queryTitle) queryTitle.textContent = `"${query}"`;
+            if (searchCard) {
+                searchCard.style.display = 'block';
+            }
+
+            if (searchContainer) {
+                searchContainer.innerHTML = `
+                    <div style="text-align: center; padding: 28px 16px; color: var(--text-secondary);">
+                        <i data-lucide="bot" class="spin" style="width: 28px; height: 28px; color: var(--primary-color); margin-bottom: 8px;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">🤖 Butterfly AI is thinking...</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Generating AI answer for "${escapeHtml(query)}"</div>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                const workspace = document.querySelector('.keyboard-workspace');
+                if (workspace && searchCard) {
+                    workspace.scrollTo({ top: Math.max(0, searchCard.offsetTop - 30), behavior: 'smooth' });
+                }
+            }
+
+            let aiAnswerText = '';
+            let targetLang = getTargetLang() || 'auto';
+            let apiErrorMsg = '';
+
+            try {
+                const srcLang = getSourceLang() || 'auto';
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: query,
+                        text: query,
+                        source_language: srcLang,
+                        language: targetLang
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success && data.answer) {
+                    aiAnswerText = data.answer;
+                    if (data.language) targetLang = data.language;
+                } else if (data.error) {
+                    apiErrorMsg = data.error;
+                } else {
+                    apiErrorMsg = 'Server failed to produce an AI response.';
+                }
+            } catch (err) {
+                console.error("Search AI API call failed:", err);
+                apiErrorMsg = "Unable to connect to Butterfly AI server. Please check your network connection.";
+            }
+
+            if (aiAnswerText) {
+                renderSearchResultsUI(query, aiAnswerText, targetLang);
+                fetchAndRenderWebLinks(query);
+
+                const appSettings = getAppSettings();
+                if (appSettings.autoSpeak && appSettings.ttsEnabled) {
+                    setTimeout(() => {
+                        const speakBtn = document.getElementById('speakAiAnswerBtn');
+                        const selectedVoice = document.getElementById('translationVoiceAccentSelect')?.value || document.getElementById('ttsVoiceSelect')?.value || appSettings.ttsVoice || 'nova';
+                        speakText(aiAnswerText, targetLang, speakBtn, null, null, 'Speak Answer', selectedVoice);
+                    }, 350);
+                }
+            } else {
+                renderSearchErrorUI(query, apiErrorMsg || "Unable to generate AI response. Please check API Key configuration.");
+            }
+
+            isSearchInProgress = false;
+            if (mainSearchActionBtn) mainSearchActionBtn.disabled = false;
+        }
+
+        function renderSearchErrorUI(query, errorMessage) {
+            const searchContainer = document.getElementById('searchResultsContainer');
+            if (!searchContainer) return;
+
+            searchContainer.innerHTML = `
+                <div class="ai-answer-card" style="border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.08);">
+                    <div class="ai-answer-header">
+                        <div class="ai-answer-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">
+                            <i data-lucide="alert-triangle"></i>
+                            <span>AI ERROR</span>
+                        </div>
+                    </div>
+                    <div class="ai-answer-question">"${escapeHtml(query)}"</div>
+                    <div class="ai-answer-text" style="color: #fca5a5;">${escapeHtml(errorMessage)}</div>
+                    <div class="ai-answer-actions" style="margin-top: 12px;">
+                        <button type="button" class="btn-action-pill" id="openSettingsFromErrorBtn" title="Open Settings to update API Key">
+                            <i data-lucide="settings"></i> <span>Open Settings</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="web-search-section">
+                    <div class="web-search-header">
+                        <i data-lucide="globe"></i> <span>WEB SEARCH</span>
+                    </div>
+                    <div id="webSearchItemsContainer">
+                        <div style="padding: 10px; font-size: 0.8rem; color: var(--text-muted);"><i data-lucide="loader-2" class="spin"></i> Loading web links...</div>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            const openSettingsBtn = document.getElementById('openSettingsFromErrorBtn');
+            if (openSettingsBtn) {
+                openSettingsBtn.addEventListener('click', () => {
+                    const settingsModal = document.getElementById('settingsModal');
+                    if (settingsModal) settingsModal.style.display = 'flex';
+                });
+            }
+            if (typeof fetchAndRenderWebLinks === 'function') {
+                fetchAndRenderWebLinks(query);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+
+        function renderSearchResultsUI(query, aiAnswer, lang = 'en') {
+            const searchContainer = document.getElementById('searchResultsContainer');
+            if (!searchContainer) return;
+
+            let currentAnswerLang = lang || getTargetLang() || 'te';
+            let originalAnswerText = aiAnswer;
+
+            const languages = [
+                { code: 'te', name: 'Telugu (తెలుగు)' },
+                { code: 'en', name: 'English' },
+                { code: 'hi', name: 'Hindi (हिन्दी)' },
+                { code: 'ta', name: 'Tamil (தமிழ்)' },
+                { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
+                { code: 'ml', name: 'Malayalam (മലയാളം)' },
+                { code: 'mr', name: 'Marathi (मराठी)' },
+                { code: 'bn', name: 'Bengali (বাংলা)' },
+                { code: 'gu', name: 'Gujarati (ગુજરાતી)' },
+                { code: 'pa', name: 'Punjabi (ਪੰਜਾਬੀ)' },
+                { code: 'ur', name: 'Urdu (اردو)' },
+                { code: 'es', name: 'Spanish' },
+                { code: 'fr', name: 'French' },
+                { code: 'de', name: 'German' },
+                { code: 'it', name: 'Italian' },
+                { code: 'pt', name: 'Portuguese' },
+                { code: 'ar', name: 'Arabic' },
+                { code: 'ja', name: 'Japanese' },
+                { code: 'ko', name: 'Korean' },
+                { code: 'zh', name: 'Chinese' },
+                { code: 'ru', name: 'Russian' }
+            ];
+
+            const langOptionsHtml = languages.map(l => 
+                `<option value="${l.code}" ${l.code === currentAnswerLang ? 'selected' : ''}>${l.name}</option>`
+            ).join('');
+
+            searchContainer.innerHTML = `
+                <div class="ai-answer-card">
+                    <div class="ai-answer-header">
+                        <div class="ai-answer-badge">
+                            <i data-lucide="bot"></i>
+                            <span>AI ANSWER</span>
+                        </div>
+                    </div>
+                    <div class="ai-answer-question">"${escapeHtml(query)}"</div>
+                    <div class="ai-answer-text" id="aiAnswerContentText">${escapeHtml(aiAnswer)}</div>
+                    <div class="ai-answer-actions">
+                        <button type="button" class="btn-action-pill" id="speakAiAnswerBtn" title="Play AI Answer Audio">
+                            <i data-lucide="volume-2" id="speakAiAnswerIcon"></i> <span id="speakAiAnswerTextLabel">Speak Answer</span>
+                        </button>
+                        
+                        <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+                            <button type="button" class="btn-action-pill" id="translateAiAnswerBtn" title="Translate Answer">
+                                <i data-lucide="languages" id="translateAiAnswerIcon"></i> <span id="translateAiAnswerTextLabel">Translate</span>
+                            </button>
+                            <select id="aiAnswerTargetLangSelect" class="card-voice-accent-select" style="max-width: 140px;" title="Target Language">
+                                ${langOptionsHtml}
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn-action-pill" id="copyAiAnswerBtn" title="Copy AI Answer">
+                            <i data-lucide="copy" id="copyAiAnswerIcon"></i> <span id="copyAiAnswerTextLabel">Copy Answer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="web-search-section">
+                    <div class="web-search-header">
+                        <i data-lucide="globe"></i> <span>WEB SEARCH</span>
+                    </div>
+                    <div id="webSearchItemsContainer">
+                        <div style="padding: 10px; font-size: 0.8rem; color: var(--text-muted);"><i data-lucide="loader-2" class="spin"></i> Loading web links...</div>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+
+            // Speak Answer Button
+            const speakBtn = document.getElementById('speakAiAnswerBtn');
+            if (speakBtn) {
+                speakBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const textToSpeak = document.getElementById('aiAnswerContentText')?.textContent || aiAnswer;
+                    const selectedVoice = document.getElementById('translationVoiceAccentSelect')?.value || document.getElementById('ttsVoiceSelect')?.value || getAppSettings().ttsVoice || 'nova';
+                    const activeLang = targetLangSelect ? targetLangSelect.value : (currentAnswerLang || 'auto');
+                    speakText(textToSpeak, activeLang, speakBtn, null, null, 'Speak Answer', selectedVoice);
+                });
+            }
+
+            // Translation Functionality
+            const translateBtn = document.getElementById('translateAiAnswerBtn');
+            const targetLangSelect = document.getElementById('aiAnswerTargetLangSelect');
+
+            async function performAnswerTranslation() {
+                if (!targetLangSelect) return;
+                const targetLang = targetLangSelect.value;
+                const currentText = document.getElementById('aiAnswerContentText')?.textContent || originalAnswerText;
+                if (!currentText || !currentText.trim()) return;
+
+                const translateLabel = document.getElementById('translateAiAnswerTextLabel');
+                const translateIcon = document.getElementById('translateAiAnswerIcon');
+                if (translateLabel) translateLabel.textContent = 'Translating...';
+                if (translateIcon) translateIcon.setAttribute('data-lucide', 'loader-2');
+                if (window.lucide) lucide.createIcons();
+
+                try {
+                    const res = await fetch('/api/translate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: originalAnswerText,
+                            target_language: targetLang,
+                            source_language: 'auto'
+                        })
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && (data.translation || data.translated_text)) {
+                            const translatedText = data.translation || data.translated_text;
+                            const textEl = document.getElementById('aiAnswerContentText');
+                            if (textEl) textEl.textContent = translatedText;
+                            currentAnswerLang = targetLang;
+
+                            if (translateLabel) translateLabel.textContent = '✓ Translated';
+                            if (translateIcon) translateIcon.setAttribute('data-lucide', 'check');
+                            if (window.lucide) lucide.createIcons();
+
+                            setTimeout(() => {
+                                if (translateLabel) translateLabel.textContent = 'Translate';
+                                if (translateIcon) translateIcon.setAttribute('data-lucide', 'languages');
+                                if (window.lucide) lucide.createIcons();
+                            }, 1500);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Answer translation error:", err);
+                }
+
+                if (translateLabel) translateLabel.textContent = 'Translate';
+                if (translateIcon) translateIcon.setAttribute('data-lucide', 'languages');
+                if (window.lucide) lucide.createIcons();
+            }
+
+            if (translateBtn) {
+                translateBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    performAnswerTranslation();
+                });
+            }
+
+            if (targetLangSelect) {
+                targetLangSelect.addEventListener('change', () => {
+                    performAnswerTranslation();
+                });
+            }
+
+            // Copy Answer Button
+            const copyBtn = document.getElementById('copyAiAnswerBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const textToCopy = document.getElementById('aiAnswerContentText')?.textContent || aiAnswer;
+                    if (textToCopy) {
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            const label = document.getElementById('copyAiAnswerTextLabel');
+                            if (label) label.textContent = '✓ Copied!';
+                            setTimeout(() => { if (label) label.textContent = 'Copy Answer'; }, 1500);
+                        });
+                    }
+                });
+            }
+
+            fetchAndRenderWebLinks(query);
+        }
+
+        async function fetchAndRenderWebLinks(query) {
+            const container = document.getElementById('webSearchItemsContainer');
+            if (!container) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.results && data.results.length > 0) {
+                        container.innerHTML = data.results.map(item => `
+                            <div class="search-result-item" style="margin-bottom: 8px;">
+                                <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
+                                    <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> ${escapeHtml(item.title)}
+                                </a>
+                                <div class="search-result-url">${escapeHtml(item.url)}</div>
+                                <div class="search-result-snippet">${escapeHtml(item.snippet)}</div>
+                            </div>
+                        `).join('');
+                        if (window.lucide) lucide.createIcons();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn("Web search links error:", err);
+            }
+
+            container.innerHTML = `
+                <div class="search-result-item" style="margin-bottom: 8px;">
+                    <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
+                        <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> Google Web Search: "${escapeHtml(query)}"
+                    </a>
+                    <div class="search-result-url">https://www.google.com/search?q=${encodeURIComponent(query)}</div>
+                    <div class="search-result-snippet">Click to view live Google search results for "${escapeHtml(query)}".</div>
+                </div>
+                <div class="search-result-item">
+                    <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
+                        <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> DuckDuckGo Search: "${escapeHtml(query)}"
+                    </a>
+                    <div class="search-result-url">https://duckduckgo.com/?q=${encodeURIComponent(query)}</div>
+                    <div class="search-result-snippet">Click to view DuckDuckGo search results for "${escapeHtml(query)}".</div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
     }
 
     function updateTargetLangTag() {
@@ -1034,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Voice Recording Flow (Strict State Machine: idle -> recording -> processing -> completed/error) ---
 
-    window.handleStartRecordClick = function(e) {
+    window.handleStartRecordClick = function (e) {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1043,15 +1942,107 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let lastToggleTime = 0;
+    let isPaused = false;
+    let totalPausedMs = 0;
+    let pauseStartTime = 0;
+
+    function pauseRecordingFlow() {
+        if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+            try {
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.pause();
+                }
+            } catch (e) {
+                console.warn('MediaRecorder pause error:', e);
+            }
+        }
+        if (speechRecognizer) {
+            try { speechRecognizer.stop(); } catch (e) { }
+            speechRecognizer = null;
+        }
+        isPaused = true;
+        pauseStartTime = Date.now();
+        setVoiceState('paused');
+    }
+
+    function resumeRecordingFlow() {
+        if (pauseStartTime > 0) {
+            totalPausedMs += (Date.now() - pauseStartTime);
+            pauseStartTime = 0;
+        }
+        isPaused = false;
+
+        if (mediaRecorder && mediaRecorder.state === 'paused') {
+            try {
+                mediaRecorder.resume();
+            } catch (e) {
+                console.warn('MediaRecorder resume error:', e);
+            }
+        }
+
+        if (SpeechRecognition && !speechRecognizer) {
+            try {
+                speechRecognizer = new SpeechRecognition();
+                speechRecognizer.continuous = true;
+                speechRecognizer.interimResults = true;
+                const activeSrcLang = getSourceLang();
+                if (activeSrcLang && activeSrcLang !== 'auto') {
+                    speechRecognizer.lang = getLangTag(activeSrcLang);
+                } else {
+                    speechRecognizer.lang = navigator.language || 'en-US';
+                }
+
+                speechRecognizer.onresult = (event) => {
+                    let interim = '';
+                    let finalChunk = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalChunk += event.results[i][0].transcript;
+                        } else {
+                            interim += event.results[i][0].transcript;
+                        }
+                    }
+                    if (finalChunk.trim()) {
+                        finalText = (finalText ? finalText.trim() + ' ' : '') + finalChunk.trim();
+                        partialText = '';
+                    } else {
+                        partialText = interim;
+                    }
+                    updateEditorDisplay();
+                };
+                speechRecognizer.start();
+            } catch (e) {
+                console.warn('SpeechRecognition resume error:', e);
+            }
+        }
+
+        setVoiceState('recording');
+    }
+
+    function togglePauseRecording() {
+        const now = Date.now();
+        if (now - lastToggleTime < 300) return;
+        lastToggleTime = now;
+
+        if (voiceState === 'recording') {
+            pauseRecordingFlow();
+        } else if (voiceState === 'paused') {
+            resumeRecordingFlow();
+        } else if (voiceState === 'completed') {
+            resetToIdleState();
+        } else if (voiceState === 'idle' || voiceState === 'error') {
+            startRecordingFlow();
+        }
+    }
 
     function toggleRecording() {
         const now = Date.now();
-        if (now - lastToggleTime < 500) {
-            return; // Ignore duplicate click events within 500ms
+        if (now - lastToggleTime < 300) {
+            return; // Ignore duplicate click events within 300ms
         }
         lastToggleTime = now;
 
-        if (voiceState === 'recording' || isRecording) {
+        if (voiceState === 'recording' || voiceState === 'paused' || isRecording) {
             stopRecordingFlow();
         } else if (voiceState === 'completed') {
             resetToIdleState();
@@ -1063,33 +2054,55 @@ document.addEventListener('DOMContentLoaded', () => {
     async function startRecordingFlow() {
         if (voiceState === 'recording' || voiceState === 'processing') return;
 
+        activeRecordingSessionToken++;
+        const currentSessionToken = activeRecordingSessionToken;
+
         partialText = '';
         finalText = '';
+        const origArea = document.getElementById('voiceOriginalTextarea');
+        accumulatedTextPrefix = origArea ? origArea.value.trim() : '';
 
         try {
             console.log("Recording started");
-            // 1. Request Microphone Access
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
-            // 2. Initialize MediaRecorder & Audio Chunks
-            audioChunks = [];
-
-            let selectedMimeType = 'audio/webm;codecs=opus';
-            if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
-                if (!MediaRecorder.isTypeSupported(selectedMimeType)) {
-                    if (MediaRecorder.isTypeSupported('audio/webm')) {
-                        selectedMimeType = 'audio/webm';
-                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                        selectedMimeType = 'audio/mp4';
-                    } else {
-                        selectedMimeType = '';
-                    }
-                }
-            } else {
-                selectedMimeType = '';
+            if (currentSessionToken !== activeRecordingSessionToken) {
+                stream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+                return;
             }
 
-            mediaRecorder = selectedMimeType ? new MediaRecorder(stream, { mimeType: selectedMimeType }) : new MediaRecorder(stream);
+            audioChunks = [];
+
+            recordedMimeType = 'audio/webm;codecs=opus';
+            recordedFileExt = 'webm';
+            if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                    recordedMimeType = 'audio/webm;codecs=opus';
+                    recordedFileExt = 'webm';
+                } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    recordedMimeType = 'audio/webm';
+                    recordedFileExt = 'webm';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                    recordedMimeType = 'audio/ogg;codecs=opus';
+                    recordedFileExt = 'ogg';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                    recordedMimeType = 'audio/ogg';
+                    recordedFileExt = 'ogg';
+                } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                    recordedMimeType = 'audio/wav';
+                    recordedFileExt = 'wav';
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    recordedMimeType = 'audio/mp4';
+                    recordedFileExt = 'mp4';
+                } else {
+                    recordedMimeType = '';
+                    recordedFileExt = 'webm';
+                }
+            } else {
+                recordedMimeType = '';
+                recordedFileExt = 'webm';
+            }
+
+            mediaRecorder = recordedMimeType ? new MediaRecorder(stream, { mimeType: recordedMimeType }) : new MediaRecorder(stream);
             console.log("MediaRecorder initialized with MIME type:", mediaRecorder.mimeType || "default");
 
             mediaRecorder.ondataavailable = (event) => {
@@ -1098,10 +2111,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // 3. Transition to 'recording' state
             setVoiceState('recording');
 
-            // 4. Start Audio Visualizer
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audioContext.createMediaStreamSource(stream);
@@ -1113,21 +2124,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Audio visualizer init error:', e);
             }
 
-            // 5. Start Recording Timer (00:00 -> 00:01 ...)
+            isPaused = false;
+            totalPausedMs = 0;
+            pauseStartTime = 0;
             recordStartTime = Date.now();
             updateTimerDisplay();
             clearInterval(recordTimerInterval);
             recordTimerInterval = setInterval(updateTimerDisplay, 1000);
 
-            // 6. Start WebSpeech STT stream for live speech preview if supported
             if (SpeechRecognition) {
                 try {
                     speechRecognizer = new SpeechRecognition();
                     speechRecognizer.continuous = true;
                     speechRecognizer.interimResults = true;
-                    speechRecognizer.lang = getLangTag(getSourceLang() === 'auto' ? 'te' : getSourceLang());
+                    const activeSrcLang = getSourceLang();
+                    if (activeSrcLang && activeSrcLang !== 'auto') {
+                        speechRecognizer.lang = getLangTag(activeSrcLang);
+                    } else {
+                        speechRecognizer.lang = navigator.language || 'en-US';
+                    }
 
                     speechRecognizer.onresult = (event) => {
+                        if (currentSessionToken !== activeRecordingSessionToken) return;
                         let interim = '';
                         let finalChunk = '';
                         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -1151,12 +2169,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 7. Start MediaRecorder with 100ms timeslice to collect chunks continuously
             mediaRecorder.start(100);
 
         } catch (err) {
             console.warn('Microphone access denied or error:', err);
-            setVoiceState('error', { error: 'Microphone permission denied or unavailable. Please allow access and try again.' });
+            if (currentSessionToken === activeRecordingSessionToken) {
+                setVoiceState('error', { error: 'Microphone permission is required to record your voice.' });
+            }
         }
     }
 
@@ -1168,7 +2187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataArray = new Uint8Array(bufferLength);
 
         function render() {
-            if (!isRecording) return;
+            if (!isRecording || voiceState === 'paused' || isPaused) return;
             animFrameId = requestAnimationFrame(render);
             analyser.getByteFrequencyData(dataArray);
 
@@ -1188,8 +2207,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateTimerDisplay() {
+        if (voiceState === 'paused' || isPaused) return;
         const modalRecordTimer = document.getElementById('modalRecordTimer');
-        const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+        const elapsed = Math.max(0, Math.floor((Date.now() - recordStartTime - totalPausedMs) / 1000));
         const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
         const secs = (elapsed % 60).toString().padStart(2, '0');
         const timerStr = `${mins}:${secs}`;
@@ -1198,40 +2218,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateEditorDisplay() {
-        const fullText = (finalText ? finalText.trim() : '') + (partialText ? (finalText ? ' ' : '') + partialText : '');
+        const fullNewText = (finalText ? finalText.trim() : '') + (partialText ? (finalText ? ' ' : '') + partialText : '');
+        const fullCombined = accumulatedTextPrefix ? (accumulatedTextPrefix + (fullNewText ? ' ' + fullNewText : '')) : fullNewText;
         const liveSpeechPreview = document.getElementById('liveSpeechPreview');
 
         if (liveSpeechPreview) {
-            liveSpeechPreview.textContent = fullText ? `Listening: ${fullText}` : '';
+            liveSpeechPreview.textContent = fullCombined ? `Listening: ${fullCombined}` : '';
         }
     }
 
     function stopRecordingFlow() {
         if (voiceState !== 'recording' && !isRecording) return;
 
+        const currentSessionToken = activeRecordingSessionToken;
         console.log("Recording stopped");
-        // 1. Transition State to 'transcribing'
         setVoiceState('transcribing');
 
-        // 2. Stop Realtime WebSpeech Recognizer
         if (speechRecognizer) {
-            try { speechRecognizer.stop(); } catch (e) {}
+            try { speechRecognizer.stop(); } catch (e) { }
         }
 
         clearInterval(recordTimerInterval);
 
-        // 3. Attach onstop callback to MediaRecorder before stopping
         if (mediaRecorder) {
             mediaRecorder.onstop = async () => {
-                // Release microphone stream tracks
-                if (mediaRecorder.stream) {
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                if (currentSessionToken !== activeRecordingSessionToken) return;
+
+                if (mediaRecorder && mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(track => {
+                        try { track.stop(); } catch (e) { }
+                    });
                 }
 
-                // Small delay to ensure all final audio chunks are processed
                 await new Promise(r => setTimeout(r, 60));
+                if (currentSessionToken !== activeRecordingSessionToken) return;
 
-                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const mimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : (recordedMimeType || 'audio/webm');
                 const audioBlob = new Blob(audioChunks, { type: mimeType });
                 console.log("Audio blob:", audioBlob.size, "bytes, MIME type:", audioBlob.type);
 
@@ -1244,7 +2266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formData = new FormData();
                     formData.append('session_id', currentSessionId);
                     formData.append('source_language', getSourceLang());
-                    formData.append('audio', audioBlob, 'recording.webm');
+                    formData.append('audio', audioBlob, `recording.${recordedFileExt}`);
                     if (liveFallbackText) {
                         formData.append('fallback_text', liveFallbackText);
                     }
@@ -1257,10 +2279,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: formData
                         });
 
+                        if (currentSessionToken !== activeRecordingSessionToken) return;
                         console.log("Transcription API status:", res.status);
 
                         if (res.ok) {
                             const data = await res.json();
+                            if (currentSessionToken !== activeRecordingSessionToken) return;
                             console.log("Transcription API response:", data);
                             if (data.success && (data.text || data.transcription || data.original_text)) {
                                 originalSpokenText = cleanMusicSymbols(data.text || data.transcription || data.original_text);
@@ -1280,35 +2304,47 @@ document.addEventListener('DOMContentLoaded', () => {
                                 originalSpokenText = liveFallbackText;
                             } else {
                                 console.error("Transcription API request failed with status:", res.status);
-                                setVoiceState('error', { error: 'Unable to transcribe audio. Please try again.' });
+                                setVoiceState('error', { error: 'Unable to transcribe the recording. Please try again.' });
                                 return;
                             }
                         }
                     } catch (err) {
+                        if (currentSessionToken !== activeRecordingSessionToken) return;
                         if (liveFallbackText) {
                             originalSpokenText = liveFallbackText;
                         } else {
                             console.error('Backend Whisper STT fetch error:', err);
-                            setVoiceState('error', { error: 'Unable to transcribe audio. Connection issue.' });
+                            setVoiceState('error', { error: 'Unable to transcribe the recording. Please try again.' });
                             return;
                         }
                     }
                 } else if (liveFallbackText) {
                     originalSpokenText = liveFallbackText;
                 } else {
-                    setVoiceState('error', { error: 'No audio recorded. Please try speaking again.' });
+                    if (currentSessionToken === activeRecordingSessionToken) {
+                        setVoiceState('error', { error: 'No speech detected. Please speak and try again.' });
+                    }
                     return;
                 }
 
+                if (currentSessionToken !== activeRecordingSessionToken) return;
+
                 if (!originalSpokenText || !originalSpokenText.trim()) {
-                    setVoiceState('error', { error: 'No speech detected. Please speak again.' });
+                    setVoiceState('error', { error: 'No speech detected. Please speak and try again.' });
                     return;
+                }
+
+                if (accumulatedTextPrefix && originalSpokenText.trim()) {
+                    const cleanSpoken = originalSpokenText.trim();
+                    if (!cleanSpoken.startsWith(accumulatedTextPrefix)) {
+                        originalSpokenText = accumulatedTextPrefix + (accumulatedTextPrefix.endsWith(' ') ? '' : ' ') + cleanSpoken;
+                    }
                 }
 
                 let translatedTextResult = '';
+                let translationErrorText = '';
                 const targetLang = getTargetLang();
 
-                // If Translation toggle is ON, perform translation into target language
                 if (isTranslationOn && originalSpokenText) {
                     setVoiceState('translating');
                     try {
@@ -1322,21 +2358,30 @@ document.addEventListener('DOMContentLoaded', () => {
                                 target_language: targetLang
                             })
                         });
+                        if (currentSessionToken !== activeRecordingSessionToken) return;
                         if (transRes.ok) {
                             const transData = await transRes.json();
                             if (transData.success && (transData.translated_text || transData.translation)) {
                                 translatedTextResult = transData.translated_text || transData.translation;
+                            } else {
+                                translationErrorText = 'Translation failed. Please try again.';
                             }
+                        } else {
+                            translationErrorText = 'Translation failed. Please try again.';
                         }
                     } catch (e) {
+                        if (currentSessionToken !== activeRecordingSessionToken) return;
                         console.warn('Translation error in voice card:', e);
+                        translationErrorText = 'Translation failed. Please try again.';
                     }
                 }
 
-                // Transition to 'completed' State displaying text
+                if (currentSessionToken !== activeRecordingSessionToken) return;
+
                 setVoiceState('completed', {
                     originalText: originalSpokenText,
                     translatedText: translatedTextResult,
+                    translationErrorText: translationErrorText,
                     sourceLang: detectedLanguage,
                     targetLang: targetLang
                 });
@@ -1350,10 +2395,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (e) {
                 console.warn('MediaRecorder stop error:', e);
-                setVoiceState('error', { error: 'Recording stop error.' });
+                if (currentSessionToken === activeRecordingSessionToken) {
+                    setVoiceState('error', { error: 'Recording stop error.' });
+                }
             }
         } else {
-            setVoiceState('error', { error: 'MediaRecorder initialization error.' });
+            if (currentSessionToken === activeRecordingSessionToken) {
+                setVoiceState('error', { error: 'MediaRecorder initialization error.' });
+            }
         }
     }
 
@@ -1387,6 +2436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleTranslatedOutput(translatedText) {
         if (!translatedText) return;
         const previewTranslatedText = document.getElementById('previewTranslatedText');
+        const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
 
         if (previewTranslatedText) {
             previewTranslatedText.textContent = translatedText;
@@ -1394,6 +2444,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (translatedTextEditor) {
             translatedTextEditor.value = translatedText;
+        }
+
+        if (voiceTranslatedTextarea) {
+            voiceTranslatedTextarea.value = translatedText;
         }
     }
 
@@ -1411,14 +2465,19 @@ document.addEventListener('DOMContentLoaded', () => {
     async function triggerTranslation() {
         if (!isTranslationOn) {
             if (translatedTextEditor) translatedTextEditor.value = '';
+            const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
+            if (voiceTranslatedTextarea) voiceTranslatedTextarea.value = '';
             lastTranslationKey = '';
             return;
         }
 
+        const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
         const target = currentTargetInput || TextInsertionService.getActiveInput();
-        const text = target ? (target.value || target.innerText || '').trim() : (originalTextEditor ? originalTextEditor.value.trim() : '');
+        const text = (voiceOriginalTextarea && voiceOriginalTextarea.value.trim()) ? voiceOriginalTextarea.value.trim() : (target ? (target.value || target.innerText || '').trim() : (originalTextEditor ? originalTextEditor.value.trim() : ''));
         if (!text) {
             if (translatedTextEditor) translatedTextEditor.value = '';
+            const vTrans = document.getElementById('voiceTranslatedTextarea');
+            if (vTrans) vTrans.value = '';
             lastTranslationKey = '';
             return;
         }
@@ -1574,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputEl.readOnly = false;
                     inputEl.style.pointerEvents = 'auto';
                     inputEl.focus();
-                } catch (e) {}
+                } catch (e) { }
 
                 const val = inputEl.value || '';
                 if (!val) return;
@@ -1638,7 +2697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 inputEl.disabled = false;
                 inputEl.readOnly = false;
                 inputEl.style.pointerEvents = 'auto';
-            } catch (e) {}
+            } catch (e) { }
 
             // 1. Handle HTML Input / Textarea (Cursor position & selection replacement)
             if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA') {
@@ -1647,7 +2706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const val = inputEl.value || '';
                     const start = (inputEl.selectionStart !== null && inputEl.selectionStart !== undefined) ? inputEl.selectionStart : val.length;
                     const end = (inputEl.selectionEnd !== null && inputEl.selectionEnd !== undefined) ? inputEl.selectionEnd : val.length;
-                    
+
                     const newVal = val.substring(0, start) + text + val.substring(end);
                     inputEl.value = newVal;
                     const newCursorPos = start + text.length;
@@ -1670,13 +2729,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             inputEl.readOnly = false;
                             inputEl.focus();
                             inputEl.setSelectionRange(newCursorPos, newCursorPos);
-                        } catch (e) {}
+                        } catch (e) { }
                     }, 40);
                 } catch (e) {
                     inputEl.value = text;
                     inputEl.focus();
                 }
-            } 
+            }
             // 2. Handle ContentEditable Elements
             else if (inputEl.isContentEditable) {
                 try {
@@ -1762,74 +2821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Search Execution ---
-    async function performSearch(queryText = null) {
-        const mainSearchInput = document.getElementById('mainSearchInput');
-        const globalSearchInput = document.getElementById('globalSearchInput');
-        const searchCard = document.getElementById('searchResultsCard');
-        const searchContainer = document.getElementById('searchResultsContainer');
-        const queryTitle = document.getElementById('searchQueryTitle');
 
-        const query = (queryText || (mainSearchInput ? mainSearchInput.value : '') || (globalSearchInput ? globalSearchInput.value : '')).trim();
-        if (!query) {
-            alert('Please enter or speak a query to search.');
-            return;
-        }
-
-        if (queryTitle) queryTitle.textContent = `"${query}"`;
-        if (searchCard) searchCard.style.display = 'block';
-        if (searchContainer) {
-            searchContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);"><i data-lucide="loader-2" class="spin"></i> Searching...</div>';
-            if (window.lucide) lucide.createIcons();
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.results && data.results.length > 0) {
-                    searchContainer.innerHTML = data.results.map(item => `
-                        <div class="search-result-item">
-                            <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
-                                <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> ${escapeHtml(item.title)}
-                            </a>
-                            <div class="search-result-url">${escapeHtml(item.url)}</div>
-                            <div class="search-result-snippet">${escapeHtml(item.snippet)}</div>
-                        </div>
-                    `).join('');
-                    if (window.lucide) lucide.createIcons();
-                    searchCard.scrollIntoView({ behavior: 'smooth' });
-                    return;
-                }
-            }
-        } catch (err) {
-            console.warn('Search API call error:', err);
-        }
-
-        if (searchContainer) {
-            searchContainer.innerHTML = `
-                <div class="search-result-item">
-                    <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="search-result-title">
-                        <i data-lucide="external-link" style="width: 14px; height: 14px; flex-shrink: 0;"></i> Search Google for "${escapeHtml(query)}"
-                    </a>
-                    <div class="search-result-url">https://www.google.com/search?q=${encodeURIComponent(query)}</div>
-                    <div class="search-result-snippet">Click to view web search results for "${escapeHtml(query)}".</div>
-                </div>
-            `;
-            if (window.lucide) lucide.createIcons();
-            searchCard.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
 
     // Global Focus Listener to track active target input
     document.addEventListener('focusin', (e) => {
@@ -1971,11 +2963,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopSpeaking() {
         if (currentAudioElement) {
-            try { currentAudioElement.pause(); currentAudioElement.currentTime = 0; } catch (e) {}
+            try { currentAudioElement.pause(); currentAudioElement.currentTime = 0; } catch (e) { }
             currentAudioElement = null;
         }
         if ('speechSynthesis' in window) {
-            try { window.speechSynthesis.cancel(); } catch (e) {}
+            try { window.speechSynthesis.cancel(); } catch (e) { }
         }
         isSpeaking = false;
         if (activeAudioBtn) {
@@ -1987,101 +2979,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
     }
 
-    async function playTextToSpeech(text, lang, playBtn = null) {
-        if (!text || !text.trim()) return;
-
-        if (isSpeaking && activeAudioBtn === playBtn && playBtn !== null) {
-            stopSpeaking();
-            return;
-        }
-
-        stopSpeaking();
-
-        if (playBtn) {
-            activeAudioBtn = playBtn;
-            activeAudioBtn.classList.add('playing');
-            activeAudioBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Loading...';
-            if (window.lucide) lucide.createIcons();
-        }
-
-        if (headerStopAudioBtn) headerStopAudioBtn.style.display = 'flex';
-        isSpeaking = true;
-
-        const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/[*_#`~]/g, '').trim();
-
-        fetchBackendAudio(cleanText, lang, (playedSuccessfully) => {
-            if (playedSuccessfully) return;
-
-            if ('speechSynthesis' in window) {
-                try {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(cleanText);
-                    utterance.lang = getLangTag(lang);
-                    utterance.rate = 1.0;
-                    utterance.onend = () => stopSpeaking();
-                    utterance.onerror = () => stopSpeaking();
-
-                    if (activeAudioBtn) {
-                        activeAudioBtn.classList.add('playing');
-                        activeAudioBtn.innerHTML = '<i data-lucide="square"></i> Stop Audio';
-                        if (window.lucide) lucide.createIcons();
-                    }
-
-                    window.speechSynthesis.speak(utterance);
-                    return;
-                } catch (err) {
-                    console.warn('SpeechSynthesis fallback error:', err);
-                }
-            }
-            stopSpeaking();
-        });
-    }
-
-    async function fetchBackendAudio(text, lang, onFinish) {
-        try {
-            const res = await fetch(`${API_BASE}/text-to-speech`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, language: lang })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success && data.audio_url) {
-                    if (currentAudioElement) {
-                        try { currentAudioElement.pause(); } catch (e) {}
-                    }
-                    const fullUrl = data.audio_url.startsWith('http') ? data.audio_url : `${window.location.origin}${data.audio_url}?t=${Date.now()}`;
-                    currentAudioElement = new Audio(fullUrl);
-                    currentAudioElement.onended = () => stopSpeaking();
-                    currentAudioElement.onerror = (e) => {
-                        stopSpeaking();
-                        onFinish(false);
-                    };
-                    const playPromise = currentAudioElement.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            if (activeAudioBtn) {
-                                activeAudioBtn.classList.add('playing');
-                                activeAudioBtn.innerHTML = '<i data-lucide="square"></i> Stop Audio';
-                                if (window.lucide) lucide.createIcons();
-                            }
-                            onFinish(true);
-                        }).catch(err => {
-                            stopSpeaking();
-                            onFinish(false);
-                        });
-                    } else {
-                        onFinish(true);
-                    }
-                    return;
-                }
-            }
-        } catch (e) {
-            console.warn('Backend TTS endpoint error:', e);
-        }
-        onFinish(false);
-    }
+    // --- Helper Utilities ---
 
     function audioBufferToWav(buffer) {
         const numChannels = 1;

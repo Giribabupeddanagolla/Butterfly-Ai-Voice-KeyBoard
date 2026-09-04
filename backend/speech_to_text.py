@@ -36,6 +36,45 @@ def detect_language_from_text(text: str) -> str:
     
     return "en"
 
+def apply_smart_punctuation(text: str, language: str = "en") -> str:
+    """Apply basic smart capitalization and punctuation formatting without altering words or meaning."""
+    if not text or not text.strip():
+        return ""
+    
+    clean = text.strip()
+    clean = re.sub(r'\s+', ' ', clean)
+    
+    # Capitalize first letter if Latin character
+    if clean and clean[0].isalpha() and clean[0].islower():
+        clean = clean[0].upper() + clean[1:]
+        
+    # Add comma after initial greetings if followed by question/clause (e.g., "Hello, how are you")
+    clean = re.sub(r'^(Hello|Hi|Hey)\s+(how|what|where|when|why|who|is|are|can|could|would|should|do|does|did)', r'\1, \2', clean, flags=re.IGNORECASE)
+
+    # Re-verify first character upper
+    if clean and clean[0].isalpha() and clean[0].islower():
+        clean = clean[0].upper() + clean[1:]
+
+    # Check terminal punctuation
+    terminal_punct = ('.', '?', '!', '।', '||')
+    if not clean.endswith(terminal_punct):
+        lower_text = clean.lower()
+        # Remove initial greeting clause if present for question detection
+        check_text = re.sub(r'^(hello|hi|hey)[,\s]+', '', lower_text).strip()
+        
+        question_starters = (
+            "who", "what", "where", "when", "why", "how", "which", "whose", "whom",
+            "is ", "are ", "can ", "could ", "would ", "should ", "do ", "does ", "did ",
+            "isnt", "arent", "cant", "wont", "am i", "have you", "has he", "are you", "do you",
+            "ఏంటి", "ఎక్కడ", "ఎప్పుడు", "ఎందుకు", "ఎలా", "ఎవరు", "ఏమిటి"
+        )
+        if any(check_text.startswith(qs) for qs in question_starters):
+            clean += "?"
+        else:
+            clean += "."
+            
+    return clean
+
 _translation_cache = {}
 _mymemory_blocked_until = 0.0
 
@@ -262,9 +301,10 @@ class SpeechToTextService:
                         if transcribed_text:
                             detected_lang = detect_language_from_text(transcribed_text)
                             final_lang = language if (language and language != "auto") else detected_lang
+                            punct_text = apply_smart_punctuation(transcribed_text, final_lang)
                             return {
                                 "success": True,
-                                "text": transcribed_text,
+                                "text": punct_text,
                                 "language": final_lang,
                                 "provider": "openai"
                             }
@@ -287,7 +327,12 @@ class SpeechToTextService:
                     if base_lang and base_lang != "auto":
                         primary_sr = SR_LANG_MAP.get(base_lang, "en-US")
                         candidate_langs.append(primary_sr)
-                    candidate_langs.extend(["te-IN", "en-US", "hi-IN", "ta-IN", "kn-IN"])
+                    elif clean_fallback:
+                        fallback_lang = detect_language_from_text(clean_fallback)
+                        if fallback_lang in SR_LANG_MAP:
+                            candidate_langs.append(SR_LANG_MAP[fallback_lang])
+                    
+                    candidate_langs.extend(["en-US", "hi-IN", "te-IN", "kn-IN", "mr-IN", "ta-IN", "ml-IN", "bn-IN"])
                     
                     seen = set()
                     target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))]
@@ -299,9 +344,10 @@ class SpeechToTextService:
                                 detected_lang = detect_language_from_text(transcribed_text.strip())
                                 final_lang = language if (language and language != "auto") else detected_lang
                                 logger.info(f"Google SR fallback successful ({sr_lang}): {transcribed_text[:30]}...")
+                                punct_text = apply_smart_punctuation(transcribed_text.strip(), final_lang)
                                 return {
                                     "success": True,
-                                    "text": transcribed_text.strip(),
+                                    "text": punct_text,
                                     "language": final_lang,
                                     "provider": "google_sr"
                                 }
@@ -320,9 +366,10 @@ class SpeechToTextService:
         if clean_fallback:
             detected_lang = detect_language_from_text(clean_fallback)
             final_lang = language if (language and language != "auto") else detected_lang
+            punct_text = apply_smart_punctuation(clean_fallback, final_lang)
             return {
                 "success": True,
-                "text": clean_fallback,
+                "text": punct_text,
                 "language": final_lang,
                 "provider": "client_fallback"
             }

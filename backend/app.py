@@ -58,6 +58,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.endswith(".css") or request.url.path.endswith(".js") or request.url.path == "/":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Mount audio output directory statically
 app.mount("/audio/output", StaticFiles(directory=config.AUDIO_OUTPUT_DIR), name="audio_output")
 
@@ -87,7 +96,14 @@ class VoiceSpeakRequest(BaseModel):
     speed: Optional[float] = 1.0
 
 class AssistantRequest(BaseModel):
-    text: str
+    message: Optional[str] = None
+    text: Optional[str] = None
+    language: Optional[str] = "en"
+    source_language: Optional[str] = "auto"
+
+class AskRequest(BaseModel):
+    message: Optional[str] = None
+    text: Optional[str] = None
     language: Optional[str] = "en"
     source_language: Optional[str] = "auto"
 
@@ -304,15 +320,19 @@ async def transcribe_endpoint(
             status_code=200,
             content={
                 "success": False,
-                "error": "No speech detected. Please speak again.",
+                "error": "No speech detected. Please speak and try again.",
                 "text": "",
                 "transcription": "",
-                "language": "en"
+                "language": "en",
+                "language_name": "English"
             }
         )
         
     if detected_lang == "auto":
         detected_lang = detect_language_from_text(spoken_text)
+
+    from languages import get_language_name
+    lang_display_name = get_language_name(detected_lang)
 
     # Save to session memory without LLM response generation
     memory_manager.save_message(
@@ -328,13 +348,14 @@ async def transcribe_endpoint(
         input_type="voice"
     )
 
-    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang})")
+    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang} / {lang_display_name})")
     return {
         "success": True,
         "text": spoken_text,
         "transcription": spoken_text,
         "original_text": spoken_text,
-        "language": detected_lang
+        "language": detected_lang,
+        "language_name": lang_display_name
     }
 
 @app.post("/api/voice/speak")
@@ -353,47 +374,79 @@ def text_to_speech_endpoint(request: VoiceSpeakRequest):
         raise HTTPException(status_code=500, detail=result.get("error", "TTS synthesis failed"))
     return result
 
+def get_intelligent_fallback_answer(prompt: str) -> str:
+    p_lower = prompt.lower().strip()
+    
+    if any(w in p_lower for w in ["hi", "hii", "hello", "hey", "hii guys", "namaste", "namaskaram"]):
+        if any(c in prompt for c in ["హాయ్", "నమస్కారం", "ఏంటి"]):
+            return "నమస్కారం! నేను బటర్‌ఫ్లై AI సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?"
+        return "Hello! I am Butterfly AI, your intelligent voice and text assistant. How can I help you today?"
+        
+    if "how are you" in p_lower:
+        return "I'm doing great, thank you for asking! How can I assist you with Butterfly AI today?"
+        
+    if "who are you" in p_lower or "what are you" in p_lower:
+        return "I am Butterfly AI, an intelligent multilingual voice & text assistant designed to transcribe, translate, search, and answer your questions."
+
+    try:
+        wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(prompt.strip())}"
+        req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=3) as response:
+            wdata = json.loads(response.read().decode('utf-8'))
+            if wdata.get("extract"):
+                return wdata.get("extract")
+    except Exception as w_err:
+        logger.warning(f"Wikipedia summary error: {w_err}")
+
+    return f"Butterfly AI processed your question '{prompt}'. To enable deep GPT-4 reasoning, please update your OpenAI API key in Settings."
+
+@app.post("/api/ai/chat")
+@app.post("/api/ask")
 @app.post("/api/voice/assistant")
 @app.post("/api/assistant")
-def ai_assistant_endpoint(request: AssistantRequest):
-    if not request.text or not request.text.strip():
-        raise HTTPException(status_code=400, detail="Question cannot be empty")
+def ai_assistant_endpoint(request: AskRequest):
+    prompt = (request.message or request.text or "").strip()
+    if not prompt:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": "Question cannot be empty."}
+        )
     
     session_id = f"session_{uuid.uuid4().hex[:8]}"
-    prompt = request.text.strip()
-    src_lang = request.source_language or "auto"
-    tgt_lang = request.language or "en"
     
-    answer = ""
-    if openai_service.is_configured():
+    ai_res = openai_service.generate_chat_response(prompt=prompt, language=request.language)
+    
+    if ai_res.get("success"):
+        answer = ai_res["answer"]
+        model = ai_res.get("model", config.AI_MODEL)
+    else:
+        ddg_answer = ""
         try:
-            from languages import get_language_name
-            lang_name = get_language_name(tgt_lang)
-            sys_msg = (
-                f"You are Butterfly AI, an intelligent, helpful voice assistant. "
-                f"Answer the user's question clearly, concisely, and accurately in {lang_name}."
-            )
-            response = openai_service.get_client().chat.completions.create(
-                model=config.AI_MODEL,
-                messages=[
-                    {"role": "system", "content": sys_msg},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=400
-            )
-            answer = response.choices[0].message.content.strip()
-        except Exception as e:
-            logger.warning(f"OpenAI Assistant completion error: {e}")
-            
-    if not answer:
-        answer = f"Butterfly AI response: I received your question '{prompt}'. Please configure your OpenAI API Key for full AI Assistant completions."
-        
+            url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(prompt)}&format=json&no_html=1"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                if data.get("AbstractText"):
+                    ddg_answer = data.get("AbstractText")
+                elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list) and len(data.get("RelatedTopics")) > 0:
+                    topic = data.get("RelatedTopics")[0]
+                    if isinstance(topic, dict) and topic.get("Text"):
+                        ddg_answer = topic.get("Text")
+        except Exception as ddg_err:
+            logger.warning(f"DuckDuckGo instant answer error: {ddg_err}")
+
+        if not ddg_answer:
+            ddg_answer = get_intelligent_fallback_answer(prompt)
+
+        answer = ddg_answer
+        model = "butterfly-ai-assistant"
+
+    # Save message to memory manager
     memory_manager.save_message(
         session_id=session_id,
         role="user",
         content=prompt,
-        language=src_lang,
+        language=request.language or "auto",
         original_text=prompt,
         translated_text=answer,
         input_type="assistant"
@@ -404,8 +457,11 @@ def ai_assistant_endpoint(request: AssistantRequest):
         "session_id": session_id,
         "question": prompt,
         "answer": answer,
-        "language": tgt_lang
+        "model": model,
+        "language": request.language or "auto"
     }
+
+
 
 @app.post("/api/voice/polish")
 @app.post("/api/polish")

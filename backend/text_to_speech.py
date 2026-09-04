@@ -32,16 +32,102 @@ GTTS_LANG_MAP = {
     "ru": "ru", # Russian
 }
 
+# Edge TTS Voice Mappings (Male & Female Neural Voices per language)
+EDGE_TTS_VOICES = {
+    "en": {
+        "nova": "en-US-AvaNeural",
+        "shimmer": "en-US-JennyNeural",
+        "alloy": "en-US-AriaNeural",
+        "echo": "en-US-ChristopherNeural",
+        "onyx": "en-US-GuyNeural",
+        "fable": "en-GB-RyanNeural",
+    },
+    "te": {
+        "male": "te-IN-MohanNeural",
+        "female": "te-IN-ShrutiNeural"
+    },
+    "hi": {
+        "male": "hi-IN-MadhurNeural",
+        "female": "hi-IN-SwaraNeural"
+    },
+    "ta": {
+        "male": "ta-IN-ValluvarNeural",
+        "female": "ta-IN-PallaviNeural"
+    },
+    "kn": {
+        "male": "kn-IN-GaganNeural",
+        "female": "kn-IN-SapnaNeural"
+    },
+    "ml": {
+        "male": "ml-IN-MidhunNeural",
+        "female": "ml-IN-SobhanaNeural"
+    },
+    "mr": {
+        "male": "mr-IN-ManoharNeural",
+        "female": "mr-IN-AarohiNeural"
+    },
+    "bn": {
+        "male": "bn-IN-BashkarNeural",
+        "female": "bn-IN-TanishaaNeural"
+    },
+    "gu": {
+        "male": "gu-IN-NiranjanNeural",
+        "female": "gu-IN-DhwaniNeural"
+    },
+    "pa": {
+        "male": "pa-IN-GurpreetNeural",
+        "female": "pa-IN-HarmandeepNeural"
+    },
+    "ur": {
+        "male": "ur-PK-AsadNeural",
+        "female": "ur-PK-UzmaNeural"
+    },
+    "es": {
+        "male": "es-ES-AlvaroNeural",
+        "female": "es-ES-ElviraNeural"
+    },
+    "fr": {
+        "male": "fr-FR-HenriNeural",
+        "female": "fr-FR-DeniseNeural"
+    },
+    "de": {
+        "male": "de-DE-KillianNeural",
+        "female": "de-DE-KatjaNeural"
+    },
+    "ja": {
+        "male": "ja-JP-KeitaNeural",
+        "female": "ja-JP-NanamiNeural"
+    },
+    "ko": {
+        "male": "ko-KR-InJoonNeural",
+        "female": "ko-KR-SunHiNeural"
+    },
+    "zh": {
+        "male": "zh-CN-YunxiNeural",
+        "female": "zh-CN-XiaoxiaoNeural"
+    },
+    "ru": {
+        "male": "ru-RU-DmitryNeural",
+        "female": "ru-RU-SvetlanaNeural"
+    }
+}
+
+def get_edge_voice(base_lang: str, voice_name: str) -> str:
+    lang_voices = EDGE_TTS_VOICES.get(base_lang, EDGE_TTS_VOICES["en"])
+    if base_lang == "en":
+        return lang_voices.get(voice_name, "en-US-AvaNeural")
+    
+    is_male = voice_name in ["echo", "onyx", "fable"]
+    gender_key = "male" if is_male else "female"
+    return lang_voices.get(gender_key, lang_voices.get("female", "en-US-AvaNeural"))
+
 class TextToSpeechService:
     def __init__(self):
         self.api_key = None
         self.client = None
-        self.openai_tts_failed = False
 
     def get_client(self):
-        if self.openai_tts_failed:
-            return None
-        current_key = config.OPENAI_API_KEY
+        current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key and (not self.client or self.api_key != current_key):
             try:
                 from openai import OpenAI
@@ -50,6 +136,9 @@ class TextToSpeechService:
             except Exception as e:
                 logger.warning(f"Could not initialize OpenAI client for TTS: {e}")
                 self.client = None
+        elif not current_key:
+            self.client = None
+            self.api_key = None
         return self.client
 
     def generate_speech(self, text: str, language: str = "en", voice: str = "nova", speed: float = 1.0) -> Dict[str, Any]:
@@ -69,47 +158,51 @@ class TextToSpeechService:
         from speech_to_text import detect_language_from_text
 
         clean_lang = normalize_language_code(language)
-        if not clean_lang or clean_lang == "auto":
-            clean_lang = detect_language_from_text(text)
+        detected_text_lang = detect_language_from_text(text)
+        if not clean_lang or clean_lang == "auto" or (clean_lang == "en" and detected_text_lang != "en"):
+            clean_lang = detected_text_lang
 
         base_lang = (clean_lang or "en").lower().split('-')[0].split('_')[0]
         gtts_lang = GTTS_LANG_MAP.get(base_lang, "en")
-        is_non_english = base_lang != "en"
 
-        # 1. For non-English languages (Telugu, Hindi, Tamil, etc.), use gTTS for authentic native TTS pronunciation
-        if is_non_english:
-            try:
-                from gtts import gTTS
-                slow_flag = True if tts_speed < 0.85 else False
-                tts = gTTS(text=text, lang=gtts_lang, slow=slow_flag)
-                tts.save(output_path)
-                return {
-                    "success": True,
-                    "audio_url": f"/audio/output/{filename}",
-                    "provider": "gtts"
-                }
-            except Exception as e:
-                logger.warning(f"gTTS for {base_lang} failed: {e}, attempting OpenAI TTS fallback")
-
-        # 2. Try OpenAI TTS if client is available and has not failed
+        # 1. Try OpenAI TTS first (supports all 6 voices: Nova, Alloy, Echo, Fable, Onyx, Shimmer across languages)
         client = self.get_client()
         if client:
             try:
-                response = self.client.audio.speech.create(
+                response = client.audio.speech.create(
                     model=config.TTS_MODEL,
                     voice=tts_voice,
                     speed=tts_speed,
                     input=text[:4090] # Truncate to API max length
                 )
                 response.stream_to_file(output_path)
+                logger.info(f"OpenAI TTS generated successfully using voice '{tts_voice}'")
                 return {
                     "success": True,
                     "audio_url": f"/audio/output/{filename}",
-                    "provider": "openai"
+                    "provider": "openai",
+                    "voice": tts_voice
                 }
             except Exception as e:
-                logger.warning(f"OpenAI TTS failed ({e}), skipping OpenAI and falling back to gTTS")
-                self.openai_tts_failed = True
+                logger.warning(f"OpenAI TTS failed ({e}), falling back to Edge TTS / gTTS")
+
+        # 2. Try Edge TTS Neural voices (Free high-quality Male & Female voices for all languages)
+        try:
+            import asyncio
+            import edge_tts
+            edge_voice = get_edge_voice(base_lang, tts_voice)
+            communicate = edge_tts.Communicate(text[:4090], edge_voice)
+            asyncio.run(communicate.save(output_path))
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                logger.info(f"Edge TTS generated successfully using voice '{edge_voice}' ({tts_voice})")
+                return {
+                    "success": True,
+                    "audio_url": f"/audio/output/{filename}",
+                    "provider": "edge_tts",
+                    "voice": tts_voice
+                }
+        except Exception as e:
+            logger.warning(f"Edge TTS error ({e}), falling back to gTTS")
 
         # 3. Fallback to gTTS (Google Text-to-Speech)
         try:
@@ -121,7 +214,8 @@ class TextToSpeechService:
             return {
                 "success": True,
                 "audio_url": f"/audio/output/{filename}",
-                "provider": "gtts"
+                "provider": "gtts",
+                "voice": tts_voice
             }
         except Exception as e:
             logger.error(f"gTTS generation failed: {e}")

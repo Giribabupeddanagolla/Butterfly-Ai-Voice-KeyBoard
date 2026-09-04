@@ -18,3 +18,6 @@ backend/audio/output/*
 
 # Database
 data/conversations.db
+
+# Audio files
+*.mp3

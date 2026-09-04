@@ -55,7 +55,7 @@ class WhisperService:
                 }
             return {
                 "success": False,
-                "error": "No speech detected. Please speak again.",
+                "error": "No speech detected. Please speak and try again.",
                 "text": "",
                 "language": language or "en"
             }
@@ -96,15 +96,16 @@ class WhisperService:
 
                     if transcribed_text:
                         from languages import normalize_language_code
-                        from speech_to_text import detect_language_from_text
+                        from speech_to_text import detect_language_from_text, apply_smart_punctuation
                         norm_lang = normalize_language_code(detected_lang)
                         if not norm_lang or norm_lang == "auto":
                             norm_lang = detect_language_from_text(transcribed_text)
 
                         logger.info(f"Whisper API transcription successful: {transcribed_text[:30]}... ({norm_lang})")
+                        punct_text = apply_smart_punctuation(transcribed_text, norm_lang)
                         return {
                             "success": True,
-                            "text": transcribed_text,
+                            "text": punct_text,
                             "language": norm_lang
                         }
             except Exception as e:

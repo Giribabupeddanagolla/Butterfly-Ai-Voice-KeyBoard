@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Butterfly AI</title>
     <meta name="description" content="Butterfly AI: Realtime Multilingual AI Voice & Input System.">
-    
+
     <!-- Google Fonts for Indian Languages & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -23,8 +26,9 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
-    <link rel="stylesheet" href="style.css?v=400.0">
+    <link rel="stylesheet" href="style.css?v=2400.0">
 </head>
+
 <body class="dark-theme">
     <div class="app-layout">
         <!-- Main Content Area -->
@@ -33,13 +37,16 @@
             <header class="app-header">
                 <div class="header-left">
                     <div class="brand-title-group" style="display: flex; align-items: center; gap: 8px;">
-                        <img src="logo.png" alt="Butterfly AI" class="brand-logo-small" style="width: 28px; height: 28px; object-fit: contain;">
-                        <h1 class="chat-title" id="chatTitle" style="font-size: 1.1rem; font-weight: 700; margin: 0;">Butterfly AI</h1>
+                        <img src="logo.png" alt="Butterfly AI" class="brand-logo-small"
+                            style="width: 28px; height: 28px; object-fit: contain;">
+                        <h1 class="chat-title" id="chatTitle" style="font-size: 1.1rem; font-weight: 700; margin: 0;">
+                            Butterfly AI</h1>
                     </div>
                 </div>
 
                 <div class="header-actions">
-                    <button class="btn-stop-speech" id="headerStopAudioBtn" style="display: none;" title="Stop Voice Playback">
+                    <button class="btn-stop-speech" id="headerStopAudioBtn" style="display: none;"
+                        title="Stop Voice Playback">
                         <i data-lucide="square"></i> <span>Stop Audio</span>
                     </button>
                     <button class="btn-icon" id="themeToggleBtn" title="Toggle Light/Dark Theme">
@@ -53,7 +60,7 @@
 
             <!-- Main Workspace (100vh Flex Viewport Layout) -->
             <div class="keyboard-workspace" id="chatContainer">
-                
+
                 <!-- Brand Hero -->
                 <div class="vk-brand-hero">
                     <img src="logo.png" alt="Butterfly AI Logo" class="hero-logo">
@@ -63,37 +70,41 @@
                 <!-- SINGLE MAIN SEARCH BAR CARD -->
                 <div class="vk-card vk-main-search-card">
                     <div class="vk-main-search-wrapper">
-                        <input type="text" id="mainSearchInput" class="vk-main-search-field voice-target-input" placeholder="Search, type, or speak..." autocomplete="off">
-                        <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput" title="Click to Speak (or press Ctrl+Shift+Space)">
+                        <input type="text" id="mainSearchInput" class="vk-main-search-field voice-target-input"
+                            placeholder="Search, type, or speak..." autocomplete="off">
+                        <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput"
+                            title="Click to Speak (or press Ctrl+Shift+Space)">
                             <i data-lucide="mic" id="mainSearchMicIcon"></i>
                         </button>
                         <button class="search-submit-btn" id="mainSearchActionBtn" title="Search">
                             <i data-lucide="search"></i>
                         </button>
                     </div>
-                <!-- Temporary Voice Status Indicator (Shown only during active recording/transcribing) -->
-                <div class="vk-status-indicator-bar" id="micStatusIndicator" style="display: none;">
-                    <span class="status-dot" id="statusDot"></span>
-                    <span id="micStatusText">Ready</span>
-                    <canvas id="mainWaveformCanvas" class="vk-waveform-mini" width="120" height="20" style="display: none; margin: 0 8px;"></canvas>
-                    <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
-                </div>
-
-
-
-                <!-- SEARCH RESULTS OVERLAY CONTAINER -->
-                <div class="vk-card" id="searchResultsCard" style="display: none; max-height: 200px; overflow-y: auto;">
-                    <div class="vk-card-header">
-                        <div class="vk-card-title">
-                            <i data-lucide="search"></i>
-                            <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle" style="color: var(--primary-color);">""</strong></span>
-                        </div>
-                        <button class="btn-text-action" id="closeSearchResultsBtn"><i data-lucide="x"></i></button>
+                    <!-- Temporary Voice Status Indicator (Shown only during active recording/transcribing) -->
+                    <div class="vk-status-indicator-bar" id="micStatusIndicator" style="display: none;">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="micStatusText">Ready</span>
+                        <canvas id="mainWaveformCanvas" class="vk-waveform-mini" width="120" height="20"
+                            style="display: none; margin: 0 8px;"></canvas>
+                        <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
                     </div>
-                    <div class="vk-card-body" id="searchResultsContainer"></div>
-                </div>
 
-            </div>
+
+
+                    <!-- SEARCH RESULTS OVERLAY CONTAINER -->
+                    <div class="vk-card" id="searchResultsCard" style="display: none;">
+                        <div class="vk-card-header">
+                            <div class="vk-card-title">
+                                <i data-lucide="search"></i>
+                                <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle"
+                                        style="color: var(--primary-color);">""</strong></span>
+                            </div>
+                            <button type="button" class="btn-text-action" id="closeSearchResultsBtn" title="Close Search Results"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="vk-card-body" id="searchResultsContainer"></div>
+                    </div>
+
+                </div>
         </main>
     </div>
 
@@ -106,7 +117,7 @@
                 </div>
                 <h3 id="modalCardTitle" class="voice-header-title-centered">AI Voice Keyboard</h3>
                 <div class="voice-header-close-container">
-                    <button class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
+                    <button type="button" class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
                 </div>
             </div>
             <div class="modal-body voice-modal-body">
@@ -154,9 +165,9 @@
                 <!-- Translation Toggle Row -->
                 <div class="voice-setting-row voice-toggle-row" id="voiceToggleRow">
                     <label><i data-lucide="languages"></i> Translation</label>
-                    <button class="vk-toggle-btn" id="translationToggleBtn" title="Toggle Translation Mode">
-                        <span class="toggle-track"></span>
+                    <button type="button" class="vk-toggle-btn" id="translationToggleBtn" title="Toggle Translation Mode">
                         <span class="toggle-text" id="toggleText">OFF</span>
+                        <span class="toggle-track"></span>
                     </button>
                 </div>
 
@@ -190,11 +201,12 @@
 
                 <!-- Voice Recording Center Visual (Idle / Recording / Processing / Error) -->
                 <div class="voice-record-center" id="voiceCenterVisual">
-                    <button class="voice-record-circle" id="modalMicRecordBtn">
+                    <button type="button" class="voice-record-circle" id="modalMicRecordBtn">
                         <i data-lucide="mic" id="modalMicIcon"></i>
                     </button>
                     <div class="voice-status-title" id="modalMicStatus">Ready to record</div>
-                    <canvas id="modalWaveformCanvas" class="voice-waveform-canvas" width="180" height="24" style="display: none;"></canvas>
+                    <canvas id="modalWaveformCanvas" class="voice-waveform-canvas" width="180" height="24"
+                        style="display: none;"></canvas>
                     <div class="voice-record-timer" id="modalRecordTimer" style="display: none;">00:00</div>
                     <div class="voice-live-text" id="liveSpeechPreview" style="display: none;"></div>
                 </div>
@@ -213,23 +225,38 @@
                 </div>
 
                 <!-- Voice Keyboard Result Cards (Original Speech & Optional Translation) -->
-                <div class="transcription-result-container" id="transcriptionResultContainer" style="display: none; flex-direction: column; gap: 14px; margin-top: 10px;">
-                    
+                <div class="transcription-result-container" id="transcriptionResultContainer"
+                    style="display: none; flex-direction: column; gap: 14px; margin-top: 10px;">
+
                     <!-- ORIGINAL SPEECH CARD -->
                     <div class="voice-speech-card" id="originalSpeechCard">
                         <div class="speech-card-header">
                             <span class="speech-card-title"><i data-lucide="mic"></i> ORIGINAL SPEECH</span>
-                            <span class="speech-lang-tag" id="originalLangTag">AUTO</span>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+                                <select id="originalVoiceAccentSelect" class="card-voice-accent-select" title="TTS Voice Accent">
+                                    <option value="nova">Nova (Female)</option>
+                                    <option value="alloy">Alloy (Neutral)</option>
+                                    <option value="echo">Echo (Male)</option>
+                                    <option value="fable">Fable (Male)</option>
+                                    <option value="onyx">Onyx (Male)</option>
+                                    <option value="shimmer">Shimmer (Female)</option>
+                                </select>
+                                <span class="speech-lang-tag" id="originalLangTag">AUTO</span>
+                            </div>
                         </div>
-                        <textarea id="voiceOriginalTextarea" class="voice-transcription-textarea" rows="2" placeholder="Original speech text will appear here..."></textarea>
+                        <textarea id="voiceOriginalTextarea" class="voice-transcription-textarea" rows="2"
+                            placeholder="Original speech text will appear here..."></textarea>
                         <div class="speech-card-actions">
-                            <button class="btn-action-pill" id="speakOriginalBtn" title="Play Original Voice Audio">
-                                <i data-lucide="volume-2" id="speakOriginalIcon"></i> <span id="speakOriginalText">Speak Original</span>
+                            <button type="button" class="btn-action-pill" id="speakOriginalBtn" title="Play Original Voice Audio">
+                                <i data-lucide="volume-2" id="speakOriginalIcon"></i> <span id="speakOriginalText">Speak
+                                    Original</span>
                             </button>
-                            <button class="btn-action-pill" id="copyOriginalBtn" title="Copy Original Text">
-                                <i data-lucide="copy" id="copyOriginalIcon"></i> <span id="copyOriginalText">Copy Original</span>
+                            <button type="button" class="btn-action-pill" id="copyOriginalBtn" title="Copy Original Text">
+                                <i data-lucide="copy" id="copyOriginalIcon"></i> <span id="copyOriginalText">Copy
+                                    Original</span>
                             </button>
-                            <button class="btn-action-pill btn-primary-pill" id="insertOriginalBtn" title="Insert Original Text into Input">
+                            <button type="button" class="btn-action-pill btn-primary-pill" id="insertOriginalBtn"
+                                title="Insert Original Text into Input">
                                 <i data-lucide="corner-down-left"></i> Insert Original
                             </button>
                         </div>
@@ -239,17 +266,32 @@
                     <div class="voice-speech-card" id="translationSpeechCard" style="display: none;">
                         <div class="speech-card-header">
                             <span class="speech-card-title"><i data-lucide="languages"></i> TRANSLATION</span>
-                            <span class="speech-lang-tag" id="translationLangTag">ENGLISH</span>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+                                <select id="translationVoiceAccentSelect" class="card-voice-accent-select" title="TTS Voice Accent">
+                                    <option value="nova">Nova (Female)</option>
+                                    <option value="alloy">Alloy (Neutral)</option>
+                                    <option value="echo">Echo (Male)</option>
+                                    <option value="fable">Fable (Male)</option>
+                                    <option value="onyx">Onyx (Male)</option>
+                                    <option value="shimmer">Shimmer (Female)</option>
+                                </select>
+                                <span class="speech-lang-tag" id="translationLangTag">ENGLISH</span>
+                            </div>
                         </div>
-                        <textarea id="voiceTranslatedTextarea" class="voice-transcription-textarea" rows="2" placeholder="Translated text will appear here..."></textarea>
+                        <textarea id="voiceTranslatedTextarea" class="voice-transcription-textarea" rows="2"
+                            placeholder="Translated text will appear here..."></textarea>
                         <div class="speech-card-actions">
-                            <button class="btn-action-pill" id="speakTranslationBtn" title="Play Translated Voice Audio">
-                                <i data-lucide="volume-2" id="speakTranslationIcon"></i> <span id="speakTranslationText">Speak Translation</span>
+                            <button type="button" class="btn-action-pill" id="speakTranslationBtn"
+                                title="Play Translated Voice Audio">
+                                <i data-lucide="volume-2" id="speakTranslationIcon"></i> <span
+                                    id="speakTranslationText">Speak Translation</span>
                             </button>
-                            <button class="btn-action-pill" id="copyTranslationBtn" title="Copy Translated Text">
-                                <i data-lucide="copy" id="copyTranslationIcon"></i> <span id="copyTranslationText">Copy Translation</span>
+                            <button type="button" class="btn-action-pill" id="copyTranslationBtn" title="Copy Translated Text">
+                                <i data-lucide="copy" id="copyTranslationIcon"></i> <span id="copyTranslationText">Copy
+                                    Translation</span>
                             </button>
-                            <button class="btn-action-pill btn-primary-pill" id="insertTranslationBtn" title="Insert Translated Text into Input">
+                            <button type="button" class="btn-action-pill btn-primary-pill" id="insertTranslationBtn"
+                                title="Insert Translated Text into Input">
                                 <i data-lucide="corner-down-left"></i> Insert Translation
                             </button>
                         </div>
@@ -259,11 +301,11 @@
 
             <!-- Modal Footer Controls -->
             <div class="modal-footer voice-modal-footer">
-                <button class="btn-secondary" id="cancelVoiceBtn">Close</button>
-                <button class="btn-secondary" id="rerecordVoiceBtn" style="display: none;">
+                <button type="button" class="btn-secondary" id="cancelVoiceBtn">Close</button>
+                <button type="button" class="btn-secondary" id="rerecordVoiceBtn" style="display: none;">
                     <i data-lucide="rotate-ccw"></i> Record Again
                 </button>
-                <button class="btn-primary btn-record-start" id="startVoiceRecordBtn">
+                <button type="button" class="btn-primary btn-record-start" id="startVoiceRecordBtn">
                     <i data-lucide="mic" id="startBtnIcon"></i> <span id="startBtnText">Start Recording</span>
                 </button>
             </div>
@@ -278,76 +320,90 @@
                 <button class="btn-icon" id="closeSettingsBtn"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <div class="setting-item">
+                <div class="setting-item setting-item-row">
                     <div class="setting-info">
-                        <label>Voice Output (Text-to-Speech)</label>
+                        <label><i data-lucide="volume-2"></i> Voice Output (Text-to-Speech)</label>
                         <p>Automatically generate and play audio responses</p>
                     </div>
                     <input type="checkbox" id="ttsToggle" class="toggle-checkbox" checked>
                 </div>
 
-                <div class="setting-item">
+                <div class="setting-item setting-item-row">
                     <div class="setting-info">
-                        <label>Auto-Speak Answers</label>
+                        <label><i data-lucide="message-square"></i> Auto-Speak Answers</label>
                         <p>Read AI responses and dictation automatically</p>
                     </div>
                     <input type="checkbox" id="autoSpeakToggle" class="toggle-checkbox">
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info" style="width: 100%;">
+                <div class="setting-item setting-item-col">
+                    <div class="setting-col-header">
                         <label><i data-lucide="mic"></i> TTS Voice Accent</label>
-                        <select id="ttsVoiceSelect" class="vk-select" style="width: 100%; margin-top: 6px;">
-                            <option value="nova">Nova (Default Warm)</option>
-                            <option value="alloy">Alloy (Balanced Neutral)</option>
-                            <option value="echo">Echo (Male Crisp)</option>
-                            <option value="fable">Fable (British Expressive)</option>
-                            <option value="onyx">Onyx (Male Deep)</option>
-                            <option value="shimmer">Shimmer (Female Clear)</option>
-                        </select>
+                        <button type="button" class="btn-test-voice-sm" id="testVoiceBtn"
+                            title="Test Voice Output with current settings">
+                            <i data-lucide="volume-2"></i> <span>Test Voice</span>
+                        </button>
                     </div>
+                    <select id="ttsVoiceSelect" class="vk-select">
+                        <option value="nova">Nova (Female Warm - Default)</option>
+                        <option value="alloy">Alloy (Balanced Neutral)</option>
+                        <option value="echo">Echo (Male Crisp)</option>
+                        <option value="fable">Fable (Male British)</option>
+                        <option value="onyx">Onyx (Male Deep)</option>
+                        <option value="shimmer">Shimmer (Female Clear)</option>
+                    </select>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info" style="width: 100%;">
+                <div class="setting-item setting-item-col">
+                    <div class="setting-col-header">
                         <label><i data-lucide="gauge"></i> Speech Playback Speed</label>
-                        <select id="ttsSpeedSelect" class="vk-select" style="width: 100%; margin-top: 6px;">
-                            <option value="0.75">0.75x (Slower)</option>
-                            <option value="1.0" selected>1.0x (Normal)</option>
-                            <option value="1.25">1.25x (Faster)</option>
-                            <option value="1.5">1.5x (Fast)</option>
-                        </select>
                     </div>
+                    <select id="ttsSpeedSelect" class="vk-select">
+                        <option value="0.75">0.75x (Slower)</option>
+                        <option value="1.0" selected>1.0x (Normal)</option>
+                        <option value="1.25">1.25x (Faster)</option>
+                        <option value="1.5">1.5x (Fast)</option>
+                        <option value="2.0">2.0x (Very Fast)</option>
+                    </select>
                 </div>
 
-                <div class="setting-item">
+                <div class="setting-item setting-item-row">
                     <div class="setting-info">
-                        <label>Global Hotkey Insertion</label>
+                        <label><i data-lucide="keyboard"></i> Global Hotkey Insertion</label>
                         <p>Ctrl + Shift + Space for desktop typing</p>
                     </div>
                     <input type="checkbox" id="hotkeyToggle" class="toggle-checkbox" checked>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info" style="width: 100%;">
+                <div class="setting-item setting-item-col">
+                    <div class="setting-col-header">
                         <label><i data-lucide="key"></i> OpenAI API Key</label>
-                        <p>Enter your OpenAI Key to enable Whisper STT & OpenAI TTS</p>
-                        <input type="password" id="apiKeyInput" class="select-input" placeholder="sk-..." style="width: 100%; margin-top: 6px; font-family: monospace; box-sizing: border-box;">
+                    </div>
+                    <p class="setting-subtext">Enter your OpenAI Key to enable Whisper STT & OpenAI TTS</p>
+                    <input type="password" id="apiKeyInput" class="vk-input" placeholder="sk-...">
+                </div>
+
+                <div class="setting-item setting-item-col">
+                    <div class="setting-col-header">
+                        <label><i data-lucide="activity"></i> OpenAI API Status</label>
+                    </div>
+                    <div id="openaiStatusBadge" class="status-badge">
+                        <span id="openaiStatusDot" class="status-dot"></span>
+                        <span id="openaiStatusText">Checking connection...</span>
                     </div>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info" style="width: 100%;">
-                        <label><i data-lucide="activity"></i> OpenAI API Status</label>
-                        <div id="openaiStatusBadge" style="margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; background: rgba(255,255,255,0.05);">
-                            <span id="openaiStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
-                            <span id="openaiStatusText">Checking connection...</span>
-                        </div>
-                    </div>
+                <div class="settings-helper-note"
+                    style="margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="info" style="width: 14px; height: 14px; color: var(--primary-color);"></i>
+                    <span>Settings are applied to all voice playback.</span>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
                 <button class="btn-primary" id="saveSettingsBtn"><i data-lucide="save"></i> Save Settings</button>
+                <button class="btn-primary" id="confirmSettingsBtn"
+                    style="display: none; background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);"><i
+                        data-lucide="check-circle"></i> Confirm</button>
             </div>
         </div>
     </div>
@@ -362,9 +418,11 @@
             <div class="modal-body">
                 <div class="upload-dropzone" id="audioDropzone">
                     <i data-lucide="upload-cloud" class="dropzone-icon"></i>
-                    <p class="dropzone-text">Drag & drop your audio file here or <span class="dropzone-browse">browse</span></p>
+                    <p class="dropzone-text">Drag & drop your audio file here or <span
+                            class="dropzone-browse">browse</span></p>
                     <span class="upload-hint">Supports .mp3, .wav, .m4a, .webm, .ogg (Max 25MB)</span>
-                    <input type="file" id="audioFileInput" accept=".mp3,.wav,.m4a,.webm,.ogg,audio/*" style="display: none;">
+                    <input type="file" id="audioFileInput" accept=".mp3,.wav,.m4a,.webm,.ogg,audio/*"
+                        style="display: none;">
                 </div>
 
                 <div class="uploaded-file-info" id="uploadedFileInfo" style="display: none;">
@@ -373,7 +431,8 @@
                         <div class="file-name" id="uploadFileName">audio.mp3</div>
                         <div class="file-size" id="uploadFileSize">0 KB</div>
                     </div>
-                    <button class="btn-icon-sm" id="removeUploadFileBtn" title="Remove File"><i data-lucide="trash-2"></i></button>
+                    <button class="btn-icon-sm" id="removeUploadFileBtn" title="Remove File"><i
+                            data-lucide="trash-2"></i></button>
                 </div>
 
                 <div class="upload-progress-box" id="uploadProgressBox" style="display: none;">
@@ -399,20 +458,25 @@
             <div class="modal-body">
                 <div class="snippet-create-form">
                     <label class="setting-label">Snippet Name</label>
-                    <input type="text" id="snippetNameInput" class="select-input" placeholder="e.g. Email Closing" style="width:100%; box-sizing:border-box;">
-                    
+                    <input type="text" id="snippetNameInput" class="select-input" placeholder="e.g. Email Closing"
+                        style="width:100%; box-sizing:border-box;">
+
                     <label class="setting-label" style="margin-top:8px;">Snippet Text</label>
-                    <textarea id="snippetTextInput" class="voice-transcription-textarea" rows="2" placeholder="e.g. Thank you for your time. Best regards, Giribabu" style="width:100%; box-sizing:border-box;"></textarea>
-                    
+                    <textarea id="snippetTextInput" class="voice-transcription-textarea" rows="2"
+                        placeholder="e.g. Thank you for your time. Best regards, Giribabu"
+                        style="width:100%; box-sizing:border-box;"></textarea>
+
                     <label class="setting-label" style="margin-top:8px;">Optional Voice Trigger</label>
-                    <input type="text" id="snippetTriggerInput" class="select-input" placeholder="e.g. insert email closing" style="width:100%; box-sizing:border-box;">
-                    
+                    <input type="text" id="snippetTriggerInput" class="select-input"
+                        placeholder="e.g. insert email closing" style="width:100%; box-sizing:border-box;">
+
                     <button class="btn-primary btn-sm" id="saveSnippetBtn" style="margin-top:10px; width:100%;">
                         <i data-lucide="save"></i> Save Snippet
                     </button>
                 </div>
 
-                <div class="snippets-list-header" style="margin-top:14px; font-weight:600; font-size:0.85rem; color:var(--text-secondary);">
+                <div class="snippets-list-header"
+                    style="margin-top:14px; font-weight:600; font-size:0.85rem; color:var(--text-secondary);">
                     Saved Snippets
                 </div>
                 <div class="snippets-list" id="snippetsContainer"></div>
@@ -420,6 +484,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=503.0"></script>
+    <script src="script.js?v=2400.0"></script>
 </body>
+
 </html>
