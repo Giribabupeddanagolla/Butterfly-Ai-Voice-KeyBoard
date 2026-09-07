@@ -974,10 +974,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             finalText = '';
             partialText = '';
+            accumulatedTextPrefix = '';
             isPaused = false;
             totalPausedMs = 0;
             pauseStartTime = 0;
             audioChunks = [];
+
+            const voiceOriginalTextarea = document.getElementById('voiceOriginalTextarea');
+            const voiceTranslatedTextarea = document.getElementById('voiceTranslatedTextarea');
+            const liveSpeechPreview = document.getElementById('liveSpeechPreview');
+            if (voiceOriginalTextarea) voiceOriginalTextarea.value = '';
+            if (voiceTranslatedTextarea) voiceTranslatedTextarea.value = '';
+            if (liveSpeechPreview) {
+                liveSpeechPreview.textContent = '';
+                liveSpeechPreview.style.display = 'none';
+            }
 
             setVoiceState('idle');
         }
@@ -1090,7 +1101,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voiceModal) {
             voiceModal.addEventListener('click', (e) => {
                 if (e.target === voiceModal) {
-                    closeVoiceModal();
+                    if (typeof voiceState !== 'undefined' && voiceState !== 'idle') {
+                        resetToIdleState();
+                    } else {
+                        closeVoiceModal();
+                    }
                 }
             });
         }
@@ -1106,7 +1121,11 @@ document.addEventListener('DOMContentLoaded', () => {
             closeVoiceModalBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                closeVoiceModal();
+                if (typeof voiceState !== 'undefined' && voiceState !== 'idle') {
+                    resetToIdleState();
+                } else {
+                    closeVoiceModal();
+                }
             });
         }
 
@@ -1114,7 +1133,11 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelVoiceBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                closeVoiceModal();
+                if (typeof voiceState !== 'undefined' && voiceState !== 'idle') {
+                    resetToIdleState();
+                } else {
+                    closeVoiceModal();
+                }
             });
         }
 
