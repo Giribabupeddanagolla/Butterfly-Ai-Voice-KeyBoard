@@ -24,7 +24,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Configure host PC FastAPI backend URL & system keyboard"
+            android:text="Configure host PC FastAPI backend URL &amp; system keyboard"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:layout_marginBottom="20dp" />
@@ -108,7 +108,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enable & Select System Keyboard"
+            android:text="Enable &amp; Select System Keyboard"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
