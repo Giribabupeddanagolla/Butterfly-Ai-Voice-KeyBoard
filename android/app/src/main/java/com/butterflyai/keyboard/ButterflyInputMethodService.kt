@@ -484,7 +484,10 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         setKeyboardState(KeyboardState.PROCESSING)
 
         val srcLang = languages[spinnerSourceLang.selectedItemPosition].first
-        val tgtLang = languages[spinnerTargetLang.selectedItemPosition].first
+        var tgtLang = languages[spinnerTargetLang.selectedItemPosition].first
+        if (isTranslateOn && (tgtLang == "auto" || tgtLang.isBlank())) {
+            tgtLang = "te" // Default target language to Telugu
+        }
 
         if (currentAudio != null && currentAudio.exists() && currentAudio.length() > 0) {
             serviceScope.launch {
@@ -500,10 +503,22 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         lastOriginalText = result.originalText
                         lastTranslatedText = result.translatedText
 
-                        lastFinalText = if (isTranslateOn && result.translatedText.isNotBlank()) {
-                            result.translatedText
+                        if (isTranslateOn) {
+                            if (lastTranslatedText.isNotBlank() && lastTranslatedText != lastOriginalText) {
+                                lastFinalText = lastTranslatedText
+                            } else {
+                                // Fallback: If backend returned raw text, perform direct translation call to target language
+                                val reqTarget = if (tgtLang == "auto" || tgtLang == "en") "te" else tgtLang
+                                val fallbackTranslated = networkService.translateTextDirect(lastOriginalText, result.language, reqTarget)
+                                if (!fallbackTranslated.isNullOrBlank() && fallbackTranslated != lastOriginalText) {
+                                    lastTranslatedText = fallbackTranslated
+                                    lastFinalText = fallbackTranslated
+                                } else {
+                                    lastFinalText = lastOriginalText
+                                }
+                            }
                         } else {
-                            result.originalText
+                            lastFinalText = lastOriginalText
                         }
 
                         // Update Voice Result View

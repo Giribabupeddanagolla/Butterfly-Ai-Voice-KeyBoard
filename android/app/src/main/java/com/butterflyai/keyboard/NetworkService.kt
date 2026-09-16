@@ -157,12 +157,12 @@ class NetworkService(private val context: Context) {
         }
     }
 
-    private fun translateTextInternal(
-        baseUrl: String,
+    suspend fun translateTextDirect(
         text: String,
         sourceLang: String,
         targetLang: String
-    ): String? {
+    ): String? = withContext(Dispatchers.IO) {
+        val baseUrl = getBaseUrl()
         try {
             val jsonBody = JsonObject().apply {
                 addProperty("text", text)
@@ -179,10 +179,10 @@ class NetworkService(private val context: Context) {
 
             client.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    val bodyString = response.body?.string() ?: return null
+                    val bodyString = response.body?.string() ?: return@withContext null
                     val json = gson.fromJson(bodyString, JsonObject::class.java)
                     if (json.has("success") && json.get("success").asBoolean) {
-                        return json.get("translation")?.asString
+                        return@withContext json.get("translation")?.asString
                             ?: json.get("translated_text")?.asString
                     }
                 }
@@ -190,7 +190,7 @@ class NetworkService(private val context: Context) {
         } catch (e: Exception) {
             Log.e("NetworkService", "Translation internal error: ${e.message}")
         }
-        return null
+        return@withContext null
     }
 
     suspend fun polishText(text: String): PolishResult = withContext(Dispatchers.IO) {
