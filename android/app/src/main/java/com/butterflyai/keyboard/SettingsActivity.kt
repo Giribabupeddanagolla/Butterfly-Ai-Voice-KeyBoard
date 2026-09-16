@@ -26,7 +26,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnSelectIme: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate()
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         networkService = NetworkService(this)
