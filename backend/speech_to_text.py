@@ -123,8 +123,7 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
                 translated_result = translated
         except Exception as e:
             logger.debug(f"OpenAI translation unavailable: {e}")
-            if "429" in str(e) or "quota" in str(e).lower():
-                stt_service.openai_stt_failed = True
+            stt_service.openai_stt_failed = True
 
     # 2. Try Google Translate API (Primary fast & free provider)
     if not translated_result:

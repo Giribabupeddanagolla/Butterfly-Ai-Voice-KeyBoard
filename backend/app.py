@@ -331,6 +331,23 @@ async def transcribe_endpoint(
     if detected_lang == "auto":
         detected_lang = detect_language_from_text(spoken_text)
 
+    tgt_lang = target_language or translation_language or "en"
+    translated_text = spoken_text
+    if tgt_lang and tgt_lang != "auto" and spoken_text.strip():
+        try:
+            if openai_service.is_configured():
+                trans_res = openai_service.translate_text(
+                    text=spoken_text,
+                    source_language=detected_lang,
+                    target_language=tgt_lang
+                )
+                if trans_res.get("success") and trans_res.get("translated_text"):
+                    translated_text = trans_res["translated_text"]
+            if translated_text == spoken_text and tgt_lang != detected_lang:
+                translated_text = translate_text(spoken_text, target_language=tgt_lang, source_language=detected_lang)
+        except Exception as t_err:
+            logger.warning(f"Translation error in transcribe_endpoint: {t_err}")
+
     from languages import get_language_name
     lang_display_name = get_language_name(detected_lang)
 
@@ -342,21 +359,26 @@ async def transcribe_endpoint(
         language=detected_lang,
         original_text=spoken_text,
         source_language=detected_lang,
-        translation_language=translation_language or "en",
+        translation_language=tgt_lang,
         text_language=detected_lang,
-        translated_text=spoken_text,
+        translated_text=translated_text,
         input_type="voice"
     )
 
-    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang} / {lang_display_name})")
+    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang} / {lang_display_name}), translation: '{translated_text}'")
     return {
         "success": True,
         "text": spoken_text,
         "transcription": spoken_text,
         "original_text": spoken_text,
+        "translation": translated_text,
+        "translated_text": translated_text,
         "language": detected_lang,
-        "language_name": lang_display_name
+        "language_name": lang_display_name,
+        "source_language": detected_lang,
+        "target_language": tgt_lang
     }
+
 
 @app.post("/api/voice/speak")
 @app.post("/text-to-speech")
@@ -374,29 +396,128 @@ def text_to_speech_endpoint(request: VoiceSpeakRequest):
         raise HTTPException(status_code=500, detail=result.get("error", "TTS synthesis failed"))
     return result
 
-def get_intelligent_fallback_answer(prompt: str) -> str:
-    p_lower = prompt.lower().strip()
+TECH_KNOWLEDGE = {
+    "java": {
+        "en": "Java is a high-level, class-based, object-oriented programming language designed to have as few implementation dependencies as possible. It is intended to let application developers write once, run anywhere (WORA), meaning that compiled Java code can run on all platforms supporting Java (via the Java Virtual Machine) without needing to recompile.",
+        "te": "జావా (Java) అనేది ఒక ప్రముఖమైన హై-లేవెల్, ఆబ్జెక్ట్-ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్. దీనిని 'Write Once, Run Anywhere' (WORA) అనే సూత్రంతో ఎక్కడైనా రన్ అయ్యేలా తయారుచేశారు."
+    },
+    "python": {
+        "en": "Python is a high-level, interpreted, general-purpose programming language known for its clear syntax and high code readability. It is widely used in Artificial Intelligence, Machine Learning, Data Science, Web Development, Automation, and Scripting.",
+        "te": "పైథాన్ (Python) అనేది సరళమైన శైలి కలిగిన ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్. ఇది AI, డేటా సైన్స్, వెబ్ డెవలప్‌మెంట్ మరియు ఆటోమేషన్ లో విస్తృతంగా ఉపయోగించబడుతుంది."
+    },
+    "javascript": {
+        "en": "JavaScript (JS) is a high-level, lightweight, interpreted programming language that powers dynamic and interactive user interfaces on web pages as well as server-side applications via Node.js.",
+        "te": "జావాస్క్రిప్ట్ (JavaScript) అనేది వెబ్ పేజీలలో డైనమిక్ మరియు ఇంటరాక్టివ్ ఫీచర్లను అందించే ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్."
+    },
+    "html": {
+        "en": "HTML (HyperText Markup Language) is the standard markup language used to structure content and elements on web pages across the World Wide Web.",
+        "te": "HTML (HyperText Markup Language) అనేది వెబ్ పేజీల ఆకృతిని (structure) డిజైన్ చేయడానికి ఉపయోగించే మార్కప్ లాంగ్వేజ్."
+    },
+    "css": {
+        "en": "CSS (Cascading Style Sheets) is a stylesheet language used to format the visual design, colors, layout, and presentation of HTML documents.",
+        "te": "CSS (Cascading Style Sheets) అనేది వెబ్ పేజీల డిజైన్, రంగులు మరియు లేఅవుట్ శైలిని అలకరించే స్టైల్‌షీట్ లాంగ్వేజ్."
+    },
+    "c++": {
+        "en": "C++ is a high-performance general-purpose programming language created by Bjarne Stroustrup as an extension of C. It supports procedural, object-oriented, and generic programming.",
+        "te": "C++ అనేది సి (C) భాష ఆధారంగా రూపొందించబడిన ఆబ్జెక్ట్ ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్."
+    },
+    "sql": {
+        "en": "SQL (Structured Query Language) is the standard domain-specific language used for storing, updating, manipulating, and querying data in relational database management systems.",
+        "te": "SQL అనేది డేటాబేస్ లోని డేటాను స్టోర్ చేయడానికి మరియు క్వెరీ చేయడానికి ఉపయోగించే స్టాండర్డ్ లాంగ్వేజ్."
+    },
+    "react": {
+        "en": "React is an open-source front-end JavaScript library maintained by Meta for building dynamic, component-based user interfaces.",
+        "te": "React అనేది డైనమిక్ వెబ్ యూజర్ ఇంటర్‌ఫేస్‌లు తయారు చేయడానికి మేటా (Meta) అందించిన ప్రముఖ జావస్క్రిప్ట్ లైబ్రరీ."
+    },
+    "ai": {
+        "en": "Artificial Intelligence (AI) refers to computer systems and software capable of performing complex tasks that typically require human intelligence, such as visual perception, speech recognition, reasoning, learning, and decision-making.",
+        "te": "కృత్రిమ మేధస్సు (AI) అనేది మానవ ఆలోచనా శక్తి, సమస్య పరిష్కారం మరియు అభ్యాస సామర్థ్యాన్ని కంప్యూటర్ల ద్వారా అనుకరించే సాంకేతికత."
+    },
+    "machine learning": {
+        "en": "Machine Learning (ML) is a branch of artificial intelligence focused on building algorithms that enable computers to learn patterns from data and improve their performance without explicit programming.",
+        "te": "మెషిన్ లెర్నింగ్ (ML) అనేది AI లో భాగం. ఇది డేటా నుండి నమూనాలను నేర్చుకుని కంప్యూటర్లు తానంతట తానే అంచనా వేసేలా చేస్తుంది."
+    }
+}
+
+def is_bad_abstract(prompt: str, abstract: str) -> bool:
+    if not abstract or len(abstract.strip()) < 35 or len(abstract.strip().split()) < 5:
+        return True
+    ext_lower = abstract.lower()
+    p_lower = prompt.lower()
     
+    # If user asks about 'java' without mentioning 'island' or 'indonesia', reject island extracts
+    if 'java' in p_lower and not any(w in p_lower for w in ['island', 'indonesia', 'sunda', 'jakarta']):
+        if any(w in ext_lower for w in ['sunda islands', 'island in indonesia', 'indonesian population', 'capital city, jakarta', 'dutch east indies', 'history of indonesia']):
+            return True
+
+    # Reject Category names or disambiguation pages
+    if any(w in ext_lower for w in ['may refer to:', 'can refer to:', 'refers to several', 'disambiguation']) or ext_lower.endswith('category'):
+        return True
+        
+    return False
+
+def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en") -> str:
+    p_lower = prompt.lower().strip()
+    is_telugu = any(ord(c) >= 0x0C00 and ord(c) <= 0x0C7F for c in prompt) or (language and language.startswith("te"))
+    lang_key = "te" if is_telugu else "en"
+
+    # 1. Greetings & bot identity
     if any(w in p_lower for w in ["hi", "hii", "hello", "hey", "hii guys", "namaste", "namaskaram"]):
-        if any(c in prompt for c in ["హాయ్", "నమస్కారం", "ఏంటి"]):
+        if is_telugu or any(c in prompt for c in ["హాయ్", "నమస్కారం", "ఏంటి"]):
             return "నమస్కారం! నేను బటర్‌ఫ్లై AI సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?"
         return "Hello! I am Butterfly AI, your intelligent voice and text assistant. How can I help you today?"
-        
+
     if "how are you" in p_lower:
         return "I'm doing great, thank you for asking! How can I assist you with Butterfly AI today?"
-        
+
     if "who are you" in p_lower or "what are you" in p_lower:
         return "I am Butterfly AI, an intelligent multilingual voice & text assistant designed to transcribe, translate, search, and answer your questions."
 
+    # 2. Check predefined tech knowledge base first
+    for tech_name, tech_dict in TECH_KNOWLEDGE.items():
+        if re.search(r'\b' + re.escape(tech_name) + r'\b', p_lower):
+            return tech_dict.get(lang_key, tech_dict["en"])
+
+    # 3. Disambiguated Wikipedia lookup
+    query_title = prompt.strip()
+    if "java" in p_lower and "island" not in p_lower:
+        query_title = "Java (programming language)"
+    elif "python" in p_lower and "snake" not in p_lower and "reptile" not in p_lower:
+        query_title = "Python (programming language)"
+    elif "ruby" in p_lower and "gem" not in p_lower and "stone" not in p_lower:
+        query_title = "Ruby (programming language)"
+    elif "rust" in p_lower and "metal" not in p_lower and "iron" not in p_lower:
+        query_title = "Rust (programming language)"
+    elif "swift" in p_lower and "bird" not in p_lower:
+        query_title = "Swift (programming language)"
+    elif "react" in p_lower and "chemical" not in p_lower:
+        query_title = "React (JavaScript library)"
+    elif "node" in p_lower and "network" not in p_lower:
+        query_title = "Node.js"
+
     try:
-        wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(prompt.strip())}"
+        wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(query_title)}"
         req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=3) as response:
+        with urllib.request.urlopen(req, timeout=4) as response:
             wdata = json.loads(response.read().decode('utf-8'))
-            if wdata.get("extract"):
-                return wdata.get("extract")
+            extract = wdata.get("extract")
+            if extract and not is_bad_abstract(prompt, extract):
+                return extract
     except Exception as w_err:
-        logger.warning(f"Wikipedia summary error: {w_err}")
+        logger.warning(f"Wikipedia summary error for '{query_title}': {w_err}")
+
+    # Fallback to direct prompt Wikipedia query if disambiguated title failed
+    if query_title != prompt.strip():
+        try:
+            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(prompt.strip())}"
+            req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3) as response:
+                wdata = json.loads(response.read().decode('utf-8'))
+                extract = wdata.get("extract")
+                if extract and not is_bad_abstract(prompt, extract):
+                    return extract
+        except Exception:
+            pass
 
     return f"Butterfly AI processed your question '{prompt}'. To enable deep GPT-4 reasoning, please update your OpenAI API key in Settings."
 
@@ -426,17 +547,21 @@ def ai_assistant_endpoint(request: AskRequest):
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=3) as response:
                 data = json.loads(response.read().decode('utf-8'))
-                if data.get("AbstractText"):
-                    ddg_answer = data.get("AbstractText")
-                elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list) and len(data.get("RelatedTopics")) > 0:
-                    topic = data.get("RelatedTopics")[0]
-                    if isinstance(topic, dict) and topic.get("Text"):
-                        ddg_answer = topic.get("Text")
+                abstract = data.get("AbstractText", "")
+                if abstract and not is_bad_abstract(prompt, abstract):
+                    ddg_answer = abstract
+                elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
+                    for topic in data.get("RelatedTopics"):
+                        if isinstance(topic, dict) and topic.get("Text"):
+                            txt = topic.get("Text")
+                            if not is_bad_abstract(prompt, txt):
+                                ddg_answer = txt
+                                break
         except Exception as ddg_err:
             logger.warning(f"DuckDuckGo instant answer error: {ddg_err}")
 
         if not ddg_answer:
-            ddg_answer = get_intelligent_fallback_answer(prompt)
+            ddg_answer = get_intelligent_fallback_answer(prompt, language=request.language)
 
         answer = ddg_answer
         model = "butterfly-ai-assistant"

@@ -125,8 +125,11 @@ class TextToSpeechService:
     def __init__(self):
         self.api_key = None
         self.client = None
+        self.openai_tts_failed = False
 
     def get_client(self):
+        if self.openai_tts_failed:
+            return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key and (not self.client or self.api_key != current_key):
             try:
@@ -185,6 +188,7 @@ class TextToSpeechService:
                 }
             except Exception as e:
                 logger.warning(f"OpenAI TTS failed ({e}), falling back to Edge TTS / gTTS")
+                self.openai_tts_failed = True
 
         # 2. Try Edge TTS Neural voices (Free high-quality Male & Female voices for all languages)
         try:

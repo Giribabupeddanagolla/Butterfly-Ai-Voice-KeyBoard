@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Butterfly AI Keyboard</string>
+    <string name="ime_name">Butterfly AI Voice Keyboard</string>
+    <string name="subtype_en_US">English (US) - Butterfly AI</string>
+    <string name="settings_title">Butterfly AI Keyboard Settings</string>
+    <string name="backend_url_hint">http://192.168.1.105:8000</string>
+    <string name="enable_keyboard">1. Enable Keyboard in Android Settings</string>
+    <string name="select_keyboard">2. Select Butterfly AI as Active Keyboard</string>
+    <string name="test_connection">Test Backend Connection</string>
+    <string name="status_listening">Listening... Tap Stop when done.</string>
+    <string name="status_processing">Processing audio with Whisper...</string>
+    <string name="status_ready">Tap mic to speak</string>
+</resources>

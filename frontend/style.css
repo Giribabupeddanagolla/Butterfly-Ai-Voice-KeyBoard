@@ -188,9 +188,21 @@ body {
     position: relative;
 }
 
-/* Sidebar Hidden */
+/* Active Collapsible Sidebar */
 .sidebar {
-    display: none !important;
+    width: var(--sidebar-width, 280px);
+    background: var(--bg-sidebar, #0C111F);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    z-index: 100;
+    transition: transform var(--transition-smooth, 0.3s ease), margin-left var(--transition-smooth, 0.3s ease);
+    flex-shrink: 0;
+}
+
+.sidebar.closed {
+    margin-left: calc(var(--sidebar-width, 280px) * -1);
 }
 
 .sidebar-header {
@@ -1608,7 +1620,8 @@ body.light-theme #openaiStatusBadge {
     border: 1px solid #CBD5E1 !important;
 }
 
-input.vk-input, .select-input {
+input.vk-input,
+.select-input {
     width: 100% !important;
     height: 40px !important;
     min-height: 40px !important;
@@ -2502,6 +2515,13 @@ body {
     border-radius: var(--radius-full) !important;
     padding: 6px 10px 6px 16px !important;
     box-sizing: border-box !important;
+    transition: border-radius 0.2s ease, padding 0.2s ease;
+}
+
+.vk-main-search-wrapper.is-multiline {
+    align-items: flex-start !important;
+    border-radius: 16px !important;
+    padding: 10px 10px 10px 16px !important;
 }
 
 .vk-main-search-field {
@@ -2513,6 +2533,11 @@ body {
     font-size: 0.95rem !important;
     font-family: inherit;
     padding: 4px 0 !important;
+    resize: none !important;
+    line-height: 1.45;
+    min-height: 28px;
+    box-sizing: border-box;
+    transition: height 0.15s ease;
 }
 
 /* Toolbar Control Card */
@@ -2738,6 +2763,91 @@ body {
     transform: translateY(-2px) scale(1.04);
 }
 
+
+
+/* AI Virtual Keyboard UI Layout */
+#virtualKeyboardCard {
+    margin-top: 14px;
+    background: var(--bg-surface, #141B2E);
+    border: 1px solid var(--border-color, rgba(0, 210, 255, 0.25));
+    border-radius: var(--radius-lg, 16px);
+    box-shadow: var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.5)), var(--shadow-glow, 0 0 20px rgba(0,210,255,0.15));
+    width: 100%;
+    box-sizing: border-box;
+    transition: all var(--transition-smooth, 0.3s ease);
+}
+
+.vk-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+.vk-key-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.vk-key {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border-radius: var(--radius-sm, 8px);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color, rgba(0, 210, 255, 0.18));
+    color: var(--text-primary, #F8FAFC);
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.vk-key:hover, .vk-key:active {
+    background: rgba(0, 210, 255, 0.22);
+    border-color: var(--primary-color, #00D2FF);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+}
+
+.vk-key.key-wide {
+    flex: 1.5;
+    font-size: 0.82rem;
+    gap: 4px;
+}
+
+.vk-key.emoji-key {
+    font-size: 1.15rem;
+}
+
+.vk-key.key-space {
+    flex: 4;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.vk-key.key-action {
+    background: var(--primary-gradient, linear-gradient(135deg, #00D2FF 0%, #3B82F6 100%));
+    border: none;
+    color: #FFFFFF;
+    box-shadow: var(--shadow-glow, 0 0 15px rgba(0, 210, 255, 0.3));
+    gap: 6px;
+}
+
+.vk-key.key-action:hover {
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
+}
+
 @media (max-width: 768px) {
     .mobile-only {
         display: flex;
@@ -2745,27 +2855,50 @@ body {
 
     .sidebar {
         position: fixed;
-        left: -280px;
+        left: 0;
         top: 0;
         bottom: 0;
+        margin-left: 0;
+        transform: translateX(-100%);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
     }
 
     .sidebar.open {
-        transform: translateX(280px);
+        transform: translateX(0);
     }
 
     .keyboard-workspace {
-        padding: 16px;
+        padding: 12px 10px;
     }
 
-    .vk-toolbar {
-        grid-template-columns: 1fr;
-        gap: 12px;
+    #virtualKeyboardCard {
+        margin-top: 10px;
+        border-radius: 14px;
+    }
+
+    .vk-container {
+        gap: 6px;
+        padding: 2px;
+    }
+
+    .vk-key-row {
+        gap: 4px;
     }
 
     .vk-key {
-        height: 42px;
-        font-size: 0.92rem;
+        height: 46px;
+        font-size: 0.95rem;
+        border-radius: 6px;
+    }
+
+    .vk-key.key-wide {
+        flex: 1.4;
+        font-size: 0.78rem;
+    }
+
+    .vk-key.key-space {
+        flex: 3.5;
+        font-size: 0.8rem;
     }
 }
 
@@ -3830,3 +3963,400 @@ body.light-theme .btn-test-voice-sm:hover {
     border-color: rgba(147, 51, 234, 0.5);
     color: #6B21A8;
 }
+
+border-radius: 50%;
+transition: color 0.2s ease,
+background-color 0.2s ease;
+}
+
+.lc-banner-close:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================================================
+   BUTTERFLY AI SYSTEM KEYBOARD (IME) CARD STYLING
+   ================================================== */
+.butterfly-ime-system-card {
+    width: 100%;
+    max-width: 780px;
+    margin: 16px auto 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.25);
+    background: #1E293B;
+    border: 2px solid rgba(124, 58, 237, 0.4);
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.ime-header-banner {
+    background: linear-gradient(90deg, #7C3AED 0%, #6366F1 100%);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ime-close-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ime-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.ime-logo-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.ime-header-title {
+    color: #FFFFFF;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.ime-inner-card {
+    background: #F0F4FE;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+body.dark-theme .ime-inner-card {
+    background: #1E293B;
+}
+
+/* Row 1: Languages */
+.ime-row-languages {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 12px;
+    padding: 6px 14px;
+}
+
+body.dark-theme .ime-row-languages {
+    background: #0F172A;
+    border-color: #334155;
+}
+
+.ime-lang-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.ime-lang-group label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #334155;
+    white-space: nowrap;
+}
+
+body.dark-theme .ime-lang-group label {
+    color: #E2E8F0;
+}
+
+.ime-lang-group .ime-icon,
+.ime-lang-group svg {
+    width: 18px;
+    height: 18px;
+    color: #2563EB;
+}
+
+.ime-select {
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1E293B;
+    outline: none;
+    cursor: pointer;
+}
+
+body.dark-theme .ime-select {
+    background: #1E293B;
+    border-color: #475569;
+    color: #F8FAFC;
+}
+
+.ime-divider {
+    width: 1.5px;
+    height: 24px;
+    background: #CBD5E1;
+    margin: 0 12px;
+}
+
+/* Row 2: Action Buttons */
+.ime-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ime-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.ime-btn.btn-tap-to-speak {
+    flex: 1.3;
+    background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.ime-btn.btn-tap-to-speak:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+}
+
+.ime-btn.btn-tap-to-speak.recording {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
+}
+
+.ime-btn.btn-ai-polish {
+    flex: 1;
+    background: #EDE9FE;
+    color: #6D28D9;
+    border: 1px solid #DDD6FE;
+}
+
+.ime-btn.btn-ai-polish:hover {
+    background: #DDD6FE;
+    transform: translateY(-1px);
+}
+
+.ime-btn.btn-ai-ask {
+    flex: 1;
+    background: #E0F2FE;
+    color: #0369A1;
+    border: 1px solid #BAE6FD;
+}
+
+.ime-btn.btn-ai-ask:hover {
+    background: #BAE6FD;
+    transform: translateY(-1px);
+}
+
+/* Row 3: Control Buttons */
+.ime-row-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ime-ctrl-btn {
+    height: 42px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: #334155;
+    font-size: 0.88rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-theme .ime-ctrl-btn {
+    background: #0F172A;
+    border-color: #334155;
+    color: #E2E8F0;
+}
+
+.ime-ctrl-btn:hover {
+    background: #E2E8F0;
+    transform: translateY(-1px);
+}
+
+body.dark-theme .ime-ctrl-btn:hover {
+    background: #334155;
+}
+
+.ime-ctrl-btn.key-toggle {
+    flex: 0.7;
+}
+
+.ime-ctrl-btn.key-space {
+    flex: 4.5;
+}
+
+.ime-ctrl-btn.key-backspace {
+    flex: 0.7;
+}
+
+.ime-ctrl-btn.key-enter {
+    flex: 0.7;
+}
+
+.ime-ctrl-btn.key-switch {
+    flex: 0.7;
+}
+
+/* Mobile Responsiveness & Alignment Fixes for Butterfly AI IME Keyboard Card */
+@media (max-width: 640px) {
+    .ime-card-wrapper {
+        padding: 4px !important;
+        margin-top: 8px !important;
+        border-radius: 12px !important;
+    }
+
+    .ime-header-banner {
+        padding: 6px 10px !important;
+        height: auto !important;
+        min-height: 38px !important;
+    }
+
+    .ime-header-banner span {
+        font-size: 0.78rem !important;
+        letter-spacing: 0.2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .ime-inner-card {
+        padding: 8px !important;
+        gap: 8px !important;
+    }
+
+    /* Row 1: Language Selection Bar - Clean Stacked Layout for Mobile */
+    .ime-row-languages {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+        padding: 6px 8px !important;
+    }
+
+    .ime-divider {
+        display: none !important;
+    }
+
+    .ime-lang-group {
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 4px !important;
+    }
+
+    .ime-lang-group label {
+        font-size: 0.76rem !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ime-lang-group .ime-icon,
+    .ime-lang-group svg {
+        width: 14px !important;
+        height: 14px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ime-select {
+        flex: 1 !important;
+        max-width: 60% !important;
+        min-width: 0 !important;
+        padding: 3px 6px !important;
+        font-size: 0.78rem !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+    }
+
+    /* Row 2: Action Buttons */
+    .ime-row-actions {
+        gap: 6px !important;
+    }
+
+    .ime-btn {
+        padding: 8px 4px !important;
+        font-size: 0.76rem !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+        min-width: 0 !important;
+        flex: 1 !important;
+    }
+
+    .ime-btn.btn-tap-to-speak {
+        flex: 1.2 !important;
+    }
+
+    .ime-btn span {
+        white-space: nowrap !important;
+    }
+
+    .ime-btn svg, .ime-btn i {
+        width: 14px !important;
+        height: 14px !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Row 3: Control Buttons */
+    .ime-row-controls {
+        gap: 4px !important;
+    }
+
+    .ime-ctrl-btn {
+        height: 38px !important;
+        padding: 2px !important;
+        font-size: 0.78rem !important;
+        border-radius: 8px !important;
+    }
+
+    .ime-ctrl-btn.key-space {
+        flex: 3 !important;
+        font-size: 0.8rem !important;
+    }
+
+    .ime-ctrl-btn.key-toggle,
+    .ime-ctrl-btn.key-backspace,
+    .ime-ctrl-btn.key-enter,
+    .ime-ctrl-btn.key-switch {
+        flex: 0.8 !important;
+        min-width: 30px !important;
+    }
+
+    .ime-ctrl-btn svg, .ime-ctrl-btn i {
+        width: 15px !important;
+        height: 15px !important;
+    }
+}

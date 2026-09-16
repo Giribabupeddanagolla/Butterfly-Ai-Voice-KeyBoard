@@ -27,7 +27,7 @@ class Config:
     AUDIO_OUTPUT_DIR: str = str(Path(__file__).resolve().parent / "audio" / "output")
     
     # App host & port
-    HOST: str = os.getenv("HOST", "127.0.0.1")
+    HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
 
 def is_port_available(host: str, port: int) -> bool:

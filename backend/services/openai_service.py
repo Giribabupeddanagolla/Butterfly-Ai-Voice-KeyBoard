@@ -12,6 +12,8 @@ class OpenAIService:
         self.openai_failed = False
 
     def get_client(self):
+        if self.openai_failed:
+            return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key:
             if not self.client or self.api_key != current_key:
@@ -29,6 +31,8 @@ class OpenAIService:
 
 
     def is_configured(self) -> bool:
+        if self.openai_failed:
+            return False
         client = self.get_client()
         return client is not None and bool(self.api_key and self.api_key.startswith("sk-"))
 

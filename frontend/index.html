@@ -25,6 +25,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
 
     <link rel="stylesheet" href="style.css?v=2400.0">
 </head>
@@ -70,10 +71,10 @@
                 <!-- SINGLE MAIN SEARCH BAR CARD -->
                 <div class="vk-card vk-main-search-card">
                     <div class="vk-main-search-wrapper">
-                        <input type="text" id="mainSearchInput" class="vk-main-search-field voice-target-input"
-                            placeholder="Search, type, or speak..." autocomplete="off">
+                        <textarea id="mainSearchInput" class="vk-main-search-field voice-target-input"
+                            placeholder="Search, type, or speak..." rows="1" autocomplete="off" style="resize: none; overflow-y: hidden; max-height: 300px;"></textarea>
                         <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput"
-                            title="Click to Speak (or press Ctrl+Shift+Space)">
+                            title="Open Butterfly AI System Keyboard (IME)">
                             <i data-lucide="mic" id="mainSearchMicIcon"></i>
                         </button>
                         <button class="search-submit-btn" id="mainSearchActionBtn" title="Search">
@@ -89,6 +90,114 @@
                         <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
                     </div>
 
+                    <!-- BUTTERFLY AI SYSTEM KEYBOARD (IME) CARD -->
+                    <div class="butterfly-ime-system-card" id="butterflyImeCard" style="display: none;">
+                        <div class="ime-header-banner">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="logo.png" alt="Butterfly Logo" class="ime-logo-icon">
+                                <span class="ime-header-title">BUTTERFLY AI SYSTEM KEYBOARD (IME)</span>
+                            </div>
+                            <button type="button" class="ime-close-btn" id="closeImeCardBtn" title="Close Keyboard">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+
+                        <div class="ime-inner-card">
+                            <!-- ROW 1: Language selection bar -->
+                            <div class="ime-row-languages">
+                                <div class="ime-lang-group">
+                                    <i data-lucide="globe" class="ime-icon"></i>
+                                    <label>Source:</label>
+                                    <select id="imeSourceLangSelect" class="ime-select">
+                                        <option value="auto">✨ Auto Detect</option>
+                                        <option value="en" selected>English</option>
+                                        <option value="te">Telugu (తెలుగు)</option>
+                                        <option value="hi">Hindi (हिन्दी)</option>
+                                        <option value="ta">Tamil (தமிழ்)</option>
+                                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                        <option value="ml">Malayalam (മലയാളം)</option>
+                                        <option value="mr">Marathi (మరాఠీ)</option>
+                                        <option value="bn">Bengali (বাংলা)</option>
+                                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                                        <option value="ur">Urdu (اردو)</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="it">Italian</option>
+                                        <option value="pt">Portuguese</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ko">Korean</option>
+                                        <option value="zh">Chinese</option>
+                                        <option value="ru">Russian</option>
+                                    </select>
+                                </div>
+                                <div class="ime-divider"></div>
+                                <div class="ime-lang-group">
+                                    <i data-lucide="globe" class="ime-icon"></i>
+                                    <label>Translate to:</label>
+                                    <select id="imeTargetLangSelect" class="ime-select">
+                                        <option value="en" selected>English</option>
+                                        <option value="te">Telugu (తెలుగు)</option>
+                                        <option value="hi">Hindi (हिन्दी)</option>
+                                        <option value="ta">Tamil (தமிழ்)</option>
+                                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                        <option value="ml">Malayalam (മലയാളം)</option>
+                                        <option value="mr">Marathi (మరాఠీ)</option>
+                                        <option value="bn">Bengali (বাংলা)</option>
+                                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                                        <option value="ur">Urdu (اردو)</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="it">Italian</option>
+                                        <option value="pt">Portuguese</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ko">Korean</option>
+                                        <option value="zh">Chinese</option>
+                                        <option value="ru">Russian</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ROW 2: Action Buttons -->
+                            <div class="ime-row-actions">
+                                <button type="button" class="ime-btn btn-tap-to-speak" id="imeTapToSpeakBtn">
+                                    <i data-lucide="mic" id="imeSpeakBtnIcon"></i>
+                                    <span id="imeSpeakBtnText">TAP TO SPEAK</span>
+                                </button>
+                                <button type="button" class="ime-btn btn-ai-polish" id="imeAiPolishBtn">
+                                    <i data-lucide="sparkles"></i> AI Polish
+                                </button>
+                                <button type="button" class="ime-btn btn-ai-ask" id="imeAiAskBtn">
+                                    <i data-lucide="bot"></i> AI Ask
+                                </button>
+                            </div>
+
+                            <!-- ROW 3: Control Buttons -->
+                            <div class="ime-row-controls">
+                                <button type="button" class="ime-ctrl-btn key-toggle" id="imeKeypadToggleBtn" title="Toggle Keyboard">
+                                    <i data-lucide="keyboard"></i>
+                                </button>
+                                <button type="button" class="ime-ctrl-btn key-space" id="imeSpaceBtn">
+                                    Space
+                                </button>
+                                <button type="button" class="ime-ctrl-btn key-backspace" id="imeBackspaceBtn" title="Backspace">
+                                    <i data-lucide="delete"></i>
+                                </button>
+                                <button type="button" class="ime-ctrl-btn key-enter" id="imeEnterBtn" title="Enter">
+                                    <i data-lucide="corner-down-left"></i>
+                                </button>
+                                <button type="button" class="ime-ctrl-btn key-switch" id="imeSwitchBtn" title="Switch Keyboard">
+                                    <i data-lucide="globe"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
 
 
                     <!-- SEARCH RESULTS OVERLAY CONTAINER -->
@@ -99,7 +208,8 @@
                                 <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle"
                                         style="color: var(--primary-color);">""</strong></span>
                             </div>
-                            <button type="button" class="btn-text-action" id="closeSearchResultsBtn" title="Close Search Results"><i data-lucide="x"></i></button>
+                            <button type="button" class="btn-text-action" id="closeSearchResultsBtn"
+                                title="Close Search Results"><i data-lucide="x"></i></button>
                         </div>
                         <div class="vk-card-body" id="searchResultsContainer"></div>
                     </div>
@@ -108,8 +218,8 @@
         </main>
     </div>
 
-    <!-- Voice Input & AI Voice Keyboard Modal -->
-    <div class="modal-backdrop" id="voiceModal">
+    <!-- Voice Input & AI Voice Keyboard Modal (Disabled) -->
+    <div class="modal-backdrop" id="voiceModal" style="display: none !important;">
         <div class="modal-card voice-modal-card">
             <div class="modal-header voice-header-centered">
                 <div class="voice-header-icon-container">
@@ -117,7 +227,8 @@
                 </div>
                 <h3 id="modalCardTitle" class="voice-header-title-centered">AI Voice Keyboard</h3>
                 <div class="voice-header-close-container">
-                    <button type="button" class="btn-icon" id="closeVoiceModalBtn" title="Close"><i data-lucide="x"></i></button>
+                    <button type="button" class="btn-icon" id="closeVoiceModalBtn" title="Close"><i
+                            data-lucide="x"></i></button>
                 </div>
             </div>
             <div class="modal-body voice-modal-body">
@@ -138,7 +249,7 @@
                     <label><i data-lucide="globe"></i> Source Language</label>
                     <select id="sourceLangSelect" class="vk-select voice-select">
                         <option value="auto">✨ Auto Detect</option>
-                        <option value="en">English</option>
+                        <option value="en" selected>English</option>
                         <option value="te">Telugu (తెలుగు)</option>
                         <option value="hi">Hindi (हिन्दी)</option>
                         <option value="ta">Tamil (தமிழ்)</option>
@@ -165,7 +276,8 @@
                 <!-- Translation Toggle Row -->
                 <div class="voice-setting-row voice-toggle-row" id="voiceToggleRow">
                     <label><i data-lucide="languages"></i> Translation</label>
-                    <button type="button" class="vk-toggle-btn" id="translationToggleBtn" title="Toggle Translation Mode">
+                    <button type="button" class="vk-toggle-btn" id="translationToggleBtn"
+                        title="Toggle Translation Mode">
                         <span class="toggle-text" id="toggleText">OFF</span>
                         <span class="toggle-track"></span>
                     </button>
@@ -233,7 +345,8 @@
                         <div class="speech-card-header">
                             <span class="speech-card-title"><i data-lucide="mic"></i> ORIGINAL SPEECH</span>
                             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
-                                <select id="originalVoiceAccentSelect" class="card-voice-accent-select" title="TTS Voice Accent">
+                                <select id="originalVoiceAccentSelect" class="card-voice-accent-select"
+                                    title="TTS Voice Accent">
                                     <option value="nova">Nova (Female)</option>
                                     <option value="alloy">Alloy (Neutral)</option>
                                     <option value="echo">Echo (Male)</option>
@@ -247,11 +360,13 @@
                         <textarea id="voiceOriginalTextarea" class="voice-transcription-textarea" rows="2"
                             placeholder="Original speech text will appear here..."></textarea>
                         <div class="speech-card-actions">
-                            <button type="button" class="btn-action-pill" id="speakOriginalBtn" title="Play Original Voice Audio">
+                            <button type="button" class="btn-action-pill" id="speakOriginalBtn"
+                                title="Play Original Voice Audio">
                                 <i data-lucide="volume-2" id="speakOriginalIcon"></i> <span id="speakOriginalText">Speak
                                     Original</span>
                             </button>
-                            <button type="button" class="btn-action-pill" id="copyOriginalBtn" title="Copy Original Text">
+                            <button type="button" class="btn-action-pill" id="copyOriginalBtn"
+                                title="Copy Original Text">
                                 <i data-lucide="copy" id="copyOriginalIcon"></i> <span id="copyOriginalText">Copy
                                     Original</span>
                             </button>
@@ -267,7 +382,8 @@
                         <div class="speech-card-header">
                             <span class="speech-card-title"><i data-lucide="languages"></i> TRANSLATION</span>
                             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
-                                <select id="translationVoiceAccentSelect" class="card-voice-accent-select" title="TTS Voice Accent">
+                                <select id="translationVoiceAccentSelect" class="card-voice-accent-select"
+                                    title="TTS Voice Accent">
                                     <option value="nova">Nova (Female)</option>
                                     <option value="alloy">Alloy (Neutral)</option>
                                     <option value="echo">Echo (Male)</option>
@@ -286,7 +402,8 @@
                                 <i data-lucide="volume-2" id="speakTranslationIcon"></i> <span
                                     id="speakTranslationText">Speak Translation</span>
                             </button>
-                            <button type="button" class="btn-action-pill" id="copyTranslationBtn" title="Copy Translated Text">
+                            <button type="button" class="btn-action-pill" id="copyTranslationBtn"
+                                title="Copy Translated Text">
                                 <i data-lucide="copy" id="copyTranslationIcon"></i> <span id="copyTranslationText">Copy
                                     Translation</span>
                             </button>
