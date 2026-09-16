@@ -104,6 +104,7 @@ class NetworkService(private val context: Context) {
                 .addFormDataPart("source_language", sourceLanguage)
                 .addFormDataPart("translation_language", targetLanguage)
                 .addFormDataPart("target_language", targetLanguage)
+                .addFormDataPart("is_translate_on", isTranslateOn.toString())
                 .build()
 
             val request = Request.Builder()

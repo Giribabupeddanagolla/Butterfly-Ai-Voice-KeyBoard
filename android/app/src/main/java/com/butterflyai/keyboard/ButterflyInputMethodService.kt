@@ -170,7 +170,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
-        spinnerTargetLang.setSelection(2) // Default to English
+        spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
 
         // Translation ON/OFF Toggle
         btnToggleTranslate.setOnClickListener {
@@ -318,6 +318,19 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
+    private var backspaceRepeatJob: Job? = null
+
+    private fun performBackspace() {
+        val ic = currentInputConnection ?: return
+        val selectedText = ic.getSelectedText(0)
+        if (!selectedText.isNullOrEmpty()) {
+            ic.commitText("", 1)
+        } else {
+            ic.deleteSurroundingText(1, 0)
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupKeyListeners(view: View) {
         val letterKeys = mapOf(
             R.id.keyQ to "q", R.id.keyW to "w", R.id.keyE to "e", R.id.keyR to "r", R.id.keyT to "t",
@@ -339,16 +352,31 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             currentInputConnection?.commitText(" ", 1)
         }
 
-        // BACKSPACE BUTTON
-        view.findViewById<Button>(R.id.btnBackspace)?.setOnClickListener {
-            val ic = currentInputConnection
-            if (ic != null) {
-                val selectedText = ic.getSelectedText(0)
-                if (!selectedText.isNullOrEmpty()) {
-                    ic.commitText("", 1)
-                } else {
-                    ic.deleteSurroundingText(1, 0)
+        // FAST CONTINUOUS BACKSPACE BUTTON
+        val btnBackspace = view.findViewById<Button>(R.id.btnBackspace)
+        btnBackspace?.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    performBackspace()
+                    backspaceRepeatJob?.cancel()
+                    backspaceRepeatJob = serviceScope.launch {
+                        delay(350) // 350ms initial hold delay
+                        var count = 0
+                        while (isActive) {
+                            performBackspace()
+                            count++
+                            val speedDelay = if (count > 12) 25L else 45L // Accelerate after 12 chars
+                            delay(speedDelay)
+                        }
+                    }
+                    true
                 }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    backspaceRepeatJob?.cancel()
+                    backspaceRepeatJob = null
+                    true
+                }
+                else -> false
             }
         }
 

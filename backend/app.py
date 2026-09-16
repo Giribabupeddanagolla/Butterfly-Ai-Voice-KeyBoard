@@ -265,12 +265,12 @@ async def transcribe_endpoint(
     translation_language: Optional[str] = Form("en"),
     target_language: Optional[str] = Form(None),
     text_language: Optional[str] = Form(None),
-    language: Optional[str] = Form(None)
+    language: Optional[str] = Form(None),
+    is_translate_on: Optional[str] = Form("true")
 ):
     """
     OpenAI Whisper API Speech-to-Text Endpoint.
-    Transcribes audio using Whisper API preserving spoken language.
-    Does NOT generate an AI answer, response, or chatbot completion.
+    Transcribes audio using Whisper API preserving spoken language and translates if requested.
     """
     session_id = session_id or f"session_{uuid.uuid4().hex[:8]}"
     spoken_text = ""
@@ -331,9 +331,15 @@ async def transcribe_endpoint(
     if detected_lang == "auto":
         detected_lang = detect_language_from_text(spoken_text)
 
-    tgt_lang = target_language or translation_language or "en"
+    should_translate = is_translate_on and is_translate_on.lower() in ["true", "1", "on", "yes"]
+    tgt_lang = target_language or translation_language or "te"
+    
+    # If translation is requested and target equals detected source (e.g. en -> en), fallback target to Telugu ('te')
+    if should_translate and (tgt_lang == detected_lang or tgt_lang == "auto"):
+        tgt_lang = "te" if detected_lang != "te" else "en"
+
     translated_text = spoken_text
-    if tgt_lang and tgt_lang != "auto" and spoken_text.strip():
+    if should_translate and spoken_text.strip():
         try:
             if openai_service.is_configured():
                 trans_res = openai_service.translate_text(
@@ -343,7 +349,7 @@ async def transcribe_endpoint(
                 )
                 if trans_res.get("success") and trans_res.get("translated_text"):
                     translated_text = trans_res["translated_text"]
-            if translated_text == spoken_text and tgt_lang != detected_lang:
+            if translated_text == spoken_text:
                 translated_text = translate_text(spoken_text, target_language=tgt_lang, source_language=detected_lang)
         except Exception as t_err:
             logger.warning(f"Translation error in transcribe_endpoint: {t_err}")
@@ -365,7 +371,7 @@ async def transcribe_endpoint(
         input_type="voice"
     )
 
-    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang} / {lang_display_name}), translation: '{translated_text}'")
+    logger.info(f"Transcription result: '{spoken_text}' (language: {detected_lang} / {lang_display_name}), translation ({tgt_lang}): '{translated_text}'")
     return {
         "success": True,
         "text": spoken_text,
