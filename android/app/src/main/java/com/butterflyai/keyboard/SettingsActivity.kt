@@ -60,16 +60,16 @@ class SettingsActivity : AppCompatActivity() {
 
             tvTestResult.visibility = View.VISIBLE
             tvTestResult.text = "Testing connection to Butterfly AI backend..."
-            tvTestResult.setTextColor(getColor(R.color.text_secondary))
+            tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
 
             activityScope.launch {
                 val result = networkService.testConnection()
                 if (result.success) {
                     tvTestResult.text = "CONNECTED! ${result.message}"
-                    tvTestResult.setTextColor(getColor(R.color.accent_green))
+                    tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.accent_green))
                 } else {
                     tvTestResult.text = "CONNECTION FAILED: ${result.message}"
-                    tvTestResult.setTextColor(getColor(R.color.accent_red))
+                    tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.accent_red))
                 }
             }
         }

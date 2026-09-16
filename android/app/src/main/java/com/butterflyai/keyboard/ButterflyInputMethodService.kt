@@ -259,7 +259,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 try {
-                    switchInputMethod()
+                    switchToNextInputMethod(false)
                 } catch (e: Exception) {
                     imm.showInputMethodPicker()
                 }
@@ -284,7 +284,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
                 tvTapToSpeak.text = "🎙  TAP TO SPEAK"
-                btnTapToSpeak.setBackgroundColor(getColor(R.color.primary))
+                btnTapToSpeak.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
             }
             KeyboardState.RECORDING -> {
                 layoutActionButtons.visibility = View.GONE
@@ -311,10 +311,10 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private fun updateTranslateToggleUI() {
         if (isTranslateOn) {
             btnToggleTranslate.text = "Trans: ON"
-            btnToggleTranslate.setBackgroundColor(getColor(R.color.accent_green))
+            btnToggleTranslate.setBackgroundColor(ContextCompat.getColor(this, R.color.accent_green))
         } else {
             btnToggleTranslate.text = "Trans: OFF"
-            btnToggleTranslate.setBackgroundColor(getColor(R.color.bg_key))
+            btnToggleTranslate.setBackgroundColor(ContextCompat.getColor(this, R.color.bg_key))
         }
     }
 
