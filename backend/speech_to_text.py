@@ -331,7 +331,9 @@ class SpeechToTextService:
                         if fallback_lang in SR_LANG_MAP:
                             candidate_langs.append(SR_LANG_MAP[fallback_lang])
                     
-                    candidate_langs.extend(["en-US", "hi-IN", "te-IN", "kn-IN", "mr-IN", "ta-IN", "ml-IN", "bn-IN"])
+                    candidate_langs.append("en-US")
+                    if "te-IN" not in candidate_langs:
+                        candidate_langs.append("te-IN")
                     
                     seen = set()
                     target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))]

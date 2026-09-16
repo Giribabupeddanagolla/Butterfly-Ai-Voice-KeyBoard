@@ -118,7 +118,8 @@ class OpenAIService:
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.1
+                temperature=0.1,
+                max_tokens=150
             )
             translated = response.choices[0].message.content.strip()
             return {

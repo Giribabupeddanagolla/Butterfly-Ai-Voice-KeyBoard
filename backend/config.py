@@ -30,6 +30,10 @@ class Config:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
 
+    def __init__(self):
+        if self.HOST in ["127.0.0.1", "localhost"]:
+            self.HOST = "0.0.0.0"
+
 def is_port_available(host: str, port: int) -> bool:
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
