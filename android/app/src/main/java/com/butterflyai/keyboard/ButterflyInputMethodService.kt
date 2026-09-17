@@ -138,7 +138,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         )
     )
 
-    private var isKeyboardGridVisible = false
+    private var isKeyboardGridVisible = true
     private var lastOriginalText = ""
     private var lastTranslatedText = ""
     private var lastFinalText = ""
@@ -226,10 +226,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         spinnerSourceLang = inputView.findViewById(R.id.spinnerSourceLang)
         spinnerTargetLang = inputView.findViewById(R.id.spinnerTargetLang)
 
-        // Setup Language Adapters
+        // Setup Language Adapters with custom layout for explicit text color
         val langNames = languages.map { it.second }
-        val mainSourceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, langNames)
-        val mainTargetAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, langNames)
+        val mainSourceAdapter = ArrayAdapter(this, R.layout.spinner_item, langNames).apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
+        }
+        val mainTargetAdapter = ArrayAdapter(this, R.layout.spinner_item, langNames).apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
+        }
 
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
@@ -1041,7 +1045,10 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val layoutKeyboardRoot = rootRootView.findViewById<LinearLayout>(R.id.layoutKeyboardRoot)
         val layoutHeaderBanner = rootRootView.findViewById<LinearLayout>(R.id.layoutHeaderBanner)
 
-        if (themeKey != "sky") {
+        if (themeKey == "sky") {
+            layoutKeyboardRoot?.setBackgroundResource(R.drawable.bg_keyboard_soft_sky)
+            layoutHeaderBanner?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        } else {
             layoutKeyboardRoot?.setBackgroundColor(palette.rootBg)
             layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
         }
@@ -1055,6 +1062,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (btn != null) {
                 if (themeKey != "sky") {
                     btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                } else {
+                    btn.backgroundTintList = null
                 }
                 btn.setTextColor(palette.keyText)
             }
@@ -1072,13 +1081,21 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         for (id in controlKeyIds) {
             val view = rootRootView.findViewById<View>(id)
             if (view is Button) {
-                if (themeKey != "sky") {
+                if (id == R.id.btnEnterQwerty || id == R.id.btnEnter || id == R.id.btnEnterNum) {
+                    view.backgroundTintList = null
+                    view.setTextColor(android.graphics.Color.WHITE)
+                } else if (themeKey != "sky") {
                     view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                    view.setTextColor(palette.ctrlKeyText)
+                } else {
+                    view.backgroundTintList = null
+                    view.setTextColor(palette.ctrlKeyText)
                 }
-                view.setTextColor(palette.ctrlKeyText)
             } else if (view is ImageButton) {
                 if (themeKey != "sky") {
                     view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                } else {
+                    view.backgroundTintList = null
                 }
                 view.setColorFilter(palette.ctrlKeyText)
             }

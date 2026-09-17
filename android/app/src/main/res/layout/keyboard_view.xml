@@ -134,10 +134,10 @@
     <LinearLayout
         android:id="@+id/layoutFeatureCards"
         android:layout_width="match_parent"
-        android:layout_height="95dp"
+        android:layout_height="76dp"
         android:orientation="horizontal"
         android:weightSum="3"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="4dp">
 
         <!-- Card 1: Voice Keyboard -->
         <LinearLayout
@@ -148,27 +148,27 @@
             android:background="@drawable/bg_card_voice"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp"
+            android:padding="4dp"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginEnd="4dp">
 
             <TextView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:background="#DBEAFE"
                 android:gravity="center"
                 android:text="🎙"
                 android:textColor="#2563EB"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp" />
+                android:textSize="14sp"
+                android:layout_marginBottom="2dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Voice Keyboard"
                 android:textColor="#1E293B"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:text="Speak &amp; Type  ›"
                 android:textColor="#2563EB"
-                android:textSize="9sp" />
+                android:textSize="8.5sp" />
         </LinearLayout>
 
         <!-- Card 2: Web Search -->
@@ -188,27 +188,27 @@
             android:background="@drawable/bg_card_search"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp"
+            android:padding="4dp"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginEnd="4dp">
 
             <TextView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:background="#DCFCE7"
                 android:gravity="center"
                 android:text="🌐"
                 android:textColor="#10B981"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp" />
+                android:textSize="14sp"
+                android:layout_marginBottom="2dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Web Search"
                 android:textColor="#1E293B"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -216,7 +216,7 @@
                 android:layout_height="wrap_content"
                 android:text="Find information  ›"
                 android:textColor="#10B981"
-                android:textSize="9sp" />
+                android:textSize="8.5sp" />
         </LinearLayout>
 
         <!-- Card 3: AI Answer -->
@@ -228,26 +228,26 @@
             android:background="@drawable/bg_card_ai"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp"
+            android:padding="4dp"
             android:clickable="true"
             android:focusable="true">
 
             <TextView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:background="#FFEDD5"
                 android:gravity="center"
                 android:text="✨"
                 android:textColor="#F97316"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp" />
+                android:textSize="14sp"
+                android:layout_marginBottom="2dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AI Answer"
                 android:textColor="#1E293B"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -255,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:text="Get smart replies  ›"
                 android:textColor="#F97316"
-                android:textSize="9sp" />
+                android:textSize="8.5sp" />
         </LinearLayout>
 
     </LinearLayout>
