@@ -104,6 +104,39 @@
             android:background="@color/stroke_card"
             android:layout_marginBottom="16dp" />
 
+        <!-- KEYBOARD THEME SECTION -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎨 Mobile Keyboard Visual Theme"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose your preferred high-contrast color scheme"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerKeyboardTheme"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@color/bg_card"
+            android:paddingHorizontal="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/stroke_card"
+            android:layout_marginBottom="16dp" />
+
         <!-- KEYBOARD ACTIVATION STEPS -->
         <TextView
             android:layout_width="wrap_content"

@@ -12,4 +12,39 @@
     <color name="stroke_card">#334155</color>
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#94A3B8</color>
+
+    <!-- Theme 1: Dark Neon (Default) -->
+    <color name="theme_dark_bg">#0F172A</color>
+    <color name="theme_dark_card">#1E293B</color>
+    <color name="theme_dark_key">#334155</color>
+    <color name="theme_dark_key_text">#FFFFFF</color>
+    <color name="theme_dark_accent">#00D2FF</color>
+
+    <!-- Theme 2: Light Modern -->
+    <color name="theme_light_bg">#F8FAFC</color>
+    <color name="theme_light_card">#FFFFFF</color>
+    <color name="theme_light_key">#E2E8F0</color>
+    <color name="theme_light_key_text">#0F172A</color>
+    <color name="theme_light_accent">#4F46E5</color>
+
+    <!-- Theme 3: OLED Black -->
+    <color name="theme_oled_bg">#000000</color>
+    <color name="theme_oled_card">#121212</color>
+    <color name="theme_oled_key">#1F1F23</color>
+    <color name="theme_oled_key_text">#FFFFFF</color>
+    <color name="theme_oled_accent">#10B981</color>
+
+    <!-- Theme 4: Cyberpunk -->
+    <color name="theme_cyber_bg">#180828</color>
+    <color name="theme_cyber_card">#27123E</color>
+    <color name="theme_cyber_key">#3B1B5D</color>
+    <color name="theme_cyber_key_text">#00F0FF</color>
+    <color name="theme_cyber_accent">#FF007A</color>
+
+    <!-- Theme 5: Sunset Violet -->
+    <color name="theme_sunset_bg">#1E1B4B</color>
+    <color name="theme_sunset_card">#2E1065</color>
+    <color name="theme_sunset_key">#3730A3</color>
+    <color name="theme_sunset_key_text">#FFFFFF</color>
+    <color name="theme_sunset_accent">#F59E0B</color>
 </resources>

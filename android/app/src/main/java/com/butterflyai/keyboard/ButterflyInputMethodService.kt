@@ -72,11 +72,15 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
 
-    // Navigation & Spinners
     private lateinit var btnToggleKeyboard: ImageButton
     private lateinit var keyboardKeysLayout: LinearLayout
     private lateinit var spinnerSourceLang: Spinner
     private lateinit var spinnerTargetLang: Spinner
+    private lateinit var btnCycleTheme: Button
+
+    private var currentRootView: View? = null
+    private val themeList = arrayOf("dark", "light", "oled", "cyber", "sunset")
+    private var currentThemeKey = "dark"
 
     private var isKeyboardGridVisible = false
     private var lastOriginalText = ""
@@ -285,8 +289,25 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         }
 
+        currentRootView = inputView
+        btnCycleTheme = inputView.findViewById(R.id.btnCycleTheme)
+        btnCycleTheme.setOnClickListener {
+            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+            val currentTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+            val currentIndex = themeList.indexOf(currentTheme).let { if (it >= 0) it else 0 }
+            val nextIndex = (currentIndex + 1) % themeList.size
+            val nextTheme = themeList[nextIndex]
+            prefs.edit().putString("keyboard_theme", nextTheme).apply()
+            applyTheme(nextTheme, inputView)
+            Toast.makeText(this, "Theme: ${nextTheme.uppercase()}", Toast.LENGTH_SHORT).show()
+        }
+
         // Key Listeners Setup
         setupKeyListeners(inputView)
+
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        val initialTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+        applyTheme(initialTheme, inputView)
 
         setKeyboardState(KeyboardState.IDLE)
         return inputView
@@ -301,7 +322,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
                 tvTapToSpeak.text = "🎙  TAP TO SPEAK"
-                btnTapToSpeak.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                btnTapToSpeak.setBackgroundColor(getThemePalette(currentThemeKey).accentColor)
             }
             KeyboardState.RECORDING -> {
                 layoutActionButtons.visibility = View.GONE
@@ -755,6 +776,116 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        currentRootView?.let { view ->
+            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+            val themeKey = prefs.getString("keyboard_theme", "dark") ?: "dark"
+            applyTheme(themeKey, view)
+        }
+    }
+
+    private fun applyTheme(themeKey: String, rootRootView: View) {
+        currentThemeKey = themeKey
+        val palette = getThemePalette(themeKey)
+
+        val layoutKeyboardRoot = rootRootView.findViewById<LinearLayout>(R.id.layoutKeyboardRoot)
+        val cardImeMain = rootRootView.findViewById<LinearLayout>(R.id.cardImeMain)
+        val layoutHeaderBanner = rootRootView.findViewById<LinearLayout>(R.id.layoutHeaderBanner)
+
+        layoutKeyboardRoot?.setBackgroundColor(palette.rootBg)
+        cardImeMain?.setBackgroundColor(palette.cardBg)
+        layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
+
+        val letterKeyIds = listOf(
+            R.id.keyQ, R.id.keyW, R.id.keyE, R.id.keyR, R.id.keyT, R.id.keyY, R.id.keyU, R.id.keyI, R.id.keyO, R.id.keyP,
+            R.id.keyA, R.id.keyS, R.id.keyD, R.id.keyF, R.id.keyG, R.id.keyH, R.id.keyJ, R.id.keyK, R.id.keyL,
+            R.id.keyZ, R.id.keyX, R.id.keyC, R.id.keyV, R.id.keyB, R.id.keyN, R.id.keyM
+        )
+
+        for (id in letterKeyIds) {
+            val btn = rootRootView.findViewById<Button>(id)
+            if (btn != null) {
+                btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                btn.setTextColor(palette.keyText)
+            }
+        }
+
+        val controlKeyIds = listOf(
+            R.id.btnSpace, R.id.btnBackspace, R.id.btnEnter, R.id.btnSwitchIme, R.id.btnToggleKeyboard
+        )
+
+        for (id in controlKeyIds) {
+            val view = rootRootView.findViewById<View>(id)
+            if (view is Button) {
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                view.setTextColor(palette.ctrlKeyText)
+            } else if (view is ImageButton) {
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                view.setColorFilter(palette.ctrlKeyText)
+            }
+        }
+
+        if (currentState == KeyboardState.IDLE) {
+            btnTapToSpeak.setBackgroundColor(palette.accentColor)
+        }
+    }
+
+    private fun getThemePalette(themeKey: String): ThemePalette {
+        return when (themeKey) {
+            "light" -> ThemePalette(
+                rootBg = android.graphics.Color.parseColor("#CBD5E1"),
+                cardBg = android.graphics.Color.parseColor("#FFFFFF"),
+                headerBg = android.graphics.Color.parseColor("#4F46E5"),
+                keyBg = android.graphics.Color.parseColor("#E2E8F0"),
+                keyText = android.graphics.Color.parseColor("#0F172A"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#CBD5E1"),
+                ctrlKeyText = android.graphics.Color.parseColor("#0F172A"),
+                accentColor = android.graphics.Color.parseColor("#4F46E5")
+            )
+            "oled" -> ThemePalette(
+                rootBg = android.graphics.Color.parseColor("#000000"),
+                cardBg = android.graphics.Color.parseColor("#121212"),
+                headerBg = android.graphics.Color.parseColor("#1F1F23"),
+                keyBg = android.graphics.Color.parseColor("#1F1F23"),
+                keyText = android.graphics.Color.parseColor("#FFFFFF"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#27272A"),
+                ctrlKeyText = android.graphics.Color.parseColor("#FFFFFF"),
+                accentColor = android.graphics.Color.parseColor("#10B981")
+            )
+            "cyber" -> ThemePalette(
+                rootBg = android.graphics.Color.parseColor("#180828"),
+                cardBg = android.graphics.Color.parseColor("#27123E"),
+                headerBg = android.graphics.Color.parseColor("#FF007A"),
+                keyBg = android.graphics.Color.parseColor("#3B1B5D"),
+                keyText = android.graphics.Color.parseColor("#00F0FF"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#4C237A"),
+                ctrlKeyText = android.graphics.Color.parseColor("#FF007A"),
+                accentColor = android.graphics.Color.parseColor("#FF007A")
+            )
+            "sunset" -> ThemePalette(
+                rootBg = android.graphics.Color.parseColor("#1E1B4B"),
+                cardBg = android.graphics.Color.parseColor("#2E1065"),
+                headerBg = android.graphics.Color.parseColor("#7C3AED"),
+                keyBg = android.graphics.Color.parseColor("#3730A3"),
+                keyText = android.graphics.Color.parseColor("#FFFFFF"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#4338CA"),
+                ctrlKeyText = android.graphics.Color.parseColor("#FDE047"),
+                accentColor = android.graphics.Color.parseColor("#F59E0B")
+            )
+            else -> ThemePalette( // "dark" default
+                rootBg = android.graphics.Color.parseColor("#0F172A"),
+                cardBg = android.graphics.Color.parseColor("#1E293B"),
+                headerBg = android.graphics.Color.parseColor("#6366F1"),
+                keyBg = android.graphics.Color.parseColor("#334155"),
+                keyText = android.graphics.Color.parseColor("#FFFFFF"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#2D3748"),
+                ctrlKeyText = android.graphics.Color.parseColor("#FFFFFF"),
+                accentColor = android.graphics.Color.parseColor("#00D2FF")
+            )
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         recordingTimerJob?.cancel()
@@ -766,3 +897,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         } catch (e: Exception) {}
     }
 }
+
+data class ThemePalette(
+    val rootBg: Int,
+    val cardBg: Int,
+    val headerBg: Int,
+    val keyBg: Int,
+    val keyText: Int,
+    val ctrlKeyBg: Int,
+    val ctrlKeyText: Int,
+    val accentColor: Int
+)

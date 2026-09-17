@@ -6,8 +6,11 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +27,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var tvTestResult: TextView
     private lateinit var btnEnableIme: Button
     private lateinit var btnSelectIme: Button
+    private lateinit var spinnerKeyboardTheme: Spinner
+
+    private val themeOptions = arrayOf(
+        "dark" to "🌙 Dark Neon (Default)",
+        "light" to "☀️ Light Modern",
+        "oled" to "🖤 OLED Pure Black",
+        "cyber" to "🌆 Cyberpunk Pink",
+        "sunset" to "🌅 Sunset Violet"
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +49,35 @@ class SettingsActivity : AppCompatActivity() {
         tvTestResult = findViewById(R.id.tvTestResult)
         btnEnableIme = findViewById(R.id.btnEnableIme)
         btnSelectIme = findViewById(R.id.btnSelectIme)
+        spinnerKeyboardTheme = findViewById(R.id.spinnerKeyboardTheme)
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
         val currentUrl = prefs.getString("server_url", "http://192.168.1.105:8000")
         etServerUrl.setText(currentUrl)
+
+        // Setup Theme Selector Spinner
+        val themeNames = themeOptions.map { it.second }
+        val themeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themeNames)
+        spinnerKeyboardTheme.adapter = themeAdapter
+
+        val savedTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+        val initialIndex = themeOptions.indexOfFirst { it.first == savedTheme }.let { if (it >= 0) it else 0 }
+        spinnerKeyboardTheme.setSelection(initialIndex)
+
+        var isThemeSpinnerInit = false
+        spinnerKeyboardTheme.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (!isThemeSpinnerInit) {
+                    isThemeSpinnerInit = true
+                    return
+                }
+                val selectedThemeKey = themeOptions[position].first
+                prefs.edit().putString("keyboard_theme", selectedThemeKey).apply()
+                Toast.makeText(this@SettingsActivity, "Theme set to: ${themeOptions[position].second}", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
 
         btnSaveUrl.setOnClickListener {
             val inputUrl = etServerUrl.text.toString().trim()
