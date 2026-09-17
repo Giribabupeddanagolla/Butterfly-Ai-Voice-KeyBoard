@@ -418,21 +418,22 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         }
 
-        // 2. Shift Key (Single Tap = Shift, Double Tap = Caps Lock)
+        // 2. Shift Key (Tap cycles: Shift -> Caps Lock -> Unshifted)
         view.findViewById<Button>(R.id.btnShift)?.setOnClickListener {
-            val now = SystemClock.elapsedRealtime()
-            if (now - lastShiftClickTime < 350) {
-                isCapsLock = !isCapsLock
-                isShifted = false
-            } else {
-                if (isCapsLock) {
+            when {
+                isCapsLock -> {
                     isCapsLock = false
                     isShifted = false
-                } else {
-                    isShifted = !isShifted
+                }
+                isShifted -> {
+                    isCapsLock = true
+                    isShifted = false
+                }
+                else -> {
+                    isShifted = true
+                    isCapsLock = false
                 }
             }
-            lastShiftClickTime = now
             updateLetterCase(view)
         }
 
@@ -540,12 +541,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val btnShift = rootView.findViewById<Button>(R.id.btnShift)
         when {
             isCapsLock -> {
-                btnShift?.text = "⇪ LOCK"
+                btnShift?.text = "⇪"
                 btnShift?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
                 btnShift?.setTextColor(android.graphics.Color.WHITE)
             }
             isShifted -> {
-                btnShift?.text = "⇧ SHIFT"
+                btnShift?.text = "⇧"
                 btnShift?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
                 btnShift?.setTextColor(android.graphics.Color.WHITE)
             }
