@@ -82,7 +82,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private val themeList = arrayOf("dark", "light", "oled", "cyber", "sunset")
     private var currentThemeKey = "dark"
 
-    private var isShifted = false
+    private var isShifted = true
     private var isCapsLock = false
     private var lastShiftClickTime = 0L
 
@@ -469,12 +469,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         view.findViewById<Button>(R.id.btnComma)?.setOnClickListener(commaListener)
         view.findViewById<Button>(R.id.btnCommaNum)?.setOnClickListener(commaListener)
 
-        val periodListener = View.OnClickListener { currentInputConnection?.commitText(".", 1) }
+        val periodListener = View.OnClickListener {
+            currentInputConnection?.commitText(".", 1)
+            checkAutoCapitalization()
+        }
         view.findViewById<Button>(R.id.btnPeriod)?.setOnClickListener(periodListener)
         view.findViewById<Button>(R.id.btnPeriodNum)?.setOnClickListener(periodListener)
 
         // 7. Spacebar Keys
-        val spaceListener = View.OnClickListener { currentInputConnection?.commitText(" ", 1) }
+        val spaceListener = View.OnClickListener {
+            currentInputConnection?.commitText(" ", 1)
+            checkAutoCapitalization()
+        }
         listOf(R.id.btnSpace, R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
             view.findViewById<Button>(id)?.setOnClickListener(spaceListener)
         }
@@ -522,12 +528,31 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
                 }
             }
+            checkAutoCapitalization()
         }
         listOf(R.id.btnEnter, R.id.btnEnterQwerty, R.id.btnEnterNum).forEach { id ->
             view.findViewById<Button>(id)?.setOnClickListener(enterListener)
         }
 
         updateLetterCase(view)
+    }
+
+    override fun onStartInputView(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(attribute, restarting)
+        if (!isCapsLock) {
+            isShifted = true
+        }
+        currentRootView?.let { updateLetterCase(it) }
+    }
+
+    private fun checkAutoCapitalization() {
+        if (isCapsLock) return
+        val ic = currentInputConnection ?: return
+        val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+        if (textBefore.isEmpty() || textBefore.endsWith("\n") || textBefore.endsWith(". ") || textBefore.endsWith("! ") || textBefore.endsWith("? ")) {
+            isShifted = true
+            currentRootView?.let { updateLetterCase(it) }
+        }
     }
 
     private fun updateLetterCase(rootView: View) {
