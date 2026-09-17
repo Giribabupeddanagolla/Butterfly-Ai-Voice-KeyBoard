@@ -82,6 +82,40 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private val themeList = arrayOf("dark", "light", "oled", "cyber", "sunset")
     private var currentThemeKey = "dark"
 
+    private var isShifted = false
+    private var isCapsLock = false
+    private var lastShiftClickTime = 0L
+
+    private enum class KeyboardMode { LETTERS, NUMBERS, EMOJI }
+    private var currentMode = KeyboardMode.LETTERS
+
+    private val letterKeysMap = mapOf(
+        R.id.keyQ to "q", R.id.keyW to "w", R.id.keyE to "e", R.id.keyR to "r", R.id.keyT to "t",
+        R.id.keyY to "y", R.id.keyU to "u", R.id.keyI to "i", R.id.keyO to "o", R.id.keyP to "p",
+        R.id.keyA to "a", R.id.keyS to "s", R.id.keyD to "d", R.id.keyF to "f", R.id.keyG to "g",
+        R.id.keyH to "h", R.id.keyJ to "j", R.id.keyK to "k", R.id.keyL to "l",
+        R.id.keyZ to "z", R.id.keyX to "x", R.id.keyC to "c", R.id.keyV to "v", R.id.keyB to "b",
+        R.id.keyN to "n", R.id.keyM to "m"
+    )
+
+    private val numberKeysMap = mapOf(
+        R.id.num1 to "1", R.id.num2 to "2", R.id.num3 to "3", R.id.num4 to "4", R.id.num5 to "5",
+        R.id.num6 to "6", R.id.num7 to "7", R.id.num8 to "8", R.id.num9 to "9", R.id.num0 to "0",
+        R.id.symAt to "@", R.id.symHash to "#", R.id.symDollar to "$", R.id.symPercent to "%",
+        R.id.symAmp to "&", R.id.symMinus to "-", R.id.symPlus to "+", R.id.symParenOpen to "(",
+        R.id.symParenClose to ")", R.id.symSlash to "/", R.id.symStar to "*", R.id.symQuoteDouble to "\"",
+        R.id.symQuoteSingle to "'", R.id.symColon to ":", R.id.symSemicolon to ";",
+        R.id.symExclamation to "!", R.id.symQuestion to "?", R.id.symEqual to "=", R.id.symBackslash to "\\"
+    )
+
+    private val emojiCategories = mapOf(
+        "smileys" to listOf("😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕"),
+        "gestures" to listOf("👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐", "🖖", "👋", "💪", "🖕", "✍️", "👊", "✊", "🤛", "🤜"),
+        "hearts" to listOf("❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "<ctrl42>", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟"),
+        "party" to listOf("🎉", "🎊", "🎈", "🎂", "🎁", "🍾", "🥂", "🍻", "🍺", "🍷", "🍹", "🍸", "🥃", "🍕", "🍔", "🍟", "<ctrl42>", "🍿", "🍩", "🍰"),
+        "symbols" to listOf("✨", "🔥", "⭐", "🌟", "💫", "⚡", "💥", "💯", "✅", "❌", "⚠️", "⛔", "⭕", "❗", "❓", "🎵", "🎶", "💬", "💭", "🚀")
+    )
+
     private var isKeyboardGridVisible = false
     private var lastOriginalText = ""
     private var lastTranslatedText = ""
@@ -370,56 +404,111 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupKeyListeners(view: View) {
-        val letterKeys = mapOf(
-            R.id.keyQ to "q", R.id.keyW to "w", R.id.keyE to "e", R.id.keyR to "r", R.id.keyT to "t",
-            R.id.keyY to "y", R.id.keyU to "u", R.id.keyI to "i", R.id.keyO to "o", R.id.keyP to "p",
-            R.id.keyA to "a", R.id.keyS to "s", R.id.keyD to "d", R.id.keyF to "f", R.id.keyG to "g",
-            R.id.keyH to "h", R.id.keyJ to "j", R.id.keyK to "k", R.id.keyL to "l",
-            R.id.keyZ to "z", R.id.keyX to "x", R.id.keyC to "c", R.id.keyV to "v", R.id.keyB to "b",
-            R.id.keyN to "n", R.id.keyM to "m"
-        )
-
-        for ((id, char) in letterKeys) {
+        // 1. QWERTY Letter Keys
+        for ((id, charStr) in letterKeysMap) {
             view.findViewById<Button>(id)?.setOnClickListener {
-                currentInputConnection?.commitText(char, 1)
+                val isUpper = isShifted || isCapsLock
+                val textToCommit = if (isUpper) charStr.uppercase(Locale.US) else charStr.lowercase(Locale.US)
+                currentInputConnection?.commitText(textToCommit, 1)
+
+                if (isShifted && !isCapsLock) {
+                    isShifted = false
+                    updateLetterCase(view)
+                }
             }
         }
 
-        // SPACE BUTTON
-        view.findViewById<Button>(R.id.btnSpace)?.setOnClickListener {
-            currentInputConnection?.commitText(" ", 1)
+        // 2. Shift Key (Single Tap = Shift, Double Tap = Caps Lock)
+        view.findViewById<Button>(R.id.btnShift)?.setOnClickListener {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastShiftClickTime < 350) {
+                isCapsLock = !isCapsLock
+                isShifted = false
+            } else {
+                if (isCapsLock) {
+                    isCapsLock = false
+                    isShifted = false
+                } else {
+                    isShifted = !isShifted
+                }
+            }
+            lastShiftClickTime = now
+            updateLetterCase(view)
         }
 
-        // FAST CONTINUOUS BACKSPACE BUTTON
-        val btnBackspace = view.findViewById<Button>(R.id.btnBackspace)
-        btnBackspace?.setOnTouchListener { _, event ->
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    performBackspace()
-                    backspaceRepeatJob?.cancel()
-                    backspaceRepeatJob = serviceScope.launch {
-                        delay(350) // 350ms initial hold delay
-                        var count = 0
-                        while (isActive) {
-                            performBackspace()
-                            count++
-                            val speedDelay = if (count > 12) 25L else 45L // Accelerate after 12 chars
-                            delay(speedDelay)
+        // 3. Numbers & Symbols Keys
+        for ((id, charStr) in numberKeysMap) {
+            view.findViewById<Button>(id)?.setOnClickListener {
+                currentInputConnection?.commitText(charStr, 1)
+            }
+        }
+
+        // 4. Layout Mode Toggles (?123 | ABC | 😊)
+        val numModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.NUMBERS, view) }
+        view.findViewById<Button>(R.id.btnNumMode)?.setOnClickListener(numModeListener)
+
+        val abcModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.LETTERS, view) }
+        view.findViewById<Button>(R.id.btnAbcMode)?.setOnClickListener(abcModeListener)
+        view.findViewById<Button>(R.id.btnAbcFromEmoji)?.setOnClickListener(abcModeListener)
+        view.findViewById<Button>(R.id.btnAbcFromEmojiBottom)?.setOnClickListener(abcModeListener)
+
+        val emojiModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.EMOJI, view) }
+        view.findViewById<Button>(R.id.btnEmojiMode)?.setOnClickListener(emojiModeListener)
+        view.findViewById<Button>(R.id.btnEmojiModeNum)?.setOnClickListener(emojiModeListener)
+
+        // 5. Emoji Category Tab Buttons
+        view.findViewById<Button>(R.id.tabEmojiSmileys)?.setOnClickListener { loadEmojiCategory("smileys", view) }
+        view.findViewById<Button>(R.id.tabEmojiGestures)?.setOnClickListener { loadEmojiCategory("gestures", view) }
+        view.findViewById<Button>(R.id.tabEmojiHearts)?.setOnClickListener { loadEmojiCategory("hearts", view) }
+        view.findViewById<Button>(R.id.tabEmojiParty)?.setOnClickListener { loadEmojiCategory("party", view) }
+        view.findViewById<Button>(R.id.tabEmojiSymbols)?.setOnClickListener { loadEmojiCategory("symbols", view) }
+
+        // 6. Punctuation Keys (, and .)
+        val commaListener = View.OnClickListener { currentInputConnection?.commitText(",", 1) }
+        view.findViewById<Button>(R.id.btnComma)?.setOnClickListener(commaListener)
+        view.findViewById<Button>(R.id.btnCommaNum)?.setOnClickListener(commaListener)
+
+        val periodListener = View.OnClickListener { currentInputConnection?.commitText(".", 1) }
+        view.findViewById<Button>(R.id.btnPeriod)?.setOnClickListener(periodListener)
+        view.findViewById<Button>(R.id.btnPeriodNum)?.setOnClickListener(periodListener)
+
+        // 7. Spacebar Keys
+        val spaceListener = View.OnClickListener { currentInputConnection?.commitText(" ", 1) }
+        listOf(R.id.btnSpace, R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
+            view.findViewById<Button>(id)?.setOnClickListener(spaceListener)
+        }
+
+        // 8. Fast Continuous Backspace for all backspace buttons
+        listOf(R.id.btnBackspace, R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji).forEach { id ->
+            view.findViewById<Button>(id)?.setOnTouchListener { _, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        performBackspace()
+                        backspaceRepeatJob?.cancel()
+                        backspaceRepeatJob = serviceScope.launch {
+                            delay(350)
+                            var count = 0
+                            while (isActive) {
+                                performBackspace()
+                                count++
+                                val speedDelay = if (count > 12) 25L else 45L
+                                delay(speedDelay)
+                            }
                         }
+                        true
                     }
-                    true
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        backspaceRepeatJob?.cancel()
+                        backspaceRepeatJob = null
+                        true
+                    }
+                    else -> false
                 }
-                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                    backspaceRepeatJob?.cancel()
-                    backspaceRepeatJob = null
-                    true
-                }
-                else -> false
             }
         }
 
-        // ENTER BUTTON
-        view.findViewById<Button>(R.id.btnEnter)?.setOnClickListener {
+        // 9. Enter Keys
+        val enterListener = View.OnClickListener {
             val ic = currentInputConnection
             if (ic != null) {
                 val editorInfo = currentInputEditorInfo
@@ -433,6 +522,94 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 }
             }
         }
+        listOf(R.id.btnEnter, R.id.btnEnterQwerty, R.id.btnEnterNum).forEach { id ->
+            view.findViewById<Button>(id)?.setOnClickListener(enterListener)
+        }
+
+        updateLetterCase(view)
+    }
+
+    private fun updateLetterCase(rootView: View) {
+        val isUpper = isShifted || isCapsLock
+        for ((id, charStr) in letterKeysMap) {
+            val btn = rootView.findViewById<Button>(id)
+            btn?.text = if (isUpper) charStr.uppercase(Locale.US) else charStr.lowercase(Locale.US)
+        }
+
+        val palette = getThemePalette(currentThemeKey)
+        val btnShift = rootView.findViewById<Button>(R.id.btnShift)
+        when {
+            isCapsLock -> {
+                btnShift?.text = "⇪ LOCK"
+                btnShift?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
+                btnShift?.setTextColor(android.graphics.Color.WHITE)
+            }
+            isShifted -> {
+                btnShift?.text = "⇧ SHIFT"
+                btnShift?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
+                btnShift?.setTextColor(android.graphics.Color.WHITE)
+            }
+            else -> {
+                btnShift?.text = "⇧"
+                btnShift?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                btnShift?.setTextColor(palette.ctrlKeyText)
+            }
+        }
+    }
+
+    private fun setKeyboardMode(mode: KeyboardMode, rootView: View) {
+        currentMode = mode
+        val qwerty = rootView.findViewById<LinearLayout>(R.id.keyboardQwertyView)
+        val numbers = rootView.findViewById<LinearLayout>(R.id.keyboardNumbersView)
+        val emoji = rootView.findViewById<LinearLayout>(R.id.keyboardEmojiView)
+
+        when (mode) {
+            KeyboardMode.LETTERS -> {
+                qwerty?.visibility = View.VISIBLE
+                numbers?.visibility = View.GONE
+                emoji?.visibility = View.GONE
+            }
+            KeyboardMode.NUMBERS -> {
+                qwerty?.visibility = View.GONE
+                numbers?.visibility = View.VISIBLE
+                emoji?.visibility = View.GONE
+            }
+            KeyboardMode.EMOJI -> {
+                qwerty?.visibility = View.GONE
+                numbers?.visibility = View.GONE
+                emoji?.visibility = View.VISIBLE
+                loadEmojiCategory("smileys", rootView)
+            }
+        }
+    }
+
+    private fun loadEmojiCategory(catKey: String, rootView: View) {
+        val gridEmoji = rootView.findViewById<GridLayout>(R.id.gridEmoji) ?: return
+        gridEmoji.removeAllViews()
+
+        val emojis = emojiCategories[catKey] ?: return
+        val palette = getThemePalette(currentThemeKey)
+
+        for (emojiStr in emojis) {
+            val btn = Button(this).apply {
+                text = emojiStr
+                textSize = 20f
+                backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                val params = GridLayout.LayoutParams()
+                params.width = dpToPx(44)
+                params.height = dpToPx(44)
+                params.setMargins(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2))
+                layoutParams = params
+                setOnClickListener {
+                    currentInputConnection?.commitText(emojiStr, 1)
+                }
+            }
+            gridEmoji.addView(btn)
+        }
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
     }
 
     private fun checkMicPermission(): Boolean {
@@ -797,13 +974,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         cardImeMain?.setBackgroundColor(palette.cardBg)
         layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
 
-        val letterKeyIds = listOf(
-            R.id.keyQ, R.id.keyW, R.id.keyE, R.id.keyR, R.id.keyT, R.id.keyY, R.id.keyU, R.id.keyI, R.id.keyO, R.id.keyP,
-            R.id.keyA, R.id.keyS, R.id.keyD, R.id.keyF, R.id.keyG, R.id.keyH, R.id.keyJ, R.id.keyK, R.id.keyL,
-            R.id.keyZ, R.id.keyX, R.id.keyC, R.id.keyV, R.id.keyB, R.id.keyN, R.id.keyM
+        val allKeyIds = letterKeysMap.keys + numberKeysMap.keys + listOf(
+            R.id.btnComma, R.id.btnPeriod, R.id.btnCommaNum, R.id.btnPeriodNum
         )
 
-        for (id in letterKeyIds) {
+        for (id in allKeyIds) {
             val btn = rootRootView.findViewById<Button>(id)
             if (btn != null) {
                 btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
@@ -812,7 +987,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         val controlKeyIds = listOf(
-            R.id.btnSpace, R.id.btnBackspace, R.id.btnEnter, R.id.btnSwitchIme, R.id.btnToggleKeyboard
+            R.id.btnShift, R.id.btnNumMode, R.id.btnEmojiMode, R.id.btnEmojiModeNum,
+            R.id.btnAbcMode, R.id.btnAbcFromEmoji, R.id.btnAbcFromEmojiBottom,
+            R.id.btnSpace, R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji,
+            R.id.btnBackspace, R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji,
+            R.id.btnEnter, R.id.btnEnterQwerty, R.id.btnEnterNum, R.id.btnSwitchIme, R.id.btnToggleKeyboard,
+            R.id.tabEmojiSmileys, R.id.tabEmojiGestures, R.id.tabEmojiHearts, R.id.tabEmojiParty, R.id.tabEmojiSymbols
         )
 
         for (id in controlKeyIds) {
@@ -825,6 +1005,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 view.setColorFilter(palette.ctrlKeyText)
             }
         }
+
+        updateLetterCase(rootRootView)
 
         if (currentState == KeyboardState.IDLE) {
             btnTapToSpeak.setBackgroundColor(palette.accentColor)
