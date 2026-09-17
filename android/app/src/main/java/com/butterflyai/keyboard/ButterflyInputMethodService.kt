@@ -79,8 +79,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnCycleTheme: Button
 
     private var currentRootView: View? = null
-    private val themeList = arrayOf("dark", "light", "oled", "cyber", "sunset")
-    private var currentThemeKey = "dark"
+    private val themeList = arrayOf("sky", "dark", "light", "oled", "cyber", "sunset")
+    private var currentThemeKey = "sky"
 
     private var isShifted = true
     private var isCapsLock = false
@@ -255,15 +255,40 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
         updateTranslateToggleUI()
 
-        // Tap to Speak Action (IDLE state)
-        val tapToSpeakListener = View.OnClickListener {
+        // Tap to Speak Action (IDLE state) - Handles both main mic button & Voice Keyboard card
+        val startVoiceRecordingAction = View.OnClickListener {
             if (currentState == KeyboardState.IDLE) {
                 startRecording()
             }
         }
-        btnTapToSpeak.setOnClickListener(tapToSpeakListener)
-        tvTapToSpeak.setOnClickListener(tapToSpeakListener)
-        imgMicIconMain.setOnClickListener(tapToSpeakListener)
+        btnTapToSpeak.setOnClickListener(startVoiceRecordingAction)
+        tvTapToSpeak.setOnClickListener(startVoiceRecordingAction)
+        imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
+        inputView.findViewById<View>(R.id.btnSearchMic)?.setOnClickListener(startVoiceRecordingAction)
+        inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
+
+        // Feature Card 2: Web Search -> AI Ask Prompt
+        inputView.findViewById<View>(R.id.btnCardSearch)?.setOnClickListener {
+            if (currentState == KeyboardState.IDLE || currentState == KeyboardState.RESULT) {
+                handleAiAsk()
+            }
+        }
+
+        // Feature Card 3: AI Answer -> AI Polish
+        inputView.findViewById<View>(R.id.btnCardAI)?.setOnClickListener {
+            if (currentState == KeyboardState.IDLE || currentState == KeyboardState.RESULT) {
+                handleAiPolish()
+            }
+        }
+
+        // Snippets Quick Action
+        inputView.findViewById<View>(R.id.btnSnippets)?.setOnClickListener {
+            val ic = currentInputConnection
+            if (ic != null) {
+                ic.commitText("Hello! Thanks for reaching out. ", 1)
+                Toast.makeText(this, "Snippet inserted", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         // Recording State Actions
         btnStopRecording.setOnClickListener {
@@ -352,7 +377,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         btnCycleTheme = inputView.findViewById(R.id.btnCycleTheme)
         btnCycleTheme.setOnClickListener {
             val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-            val currentTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+            val currentTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
             val currentIndex = themeList.indexOf(currentTheme).let { if (it >= 0) it else 0 }
             val nextIndex = (currentIndex + 1) % themeList.size
             val nextTheme = themeList[nextIndex]
@@ -365,7 +390,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         setupKeyListeners(inputView)
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        val initialTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+        val initialTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
         applyTheme(initialTheme, inputView)
 
         setKeyboardState(KeyboardState.IDLE)
@@ -570,7 +595,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         currentRootView?.let { view ->
             updateLetterCase(view)
             val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-            val themeKey = prefs.getString("keyboard_theme", "dark") ?: "dark"
+            val themeKey = prefs.getString("keyboard_theme", "sky") ?: "sky"
             applyTheme(themeKey, view)
         }
     }
@@ -1014,12 +1039,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val palette = getThemePalette(themeKey)
 
         val layoutKeyboardRoot = rootRootView.findViewById<LinearLayout>(R.id.layoutKeyboardRoot)
-        val cardImeMain = rootRootView.findViewById<LinearLayout>(R.id.cardImeMain)
         val layoutHeaderBanner = rootRootView.findViewById<LinearLayout>(R.id.layoutHeaderBanner)
 
-        layoutKeyboardRoot?.setBackgroundColor(palette.rootBg)
-        cardImeMain?.setBackgroundColor(palette.cardBg)
-        layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
+        if (themeKey != "sky") {
+            layoutKeyboardRoot?.setBackgroundColor(palette.rootBg)
+            layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
+        }
 
         val allKeyIds = letterKeysMap.keys + numberKeysMap.keys + listOf(
             R.id.btnComma, R.id.btnPeriod, R.id.btnCommaNum, R.id.btnPeriodNum
@@ -1028,7 +1053,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         for (id in allKeyIds) {
             val btn = rootRootView.findViewById<Button>(id)
             if (btn != null) {
-                btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                if (themeKey != "sky") {
+                    btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                }
                 btn.setTextColor(palette.keyText)
             }
         }
@@ -1045,10 +1072,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         for (id in controlKeyIds) {
             val view = rootRootView.findViewById<View>(id)
             if (view is Button) {
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                if (themeKey != "sky") {
+                    view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                }
                 view.setTextColor(palette.ctrlKeyText)
             } else if (view is ImageButton) {
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                if (themeKey != "sky") {
+                    view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                }
                 view.setColorFilter(palette.ctrlKeyText)
             }
         }
@@ -1058,17 +1089,25 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val btnThemeView = rootRootView.findViewById<Button>(R.id.btnCycleTheme)
         if (btnThemeView != null) {
             btnThemeView.text = "🎨 ${themeKey.uppercase(Locale.US)}"
-            btnThemeView.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
-            btnThemeView.setTextColor(android.graphics.Color.WHITE)
         }
 
-        if (currentState == KeyboardState.IDLE) {
+        if (::btnTapToSpeak.isInitialized && currentState == KeyboardState.IDLE) {
             btnTapToSpeak.setBackgroundColor(palette.accentColor)
         }
     }
 
     private fun getThemePalette(themeKey: String): ThemePalette {
         return when (themeKey) {
+            "sky" -> ThemePalette(
+                rootBg = android.graphics.Color.parseColor("#E6F2FF"),
+                cardBg = android.graphics.Color.parseColor("#FFFFFF"),
+                headerBg = android.graphics.Color.parseColor("#E6F2FF"),
+                keyBg = android.graphics.Color.parseColor("#FFFFFF"),
+                keyText = android.graphics.Color.parseColor("#1E293B"),
+                ctrlKeyBg = android.graphics.Color.parseColor("#DCEBFE"),
+                ctrlKeyText = android.graphics.Color.parseColor("#1D4ED8"),
+                accentColor = android.graphics.Color.parseColor("#2563EB")
+            )
             "light" -> ThemePalette(
                 rootBg = android.graphics.Color.parseColor("#CBD5E1"),
                 cardBg = android.graphics.Color.parseColor("#FFFFFF"),
@@ -1109,7 +1148,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 ctrlKeyText = android.graphics.Color.parseColor("#FDE047"),
                 accentColor = android.graphics.Color.parseColor("#F59E0B")
             )
-            else -> ThemePalette( // "dark" default
+            else -> ThemePalette( // "dark"
                 rootBg = android.graphics.Color.parseColor("#0F172A"),
                 cardBg = android.graphics.Color.parseColor("#1E293B"),
                 headerBg = android.graphics.Color.parseColor("#6366F1"),
