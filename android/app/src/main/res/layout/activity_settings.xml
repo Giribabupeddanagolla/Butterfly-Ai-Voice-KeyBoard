@@ -3,207 +3,234 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
+    android:background="#0F172A"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="16dp">
 
         <!-- TITLE HEADER -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🦋 Butterfly AI Voice Keyboard Settings"
-            android:textColor="@color/primary"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Configure host PC FastAPI backend URL &amp; system keyboard"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:layout_marginBottom="20dp" />
-
-        <!-- BACKEND SERVER URL SECTION -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="FastAPI Backend Server URL (LAN IP)"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Run 'python app.py' on PC and enter your Wi-Fi IP address (e.g. http://192.168.1.105:8000)"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginBottom="8dp" />
-
-        <EditText
-            android:id="@+id/etServerUrl"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="@string/backend_url_hint"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#94A3B8"
-            android:background="@color/bg_card"
-            android:paddingHorizontal="16dp"
-            android:inputType="textUri"
-            android:textSize="14sp"
-            android:layout_marginBottom="12dp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
-            <Button
-                android:id="@+id/btnSaveUrl"
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_butterfly_logo"
+                android:contentDescription="Logo"
+                android:layout_marginEnd="12dp" />
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
                 android:layout_weight="1"
-                android:text="Save Server URL"
-                android:textAllCaps="false"
-                app:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:backgroundTint="@color/primary"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingVertical="12dp"
-                android:paddingHorizontal="8dp"
-                android:layout_marginEnd="6dp" />
+                android:orientation="vertical">
 
-            <Button
-                android:id="@+id/btnTestConnection"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:layout_weight="1"
-                android:text="Test Connection"
-                android:textAllCaps="false"
-                app:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:backgroundTint="@color/bg_key"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingVertical="12dp"
-                android:paddingHorizontal="8dp"
-                android:layout_marginStart="6dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Butterfly AI Voice Keyboard"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Settings &amp; Server Connection"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvTestResult"
+        <!-- CARD 1: BACKEND SERVER URL SECTION -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:padding="8dp"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_voice"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
 
-        <!-- DIVIDER -->
-        <View
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌐 FastAPI Backend Server URL (LAN IP)"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Run 'python app.py' on PC and enter your Wi-Fi IP address (e.g. http://192.168.1.105:8000)"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:layout_marginBottom="10dp" />
+
+            <EditText
+                android:id="@+id/etServerUrl"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="http://192.168.1.105:8000"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#94A3B8"
+                android:background="@drawable/bg_search_bar"
+                android:backgroundTint="#0F172A"
+                android:paddingHorizontal="14dp"
+                android:inputType="textUri"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnSaveUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:text="Save Server URL"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_keycap_enter_blue"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnTestConnection"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:text="Test Connection"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_quick_toolbar_pill"
+                    android:backgroundTint="#334155"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvTestResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:padding="8dp"
+                android:visibility="gone"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- CARD 2: KEYBOARD VISUAL THEME SECTION -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/stroke_card"
-            android:layout_marginBottom="16dp" />
-
-        <!-- KEYBOARD THEME SECTION -->
-        <TextView
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🎨 Mobile Keyboard Visual Theme"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_search"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Choose your preferred high-contrast color scheme"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginBottom="8dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎨 Mobile Keyboard Visual Theme"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
 
-        <Spinner
-            android:id="@+id/spinnerKeyboardTheme"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/bg_card"
-            android:paddingHorizontal="12dp"
-            android:layout_marginBottom="16dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Choose your preferred high-contrast color scheme"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:layout_marginBottom="10dp" />
 
-        <!-- DIVIDER -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/stroke_card"
-            android:layout_marginBottom="16dp" />
+            <Spinner
+                android:id="@+id/spinnerKeyboardTheme"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_lang_pill"
+                android:backgroundTint="#0F172A"
+                android:paddingHorizontal="12dp" />
+        </LinearLayout>
 
-        <!-- KEYBOARD ACTIVATION STEPS -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Enable &amp; Select System Keyboard"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
-
-        <Button
-            android:id="@+id/btnEnableIme"
+        <!-- CARD 3: KEYBOARD ACTIVATION STEPS -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="52dp"
-            android:text="1. Enable Keyboard in Android Settings"
-            android:textAllCaps="false"
-            app:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:backgroundTint="@color/bg_card"
-            android:gravity="start|center_vertical"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="14dp"
-            android:layout_marginBottom="10dp" />
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_ai"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
 
-        <Button
-            android:id="@+id/btnSelectIme"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="52dp"
-            android:text="2. Select Butterfly AI as Active Keyboard"
-            android:textAllCaps="false"
-            app:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:backgroundTint="@color/bg_card"
-            android:gravity="start|center_vertical"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="14dp"
-            android:layout_marginBottom="20dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⌨ Enable &amp; Select System Keyboard"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Dynamic IME Status Badge -->
+            <TextView
+                android:id="@+id/tvImeStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="● Checking Keyboard Status..."
+                android:textColor="#F59E0B"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnEnableIme"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="1. Enable Keyboard in Android Settings ➔"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13.5sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_keycap_enter_blue"
+                android:gravity="start|center_vertical"
+                android:paddingHorizontal="16dp"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/btnSelectIme"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="2. Select Butterfly AI as Active Keyboard ➔"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13.5sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:backgroundTint="#059669"
+                android:gravity="start|center_vertical"
+                android:paddingHorizontal="16dp" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

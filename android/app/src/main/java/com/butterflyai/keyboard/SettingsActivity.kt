@@ -25,12 +25,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnSaveUrl: Button
     private lateinit var btnTestConnection: Button
     private lateinit var tvTestResult: TextView
+    private lateinit var tvImeStatus: TextView
     private lateinit var btnEnableIme: Button
     private lateinit var btnSelectIme: Button
     private lateinit var spinnerKeyboardTheme: Spinner
 
     private val themeOptions = arrayOf(
-        "dark" to "🌙 Dark Neon (Default)",
+        "sky" to "☁️ Soft Sky (Default screenshot)",
+        "dark" to "🌙 Dark Neon",
         "light" to "☀️ Light Modern",
         "oled" to "🖤 OLED Pure Black",
         "cyber" to "🌆 Cyberpunk Pink",
@@ -47,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
         btnSaveUrl = findViewById(R.id.btnSaveUrl)
         btnTestConnection = findViewById(R.id.btnTestConnection)
         tvTestResult = findViewById(R.id.tvTestResult)
+        tvImeStatus = findViewById(R.id.tvImeStatus)
         btnEnableIme = findViewById(R.id.btnEnableIme)
         btnSelectIme = findViewById(R.id.btnSelectIme)
         spinnerKeyboardTheme = findViewById(R.id.spinnerKeyboardTheme)
@@ -55,12 +58,14 @@ class SettingsActivity : AppCompatActivity() {
         val currentUrl = prefs.getString("server_url", "http://192.168.1.105:8000")
         etServerUrl.setText(currentUrl)
 
-        // Setup Theme Selector Spinner
+        // Setup Theme Selector Spinner with custom layout for explicit high-contrast text color
         val themeNames = themeOptions.map { it.second }
-        val themeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themeNames)
+        val themeAdapter = ArrayAdapter(this, R.layout.spinner_item, themeNames).apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
+        }
         spinnerKeyboardTheme.adapter = themeAdapter
 
-        val savedTheme = prefs.getString("keyboard_theme", "dark") ?: "dark"
+        val savedTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
         val initialIndex = themeOptions.indexOfFirst { it.first == savedTheme }.let { if (it >= 0) it else 0 }
         spinnerKeyboardTheme.setSelection(initialIndex)
 
@@ -73,7 +78,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 val selectedThemeKey = themeOptions[position].first
                 prefs.edit().putString("keyboard_theme", selectedThemeKey).apply()
-                Toast.makeText(this@SettingsActivity, "Theme set to: ${themeOptions[position].second}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@SettingsActivity, "Keyboard Theme: ${themeOptions[position].second}", Toast.LENGTH_SHORT).show()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -97,16 +102,16 @@ class SettingsActivity : AppCompatActivity() {
 
             tvTestResult.visibility = View.VISIBLE
             tvTestResult.text = "Testing connection to Butterfly AI backend..."
-            tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
+            tvTestResult.setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
 
             activityScope.launch {
                 val result = networkService.testConnection()
                 if (result.success) {
                     tvTestResult.text = "CONNECTED! ${result.message}"
-                    tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.accent_green))
+                    tvTestResult.setTextColor(android.graphics.Color.parseColor("#10B981"))
                 } else {
                     tvTestResult.text = "CONNECTION FAILED: ${result.message}"
-                    tvTestResult.setTextColor(androidx.core.content.ContextCompat.getColor(this@SettingsActivity, R.color.accent_red))
+                    tvTestResult.setTextColor(android.graphics.Color.parseColor("#EF4444"))
                 }
             }
         }
@@ -118,6 +123,37 @@ class SettingsActivity : AppCompatActivity() {
         btnSelectIme.setOnClickListener {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showInputMethodPicker()
+        }
+
+        checkImeStatus()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkImeStatus()
+    }
+
+    private fun checkImeStatus() {
+        val enabledMethods = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_INPUT_METHODS) ?: ""
+        val defaultMethod = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD) ?: ""
+        val pkg = packageName
+
+        val isEnabled = enabledMethods.contains(pkg)
+        val isDefault = defaultMethod.contains(pkg)
+
+        when {
+            isEnabled && isDefault -> {
+                tvImeStatus.text = "✓ Status: Butterfly AI Voice Keyboard is ENABLED & ACTIVE!"
+                tvImeStatus.setTextColor(android.graphics.Color.parseColor("#10B981"))
+            }
+            isEnabled -> {
+                tvImeStatus.text = "● Status: Enabled! Now tap 'Step 2' to select Butterfly AI"
+                tvImeStatus.setTextColor(android.graphics.Color.parseColor("#3B82F6"))
+            }
+            else -> {
+                tvImeStatus.text = "● Status: Not enabled yet. Tap 'Step 1' to enable in Android settings"
+                tvImeStatus.setTextColor(android.graphics.Color.parseColor("#F59E0B"))
+            }
         }
     }
 
