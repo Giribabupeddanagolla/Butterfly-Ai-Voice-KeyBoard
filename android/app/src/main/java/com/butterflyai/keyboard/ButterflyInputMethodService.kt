@@ -82,6 +82,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private var lastOriginalText = ""
     private var lastTranslatedText = ""
     private var lastFinalText = ""
+    private var lastCommittedText = ""
+    private var isSpinnerInitialized = false
+    private var retranslateJob: Job? = null
 
     private val languages = arrayOf(
         "auto" to "✨ Auto Detect",
@@ -172,10 +175,23 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         spinnerTargetLang.adapter = mainTargetAdapter
         spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
 
+        val spinnerListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (!isSpinnerInitialized) return
+                retranslateAndUpdate()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        spinnerSourceLang.onItemSelectedListener = spinnerListener
+        spinnerTargetLang.onItemSelectedListener = spinnerListener
+        isSpinnerInitialized = true
+
         // Translation ON/OFF Toggle
         btnToggleTranslate.setOnClickListener {
             isTranslateOn = !isTranslateOn
             updateTranslateToggleUI()
+            retranslateAndUpdate()
         }
         updateTranslateToggleUI()
 
@@ -205,6 +221,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val ic = currentInputConnection
                 if (ic != null) {
                     ic.commitText(lastFinalText, 1)
+                    lastCommittedText = lastFinalText
                     Toast.makeText(this, "Inserted to input field", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Target text field not focused", Toast.LENGTH_SHORT).show()
@@ -536,6 +553,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         val ic = currentInputConnection
                         if (ic != null) {
                             val committed = ic.commitText(lastFinalText, 1)
+                            lastCommittedText = lastFinalText
                             Log.d("ButterflyIME", "Text committed: $lastFinalText (success: $committed)")
                             tvInsertedNotice.text = "✓ Inserted into app: \"$lastFinalText\""
                             tvInsertedNotice.visibility = View.VISIBLE
@@ -650,6 +668,83 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         } else {
             Toast.makeText(this, "Type a question or speak first", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun retranslateAndUpdate() {
+        if (!::spinnerSourceLang.isInitialized || !::spinnerTargetLang.isInitialized) return
+
+        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+        val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "te"
+        val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
+
+        retranslateJob?.cancel()
+
+        if (!isTranslateOn) {
+            if (lastOriginalText.isNotBlank()) {
+                val textToRestore = lastOriginalText
+                lastFinalText = textToRestore
+                tvOriginalText.text = lastOriginalText
+                lblTranslationHeader.visibility = View.GONE
+                tvTranslatedText.visibility = View.GONE
+
+                val ic = currentInputConnection
+                if (ic != null && lastCommittedText.isNotBlank()) {
+                    ic.deleteSurroundingText(lastCommittedText.length, 0)
+                    ic.commitText(textToRestore, 1)
+                    lastCommittedText = textToRestore
+                    tvInsertedNotice.text = "✓ Showing original text (Trans: OFF)"
+                    tvInsertedNotice.visibility = View.VISIBLE
+                }
+            }
+            return
+        }
+
+        val ic = currentInputConnection
+        val textToTranslate = when {
+            lastOriginalText.isNotBlank() -> lastOriginalText
+            ic != null -> ic.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
+            else -> ""
+        }
+
+        if (textToTranslate.isBlank()) return
+
+        tvInsertedNotice.text = "🔄 Translating to $targetLangName..."
+        tvInsertedNotice.visibility = View.VISIBLE
+
+        retranslateJob = serviceScope.launch {
+            try {
+                val reqTarget = if (tgtLang == "auto") "te" else tgtLang
+                val translated = networkService.translateTextDirect(textToTranslate, srcLang, reqTarget)
+
+                if (!translated.isNullOrBlank()) {
+                    lastTranslatedText = translated
+                    lastFinalText = translated
+
+                    tvOriginalText.text = textToTranslate
+                    lblTranslationHeader.visibility = View.VISIBLE
+                    tvTranslatedText.visibility = View.VISIBLE
+                    tvTranslatedText.text = translated
+
+                    val currentIc = currentInputConnection
+                    if (currentIc != null) {
+                        if (lastCommittedText.isNotBlank()) {
+                            currentIc.deleteSurroundingText(lastCommittedText.length, 0)
+                        }
+                        currentIc.commitText(translated, 1)
+                        lastCommittedText = translated
+                        tvInsertedNotice.text = "✓ Automatically translated to $targetLangName"
+                        tvInsertedNotice.visibility = View.VISIBLE
+                    }
+                } else {
+                    tvInsertedNotice.text = "⚠️ Translation failed. Check connection."
+                    tvInsertedNotice.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Retranslate error: ${e.message}", e)
+                tvInsertedNotice.text = "⚠️ Translation error: ${e.localizedMessage}"
+                tvInsertedNotice.visibility = View.VISIBLE
+            }
         }
     }
 

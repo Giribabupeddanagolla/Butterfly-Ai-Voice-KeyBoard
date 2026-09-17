@@ -138,7 +138,7 @@ class NetworkService(private val context: Context) {
 
                 // Perform separate translation if Translation is ON and backend did not return translation directly
                 if (isTranslateOn && originalText.isNotBlank() && (finalTranslatedText == originalText || finalTranslatedText.isBlank())) {
-                    val translated = translateTextInternal(baseUrl, originalText, detectedLang, targetLanguage)
+                    val translated = translateTextDirect(originalText, detectedLang, targetLanguage)
                     if (!translated.isNullOrBlank()) {
                         finalTranslatedText = translated
                     }
