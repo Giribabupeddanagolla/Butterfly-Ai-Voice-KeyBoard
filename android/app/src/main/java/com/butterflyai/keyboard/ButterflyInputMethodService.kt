@@ -72,7 +72,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
 
-    private lateinit var btnToggleKeyboard: ImageButton
+    private lateinit var btnToggleKeyboard: Button
     private lateinit var keyboardKeysLayout: LinearLayout
     private lateinit var spinnerSourceLang: Spinner
     private lateinit var spinnerTargetLang: Spinner
@@ -589,6 +589,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         updateLetterCase(view)
+    }
+
+    override fun onEvaluateInputViewShown(): Boolean {
+        super.onEvaluateInputViewShown()
+        return true
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
