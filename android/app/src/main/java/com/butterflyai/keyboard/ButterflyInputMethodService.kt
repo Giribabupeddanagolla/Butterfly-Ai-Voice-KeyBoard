@@ -537,12 +537,17 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         updateLetterCase(view)
     }
 
-    override fun onStartInputView(attribute: EditorInfo?, restarting: Boolean) {
-        super.onStartInputView(attribute, restarting)
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
         if (!isCapsLock) {
             isShifted = true
         }
-        currentRootView?.let { updateLetterCase(it) }
+        currentRootView?.let { view ->
+            updateLetterCase(view)
+            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+            val themeKey = prefs.getString("keyboard_theme", "dark") ?: "dark"
+            applyTheme(themeKey, view)
+        }
     }
 
     private fun checkAutoCapitalization() {
@@ -976,15 +981,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         super.onFinishInputView(finishingInput)
         if (currentState == KeyboardState.RECORDING) {
             cancelRecording()
-        }
-    }
-
-    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
-        super.onStartInputView(info, restarting)
-        currentRootView?.let { view ->
-            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-            val themeKey = prefs.getString("keyboard_theme", "dark") ?: "dark"
-            applyTheme(themeKey, view)
         }
     }
 
