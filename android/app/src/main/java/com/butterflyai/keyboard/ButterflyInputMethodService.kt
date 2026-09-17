@@ -234,11 +234,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         updateTranslateToggleUI()
 
         // Tap to Speak Action (IDLE state)
-        btnTapToSpeak.setOnClickListener {
+        val tapToSpeakListener = View.OnClickListener {
             if (currentState == KeyboardState.IDLE) {
                 startRecording()
             }
         }
+        btnTapToSpeak.setOnClickListener(tapToSpeakListener)
+        tvTapToSpeak.setOnClickListener(tapToSpeakListener)
+        imgMicIconMain.setOnClickListener(tapToSpeakListener)
 
         // Recording State Actions
         btnStopRecording.setOnClickListener {
@@ -1029,6 +1032,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         updateLetterCase(rootRootView)
+
+        val btnThemeView = rootRootView.findViewById<Button>(R.id.btnCycleTheme)
+        if (btnThemeView != null) {
+            btnThemeView.text = "🎨 ${themeKey.uppercase(Locale.US)}"
+            btnThemeView.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
+            btnThemeView.setTextColor(android.graphics.Color.WHITE)
+        }
 
         if (currentState == KeyboardState.IDLE) {
             btnTapToSpeak.setBackgroundColor(palette.accentColor)

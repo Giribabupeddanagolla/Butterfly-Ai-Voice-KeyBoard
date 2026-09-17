@@ -30,13 +30,20 @@
         <Button
             android:id="@+id/btnCycleTheme"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
-            android:text="🎨 Theme"
+            android:layout_height="30dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:text="🎨 DARK"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:backgroundTint="#4F46E5"
-            android:paddingHorizontal="8dp" />
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="0dp" />
     </LinearLayout>
 
     <!-- MAIN KEYBOARD CONTENT CARD -->
@@ -350,6 +357,8 @@
                     android:layout_height="20dp"
                     android:src="@android:drawable/ic_btn_speak_now"
                     android:tint="#FFFFFF"
+                    android:clickable="false"
+                    android:focusable="false"
                     android:contentDescription="Mic Icon"
                     android:layout_marginEnd="4dp" />
 
@@ -360,7 +369,9 @@
                     android:text="🎙  TAP TO SPEAK"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:clickable="false"
+                    android:focusable="false" />
             </LinearLayout>
 
             <!-- AI POLISH BUTTON -->
