@@ -511,52 +511,70 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="28dp"
+            android:layout_height="34dp"
             android:orientation="horizontal"
-            android:gravity="end"
-            android:layout_marginTop="3dp">
+            android:gravity="center_vertical"
+            android:weightSum="4"
+            android:layout_marginTop="4dp">
 
             <Button
                 android:id="@+id/btnInsertText"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:text="Insert Again"
+                android:layout_weight="1.2"
+                android:text="✓ Insert"
                 android:textColor="#FFFFFF"
-                android:textSize="9.5sp"
+                android:textSize="10.5sp"
                 android:textStyle="bold"
-                android:backgroundTint="#2563EB"
+                android:background="@drawable/bg_keycap_enter_blue"
+                android:padding="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
                 android:layout_marginEnd="3dp" />
 
             <Button
                 android:id="@+id/btnCopyText"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:text="Copy"
-                android:textColor="#334155"
-                android:textSize="9.5sp"
+                android:layout_weight="0.9"
+                android:text="📋 Copy"
+                android:textColor="#0F172A"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:backgroundTint="#E2E8F0"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:padding="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
                 android:layout_marginEnd="3dp" />
 
             <Button
                 android:id="@+id/btnSpeakText"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
+                android:layout_weight="1.1"
                 android:text="🔊 Speak"
-                android:textColor="#334155"
-                android:textSize="9.5sp"
+                android:textColor="#0F172A"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:backgroundTint="#E2E8F0"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:padding="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
                 android:layout_marginEnd="3dp" />
 
             <Button
                 android:id="@+id/btnDismissResult"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:text="✕"
-                android:textColor="#334155"
-                android:textSize="9.5sp"
-                android:backgroundTint="#E2E8F0" />
+                android:layout_weight="0.8"
+                android:text="✕ Close"
+                android:textColor="#DC2626"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:padding="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp" />
         </LinearLayout>
     </LinearLayout>
 
