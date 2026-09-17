@@ -11,4 +11,6 @@
     <string name="status_listening">Listening... Tap Stop when done.</string>
     <string name="status_processing">Processing audio with Whisper...</string>
     <string name="status_ready">Tap mic to speak</string>
+    <string name="keyboard_num_mode">&#63;123</string>
+    <string name="keyboard_sym_question">&#63;</string>
 </resources>
