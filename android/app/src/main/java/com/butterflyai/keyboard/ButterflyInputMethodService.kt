@@ -268,7 +268,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         btnTapToSpeak.setOnClickListener(startVoiceRecordingAction)
         tvTapToSpeak.setOnClickListener(startVoiceRecordingAction)
         imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
-        inputView.findViewById<View>(R.id.btnSearchMic)?.setOnClickListener(startVoiceRecordingAction)
         inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
 
         // Feature Card 2: Web Search -> AI Ask Prompt
@@ -504,7 +503,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         val abcModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.LETTERS, view) }
         view.findViewById<Button>(R.id.btnAbcMode)?.setOnClickListener(abcModeListener)
-        view.findViewById<Button>(R.id.btnAbcFromEmoji)?.setOnClickListener(abcModeListener)
         view.findViewById<Button>(R.id.btnAbcFromEmojiBottom)?.setOnClickListener(abcModeListener)
 
         val emojiModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.EMOJI, view) }
@@ -535,12 +533,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             currentInputConnection?.commitText(" ", 1)
             checkAutoCapitalization()
         }
-        listOf(R.id.btnSpace, R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
+        listOf(R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
             view.findViewById<Button>(id)?.setOnClickListener(spaceListener)
         }
 
         // 8. Fast Continuous Backspace for all backspace buttons
-        listOf(R.id.btnBackspace, R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji).forEach { id ->
+        listOf(R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji).forEach { id ->
             view.findViewById<Button>(id)?.setOnTouchListener { _, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
@@ -584,7 +582,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
             checkAutoCapitalization()
         }
-        listOf(R.id.btnEnter, R.id.btnEnterQwerty, R.id.btnEnterNum).forEach { id ->
+        listOf(R.id.btnEnterQwerty, R.id.btnEnterNum).forEach { id ->
             view.findViewById<Button>(id)?.setOnClickListener(enterListener)
         }
 
@@ -1076,17 +1074,17 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         val controlKeyIds = listOf(
             R.id.btnShift, R.id.btnNumMode, R.id.btnEmojiMode, R.id.btnEmojiModeNum,
-            R.id.btnAbcMode, R.id.btnAbcFromEmoji, R.id.btnAbcFromEmojiBottom,
-            R.id.btnSpace, R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji,
-            R.id.btnBackspace, R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji,
-            R.id.btnEnter, R.id.btnEnterQwerty, R.id.btnEnterNum, R.id.btnSwitchIme, R.id.btnToggleKeyboard,
+            R.id.btnAbcMode, R.id.btnAbcFromEmojiBottom,
+            R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji,
+            R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji,
+            R.id.btnEnterQwerty, R.id.btnEnterNum, R.id.btnSwitchIme, R.id.btnToggleKeyboard,
             R.id.tabEmojiSmileys, R.id.tabEmojiGestures, R.id.tabEmojiHearts, R.id.tabEmojiParty, R.id.tabEmojiSymbols
         )
 
         for (id in controlKeyIds) {
             val view = rootRootView.findViewById<View>(id)
             if (view is Button) {
-                if (id == R.id.btnEnterQwerty || id == R.id.btnEnter || id == R.id.btnEnterNum) {
+                if (id == R.id.btnEnterQwerty || id == R.id.btnEnterNum) {
                     view.backgroundTintList = null
                     view.setTextColor(android.graphics.Color.WHITE)
                 } else if (themeKey != "sky") {
