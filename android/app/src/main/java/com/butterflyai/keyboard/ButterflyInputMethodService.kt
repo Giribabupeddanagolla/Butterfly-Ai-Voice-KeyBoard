@@ -147,14 +147,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private var retranslateJob: Job? = null
 
     private val languages = arrayOf(
-        "auto" to "✨ Auto Detect",
+        "auto" to "Auto Detect",
         "te" to "Telugu (తెలుగు)",
         "en" to "English",
         "hi" to "Hindi (हिंदी)",
         "ta" to "Tamil (தமிழ்)",
-        "kn" to "Kannada (కన్నడ)",
+        "kn" to "Kannada (ಕನ್ನಡ)",
         "ml" to "Malayalam (മലയാളം)",
-        "mr" to "Marathi (మరాఠీ)",
+        "mr" to "Marathi (मराठी)",
         "bn" to "Bengali (বাংলা)",
         "gu" to "Gujarati (ગુજરાતી)",
         "pa" to "Punjabi (ਪੰਜਾਬੀ)",
@@ -269,6 +269,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvTapToSpeak.setOnClickListener(startVoiceRecordingAction)
         imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
         inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
+        inputView.findViewById<View>(R.id.btnSearchMic)?.setOnClickListener(startVoiceRecordingAction)
 
         // Feature Card 2: Web Search -> AI Ask Prompt
         inputView.findViewById<View>(R.id.btnCardSearch)?.setOnClickListener {
@@ -1108,7 +1109,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         val btnThemeView = rootRootView.findViewById<Button>(R.id.btnCycleTheme)
         if (btnThemeView != null) {
-            btnThemeView.text = "🎨 ${themeKey.uppercase(Locale.US)}"
+            btnThemeView.text = "⚙"
         }
 
         if (::btnTapToSpeak.isInitialized && currentState == KeyboardState.IDLE) {
