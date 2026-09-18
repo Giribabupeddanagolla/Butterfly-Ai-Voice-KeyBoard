@@ -77,6 +77,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var spinnerSourceLang: Spinner
     private lateinit var spinnerTargetLang: Spinner
     private lateinit var btnCycleTheme: Button
+    private var btnStatusOnline: View? = null
+    private var tvOnlineStatus: TextView? = null
 
     private var currentRootView: View? = null
     private val themeList = arrayOf("sky", "dark", "light", "oled", "cyber", "sunset")
@@ -282,6 +284,38 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         inputView.findViewById<View>(R.id.btnCardAI)?.setOnClickListener {
             if (currentState == KeyboardState.IDLE || currentState == KeyboardState.RESULT) {
                 handleAiPolish()
+            }
+        }
+
+        // Online Status Pill Click Listener & Connection Check
+        btnStatusOnline = inputView.findViewById(R.id.btnStatusOnline)
+        tvOnlineStatus = inputView.findViewById(R.id.tvOnlineStatus)
+
+        btnStatusOnline?.setOnClickListener {
+            Toast.makeText(this, "Checking connection...", Toast.LENGTH_SHORT).show()
+            serviceScope.launch {
+                val result = networkService.testConnection()
+                if (result.success) {
+                    tvOnlineStatus?.text = "● Online"
+                    tvOnlineStatus?.setTextColor(android.graphics.Color.parseColor("#059669"))
+                    Toast.makeText(this@ButterflyInputMethodService, result.message, Toast.LENGTH_LONG).show()
+                } else {
+                    tvOnlineStatus?.text = "● Offline"
+                    tvOnlineStatus?.setTextColor(android.graphics.Color.parseColor("#DC2626"))
+                    Toast.makeText(this@ButterflyInputMethodService, result.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        // Run background check on creation
+        serviceScope.launch {
+            val result = networkService.testConnection()
+            if (result.success) {
+                tvOnlineStatus?.text = "● Online"
+                tvOnlineStatus?.setTextColor(android.graphics.Color.parseColor("#059669"))
+            } else {
+                tvOnlineStatus?.text = "● Offline"
+                tvOnlineStatus?.setTextColor(android.graphics.Color.parseColor("#DC2626"))
             }
         }
 

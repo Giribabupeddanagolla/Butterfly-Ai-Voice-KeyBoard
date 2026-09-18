@@ -49,14 +49,18 @@
 
         <!-- Online Status Pill -->
         <LinearLayout
+            android:id="@+id/btnStatusOnline"
             android:layout_width="wrap_content"
             android:layout_height="22dp"
             android:background="@drawable/bg_status_online_pill"
             android:gravity="center"
             android:paddingHorizontal="8dp"
-            android:layout_marginEnd="6dp">
+            android:layout_marginEnd="6dp"
+            android:clickable="true"
+            android:focusable="true">
 
             <TextView
+                android:id="@+id/tvOnlineStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="● Online"
@@ -83,59 +87,14 @@
             android:padding="0dp" />
     </LinearLayout>
 
-    <!-- SEARCH INPUT & VOICE MIC BAR -->
-    <LinearLayout
-        android:id="@+id/layoutSearchBar"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:background="@drawable/bg_search_bar"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp"
-        android:layout_marginBottom="6dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔍"
-            android:textSize="16sp"
-            android:textColor="#64748B"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Type something..."
-            android:textColor="#94A3B8"
-            android:textSize="13sp" />
-
-        <LinearLayout
-            android:id="@+id/btnSearchMic"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:background="@drawable/bg_mic_circle_button"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🎙"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- 3 FEATURE CARDS ROW (Voice Keyboard | Web Search | AI Answer) -->
+    <!-- 3 FEATURE CARDS ROW (Voice Keyboard | Web Search | AI Answer) - Mini Pill Bar -->
     <LinearLayout
         android:id="@+id/layoutFeatureCards"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="32dp"
         android:orientation="horizontal"
         android:weightSum="3"
-        android:layout_marginBottom="6dp">
+        android:layout_marginBottom="3dp">
 
         <!-- Card 1: Voice Keyboard -->
         <LinearLayout
@@ -144,37 +103,29 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_card_voice"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="6dp"
+            android:paddingHorizontal="4dp"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginEnd="4dp">
+            android:layout_marginEnd="3dp">
 
             <TextView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:background="#DBEAFE"
                 android:gravity="center"
                 android:text="🎙"
                 android:textColor="#2563EB"
-                android:textSize="12sp"
-                android:layout_marginBottom="3dp" />
+                android:textSize="10sp"
+                android:layout_marginEnd="3dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Voice Keyboard"
-                android:textColor="#0F172A"
-                android:textSize="10.5sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Speak &amp; Type ›"
-                android:textColor="#2563EB"
-                android:textSize="8.5sp"
+                android:text="Voice"
+                android:textColor="#1E293B"
+                android:textSize="9.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -185,37 +136,29 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_card_search"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="6dp"
+            android:paddingHorizontal="4dp"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginEnd="4dp">
+            android:layout_marginEnd="3dp">
 
             <TextView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:background="#DCFCE7"
                 android:gravity="center"
                 android:text="🌐"
                 android:textColor="#10B981"
-                android:textSize="12sp"
-                android:layout_marginBottom="3dp" />
+                android:textSize="10sp"
+                android:layout_marginEnd="3dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Web Search"
-                android:textColor="#0F172A"
-                android:textSize="10.5sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Find information ›"
-                android:textColor="#10B981"
-                android:textSize="8.5sp"
+                android:text="Search"
+                android:textColor="#1E293B"
+                android:textSize="9.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -226,36 +169,28 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_card_ai"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="6dp"
+            android:paddingHorizontal="4dp"
             android:clickable="true"
             android:focusable="true">
 
             <TextView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:background="#FFEDD5"
                 android:gravity="center"
                 android:text="✨"
                 android:textColor="#F97316"
-                android:textSize="12sp"
-                android:layout_marginBottom="3dp" />
+                android:textSize="10sp"
+                android:layout_marginEnd="3dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AI Answer"
-                android:textColor="#0F172A"
-                android:textSize="10.5sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Get smart replies ›"
-                android:textColor="#F97316"
-                android:textSize="8.5sp"
+                android:textColor="#1E293B"
+                android:textSize="9.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
