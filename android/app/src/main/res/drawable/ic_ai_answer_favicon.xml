@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Main Golden Star -->
+    <path
+        android:pathData="M 50,12 Q 50,43 88,52 Q 50,61 50,90 Q 50,61 12,52 Q 50,43 50,12 Z"
+        android:fillColor="#F59E0B"/>
+    <!-- Top Right Green Star -->
+    <path
+        android:pathData="M 78,10 Q 78,20 92,24 Q 78,28 78,38 Q 78,28 64,24 Q 78,20 78,10 Z"
+        android:fillColor="#00BFA5"/>
+    <!-- Bottom Left Blue Dot -->
+    <path
+        android:pathData="M 22,71.5 A 6.5,6.5 0 1,1 21.99,71.5 Z"
+        android:fillColor="#00B0FF"/>
+</vector>

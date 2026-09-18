@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Lens Ring -->
+    <path
+        android:pathData="M 44,18 A 26,26 0 1,1 43.99,18 Z"
+        android:strokeColor="#00B0FF"
+        android:strokeWidth="11"/>
+    <!-- Handle -->
+    <path
+        android:pathData="M 62,62 L 86,86"
+        android:strokeColor="#00B0FF"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"/>
+</vector>

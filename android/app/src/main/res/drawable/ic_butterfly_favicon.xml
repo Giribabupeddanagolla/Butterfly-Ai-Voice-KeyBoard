@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Left Antenna -->
+    <path
+        android:pathData="M 44,26 C 40,18 32,14 30,13"
+        android:strokeColor="#0052CC"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"/>
+    <!-- Right Antenna -->
+    <path
+        android:pathData="M 56,26 C 60,18 68,14 70,13"
+        android:strokeColor="#0052CC"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"/>
+    <!-- Left Wings (Dark Blue) -->
+    <path
+        android:pathData="M 48,34 C 25,10 6,25 8,46 C 9,58 22,55 34,52 C 14,62 12,76 26,80 C 40,84 46,66 48,54 Z"
+        android:fillColor="#1B72E8"/>
+    <!-- Right Wings (Cyan Blue) -->
+    <path
+        android:pathData="M 52,34 C 75,10 94,25 92,46 C 91,58 78,55 66,52 C 86,62 88,76 74,80 C 60,84 54,66 52,54 Z"
+        android:fillColor="#00B0FF"/>
+    <!-- Center Body -->
+    <path
+        android:pathData="M 50,33 L 50,82"
+        android:strokeColor="#0052CC"
+        android:strokeWidth="7.5"
+        android:strokeLineCap="round"/>
+</vector>

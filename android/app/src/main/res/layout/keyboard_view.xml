@@ -20,7 +20,7 @@
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_butterfly_logo"
+            android:src="@drawable/ic_butterfly_favicon"
             android:contentDescription="Butterfly AI Logo"
             android:layout_marginEnd="4dp" />
 
@@ -111,15 +111,13 @@
             android:focusable="true"
             android:layout_marginEnd="3dp">
 
-            <TextView
+            <ImageView
                 android:id="@+id/tvCardVoiceIcon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:gravity="center"
-                android:text="🎙"
-                android:textColor="#2563EB"
-                android:textSize="11sp"
-                android:layout_marginEnd="3dp" />
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_voice_favicon"
+                android:contentDescription="Voice Icon"
+                android:layout_marginEnd="4dp" />
 
             <TextView
                 android:id="@+id/tvCardVoiceTitle"
@@ -145,15 +143,13 @@
             android:focusable="true"
             android:layout_marginEnd="3dp">
 
-            <TextView
+            <ImageView
                 android:id="@+id/tvCardSearchIcon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:gravity="center"
-                android:text="🌐"
-                android:textColor="#10B981"
-                android:textSize="11sp"
-                android:layout_marginEnd="3dp" />
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_search_favicon"
+                android:contentDescription="Search Icon"
+                android:layout_marginEnd="4dp" />
 
             <TextView
                 android:id="@+id/tvCardSearchTitle"
@@ -178,15 +174,13 @@
             android:clickable="true"
             android:focusable="true">
 
-            <TextView
+            <ImageView
                 android:id="@+id/tvCardAIIcon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:gravity="center"
-                android:text="✨"
-                android:textColor="#F97316"
-                android:textSize="11sp"
-                android:layout_marginEnd="3dp" />
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_ai_answer_favicon"
+                android:contentDescription="AI Answer Icon"
+                android:layout_marginEnd="4dp" />
 
             <TextView
                 android:id="@+id/tvCardAITitle"
@@ -220,12 +214,12 @@
             android:orientation="horizontal"
             android:paddingHorizontal="8dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🌐"
-                android:textSize="11sp"
-                android:textColor="#2563EB"
+            <ImageView
+                android:id="@+id/imgSourceLangIcon"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:src="@drawable/ic_source_favicon"
+                android:contentDescription="Source Icon"
                 android:layout_marginEnd="4dp" />
 
             <LinearLayout
@@ -276,12 +270,12 @@
             android:orientation="horizontal"
             android:paddingHorizontal="8dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🌐"
-                android:textSize="11sp"
-                android:textColor="#2563EB"
+            <ImageView
+                android:id="@+id/imgTargetLangIcon"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:src="@drawable/ic_source_favicon"
+                android:contentDescription="Target Icon"
                 android:layout_marginEnd="4dp" />
 
             <LinearLayout
