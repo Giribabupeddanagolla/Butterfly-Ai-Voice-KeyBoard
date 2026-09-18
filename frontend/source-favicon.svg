@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Main Globe Outer Ring -->
+  <circle cx="44" cy="44" r="34" fill="none" stroke="#00B0FF" stroke-width="6"/>
+  <!-- Equatorial & Polar Grid Lines -->
+  <line x1="44" y1="10" x2="44" y2="78" stroke="#00B0FF" stroke-width="4"/>
+  <line x1="10" y1="44" x2="78" y2="44" stroke="#00B0FF" stroke-width="4"/>
+  <!-- Latitude Curves -->
+  <path d="M 14 30 Q 44 18 74 30" fill="none" stroke="#00B0FF" stroke-width="4"/>
+  <path d="M 14 58 Q 44 70 74 58" fill="none" stroke="#00B0FF" stroke-width="4"/>
+  <!-- Longitude Curves -->
+  <path d="M 30 14 Q 18 44 30 74" fill="none" stroke="#00B0FF" stroke-width="4"/>
+  <path d="M 58 14 Q 70 44 58 74" fill="none" stroke="#00B0FF" stroke-width="4"/>
+  
+  <!-- Checkmark Badge -->
+  <circle cx="74" cy="74" r="18" fill="#00BFA5"/>
+  <path d="M 65 74 L 71 80 L 82 67" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
