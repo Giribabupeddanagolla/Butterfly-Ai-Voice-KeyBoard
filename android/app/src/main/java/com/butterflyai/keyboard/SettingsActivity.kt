@@ -58,11 +58,31 @@ class SettingsActivity : AppCompatActivity() {
         val currentUrl = prefs.getString("server_url", "http://192.168.1.105:8000")
         etServerUrl.setText(currentUrl)
 
-        // Setup Theme Selector Spinner with custom layout for explicit high-contrast text color
+        // Setup Theme Selector Spinner with custom layout for explicit high-contrast white text color
         val themeNames = themeOptions.map { it.second }
-        val themeAdapter = ArrayAdapter(this, R.layout.spinner_item, themeNames).apply {
-            setDropDownViewResource(R.layout.spinner_dropdown_item)
+        val themeAdapter = object : ArrayAdapter<String>(this, R.layout.spinner_item, themeNames) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val v = super.getView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(android.graphics.Color.WHITE)
+                    v.textSize = 13.5f
+                    v.setPadding(0, 0, 0, 0)
+                }
+                return v
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val v = super.getDropDownView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(android.graphics.Color.WHITE)
+                    v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                    v.textSize = 13.5f
+                    v.setPadding(24, 20, 24, 20)
+                }
+                return v
+            }
         }
+        themeAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerKeyboardTheme.adapter = themeAdapter
 
         val savedTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
@@ -78,7 +98,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 val selectedThemeKey = themeOptions[position].first
                 prefs.edit().putString("keyboard_theme", selectedThemeKey).apply()
-                Toast.makeText(this@SettingsActivity, "Keyboard Theme: ${themeOptions[position].second}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@SettingsActivity, "Keyboard Theme Set: ${themeOptions[position].second}", Toast.LENGTH_SHORT).show()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
