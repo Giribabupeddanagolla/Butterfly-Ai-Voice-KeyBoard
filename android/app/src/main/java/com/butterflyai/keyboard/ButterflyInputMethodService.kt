@@ -1124,11 +1124,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
         }
 
-        // 1. Header Title Text Color
+        // 1. Header Title & Subtitle Text Color
         val tvHeaderTitle = rootRootView.findViewById<TextView>(R.id.tvHeaderTitle)
         tvHeaderTitle?.setTextColor(palette.ctrlKeyText)
+        val tvHeaderSubtitle = rootRootView.findViewById<TextView>(R.id.tvHeaderSubtitle)
+        tvHeaderSubtitle?.setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B"))
 
-        // 2. Feature Cards Backgrounds & Titles
+        // 2. Feature Cards Backgrounds & Titles (Voice | Search | AI Answer)
         val btnCardVoice = rootRootView.findViewById<View>(R.id.btnCardVoice)
         val btnCardSearch = rootRootView.findViewById<View>(R.id.btnCardSearch)
         val btnCardAI = rootRootView.findViewById<View>(R.id.btnCardAI)
@@ -1147,8 +1149,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (container is ViewGroup) {
                 for (i in 0 until container.childCount) {
                     val child = container.getChildAt(i)
-                    if (child is TextView && child.typeface?.style == android.graphics.Typeface.BOLD) {
-                        child.setTextColor(palette.keyText)
+                    if (child is TextView) {
+                        val txt = child.text?.toString() ?: ""
+                        if (txt != "🎙" && txt != "🌐" && txt != "✨") {
+                            child.setTextColor(palette.keyText)
+                        }
+                    } else if (child is ViewGroup) {
+                        updateCardTexts(child)
                     }
                 }
             }
@@ -1157,7 +1164,35 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         updateCardTexts(btnCardSearch)
         updateCardTexts(btnCardAI)
 
-        // 3. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
+        // 3. Source & Target Language Pill Cards & Labels
+        val cardSourceLang = rootRootView.findViewById<View>(R.id.cardSourceLang)
+        val cardTargetLang = rootRootView.findViewById<View>(R.id.cardTargetLang)
+        val lblSourceLang = rootRootView.findViewById<TextView>(R.id.lblSourceLang)
+        val lblTargetLang = rootRootView.findViewById<TextView>(R.id.lblTargetLang)
+        val tvLangArrow = rootRootView.findViewById<TextView>(R.id.tvLangArrow)
+
+        if (palette.isDark) {
+            cardSourceLang?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
+            cardTargetLang?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
+            lblSourceLang?.setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
+            lblTargetLang?.setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
+        } else {
+            cardSourceLang?.backgroundTintList = null
+            cardTargetLang?.backgroundTintList = null
+            lblSourceLang?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+            lblTargetLang?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+        }
+        tvLangArrow?.setTextColor(palette.ctrlKeyText)
+
+        // Refresh Language Spinners
+        val spinnerSource = rootRootView.findViewById<Spinner>(R.id.spinnerSourceLang)
+        val spinnerTarget = rootRootView.findViewById<Spinner>(R.id.spinnerTargetLang)
+        (spinnerSource?.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
+        (spinnerTarget?.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
+        (spinnerSource?.selectedView as? TextView)?.setTextColor(palette.keyText)
+        (spinnerTarget?.selectedView as? TextView)?.setTextColor(palette.keyText)
+
+        // 4. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
         val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnSwitchIme, R.id.btnCycleTheme)
         for (id in toolbarIds) {
             val btn = rootRootView.findViewById<Button>(id)
@@ -1171,13 +1206,76 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         }
 
-        // 4. Language Spinner Selected Text Colors
-        val spinnerSource = rootRootView.findViewById<Spinner>(R.id.spinnerSourceLang)
-        val spinnerTarget = rootRootView.findViewById<Spinner>(R.id.spinnerTargetLang)
-        (spinnerSource?.selectedView as? TextView)?.setTextColor(palette.keyText)
-        (spinnerTarget?.selectedView as? TextView)?.setTextColor(palette.keyText)
+        // 5. Voice Result & AI Answer Card Styling
+        val layoutVoiceResult = rootRootView.findViewById<View>(R.id.layoutVoiceResult)
+        if (layoutVoiceResult != null) {
+            if (palette.isDark) {
+                layoutVoiceResult.setBackgroundColor(palette.cardBg)
+            } else {
+                layoutVoiceResult.setBackgroundColor(android.graphics.Color.parseColor("#F1F5F9"))
+            }
 
-        // 5. Keypad Letter Keys
+            val lblOriginalHeader = rootRootView.findViewById<TextView>(R.id.lblOriginalHeader)
+            lblOriginalHeader?.setTextColor(palette.ctrlKeyText)
+
+            val tvOriginalText = rootRootView.findViewById<TextView>(R.id.tvOriginalText)
+            tvOriginalText?.setTextColor(palette.keyText)
+
+            val lblTranslationHeader = rootRootView.findViewById<TextView>(R.id.lblTranslationHeader)
+            lblTranslationHeader?.setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#34D399") else android.graphics.Color.parseColor("#10B981"))
+
+            val tvTranslatedText = rootRootView.findViewById<TextView>(R.id.tvTranslatedText)
+            tvTranslatedText?.setTextColor(palette.keyText)
+
+            val tvInsertedNotice = rootRootView.findViewById<TextView>(R.id.tvInsertedNotice)
+            tvInsertedNotice?.setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#6EE7B7") else android.graphics.Color.parseColor("#059669"))
+
+            val btnCopyText = rootRootView.findViewById<Button>(R.id.btnCopyText)
+            val btnSpeakText = rootRootView.findViewById<Button>(R.id.btnSpeakText)
+            val btnDismissResult = rootRootView.findViewById<Button>(R.id.btnDismissResult)
+
+            for (resBtn in listOf(btnCopyText, btnSpeakText, btnDismissResult)) {
+                if (resBtn != null) {
+                    if (themeKey != "sky") {
+                        resBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                    } else {
+                        resBtn.backgroundTintList = null
+                    }
+                    if (resBtn == btnDismissResult && palette.isDark) {
+                        resBtn.setTextColor(android.graphics.Color.parseColor("#F87171"))
+                    } else {
+                        resBtn.setTextColor(palette.ctrlKeyText)
+                    }
+                }
+            }
+        }
+
+        // 6. Recording & Processing State Cards Styling
+        val layoutRecordingState = rootRootView.findViewById<View>(R.id.layoutRecordingState)
+        val tvRecordingTimer = rootRootView.findViewById<TextView>(R.id.tvRecordingTimer)
+        if (layoutRecordingState != null) {
+            if (palette.isDark) {
+                layoutRecordingState.setBackgroundColor(android.graphics.Color.parseColor("#3F0F16"))
+                tvRecordingTimer?.setTextColor(android.graphics.Color.parseColor("#FCA5A5"))
+            } else {
+                layoutRecordingState.setBackgroundColor(android.graphics.Color.parseColor("#FEF2F2"))
+                tvRecordingTimer?.setTextColor(android.graphics.Color.parseColor("#991B1B"))
+            }
+        }
+
+        val layoutProcessingState = rootRootView.findViewById<View>(R.id.layoutProcessingState)
+        val tvProcessingStatus = rootRootView.findViewById<TextView>(R.id.tvProcessingStatus)
+        if (layoutProcessingState != null) {
+            if (palette.isDark) {
+                layoutProcessingState.setBackgroundColor(android.graphics.Color.parseColor("#382009"))
+                tvProcessingStatus?.setTextColor(android.graphics.Color.parseColor("#FDE68A"))
+            } else {
+                layoutProcessingState.setBackgroundColor(android.graphics.Color.parseColor("#FFFBEB"))
+                tvProcessingStatus?.setTextColor(android.graphics.Color.parseColor("#B45309"))
+            }
+        }
+
+        // 7. Keypad Letter Keys
         val allKeyIds = letterKeysMap.keys + numberKeysMap.keys + listOf(
             R.id.btnComma, R.id.btnPeriod, R.id.btnCommaNum, R.id.btnPeriodNum
         )
@@ -1194,7 +1292,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         }
 
-        // 6. Keypad Control Keys
+        // 8. Keypad Control Keys
         val controlKeyIds = listOf(
             R.id.btnShift, R.id.btnNumMode, R.id.btnEmojiMode, R.id.btnEmojiModeNum,
             R.id.btnAbcMode, R.id.btnAbcFromEmojiBottom,

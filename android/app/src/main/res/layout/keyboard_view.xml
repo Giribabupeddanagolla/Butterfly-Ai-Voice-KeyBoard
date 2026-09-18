@@ -40,6 +40,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvHeaderSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Voice · Translate · Search · AI"
@@ -207,6 +208,7 @@
 
         <!-- Source Language Pill Card -->
         <LinearLayout
+            android:id="@+id/cardSourceLang"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -231,6 +233,7 @@
                 android:gravity="center_vertical">
 
                 <TextView
+                    android:id="@+id/lblSourceLang"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Source"
@@ -250,6 +253,7 @@
 
         <!-- Central Directional Arrow -->
         <TextView
+            android:id="@+id/tvLangArrow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="➔"
@@ -260,6 +264,7 @@
 
         <!-- Target Language Pill Card -->
         <LinearLayout
+            android:id="@+id/cardTargetLang"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -284,6 +289,7 @@
                 android:gravity="center_vertical">
 
                 <TextView
+                    android:id="@+id/lblTargetLang"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Target"
@@ -485,6 +491,7 @@
         android:visibility="gone">
 
         <TextView
+            android:id="@+id/lblOriginalHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="You said:"
