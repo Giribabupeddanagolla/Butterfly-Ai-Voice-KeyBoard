@@ -112,16 +112,17 @@
             android:layout_marginEnd="3dp">
 
             <TextView
+                android:id="@+id/tvCardVoiceIcon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:background="#DBEAFE"
                 android:gravity="center"
                 android:text="🎙"
                 android:textColor="#2563EB"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:layout_marginEnd="3dp" />
 
             <TextView
+                android:id="@+id/tvCardVoiceTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Voice"
@@ -145,16 +146,17 @@
             android:layout_marginEnd="3dp">
 
             <TextView
+                android:id="@+id/tvCardSearchIcon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:background="#DCFCE7"
                 android:gravity="center"
                 android:text="🌐"
                 android:textColor="#10B981"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:layout_marginEnd="3dp" />
 
             <TextView
+                android:id="@+id/tvCardSearchTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Search"
@@ -177,16 +179,17 @@
             android:focusable="true">
 
             <TextView
+                android:id="@+id/tvCardAIIcon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:background="#FFEDD5"
                 android:gravity="center"
                 android:text="✨"
                 android:textColor="#F97316"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:layout_marginEnd="3dp" />
 
             <TextView
+                android:id="@+id/tvCardAITitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AI Answer"

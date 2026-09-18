@@ -236,7 +236,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.setTextColor(palette.keyText)
+                    if (palette.isDark) {
+                        v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
+                    } else {
+                        v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
+                    }
                 }
                 return v
             }
@@ -244,8 +248,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.setTextColor(if (palette.isDark) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#1E293B"))
-                    v.setBackgroundColor(if (palette.isDark) android.graphics.Color.parseColor("#1E293B") else android.graphics.Color.WHITE)
+                    if (palette.isDark) {
+                        v.setTextColor(android.graphics.Color.WHITE)
+                        v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                    } else {
+                        v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
+                        v.setBackgroundColor(android.graphics.Color.WHITE)
+                    }
                 }
                 return v
             }
@@ -256,7 +265,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.setTextColor(palette.keyText)
+                    if (palette.isDark) {
+                        v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
+                    } else {
+                        v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
+                    }
                 }
                 return v
             }
@@ -264,8 +277,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.setTextColor(if (palette.isDark) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#1E293B"))
-                    v.setBackgroundColor(if (palette.isDark) android.graphics.Color.parseColor("#1E293B") else android.graphics.Color.WHITE)
+                    if (palette.isDark) {
+                        v.setTextColor(android.graphics.Color.WHITE)
+                        v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                    } else {
+                        v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
+                        v.setBackgroundColor(android.graphics.Color.WHITE)
+                    }
                 }
                 return v
             }
@@ -1135,34 +1153,37 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val btnCardSearch = rootRootView.findViewById<View>(R.id.btnCardSearch)
         val btnCardAI = rootRootView.findViewById<View>(R.id.btnCardAI)
 
+        val tvCardVoiceTitle = rootRootView.findViewById<TextView>(R.id.tvCardVoiceTitle)
+        val tvCardSearchTitle = rootRootView.findViewById<TextView>(R.id.tvCardSearchTitle)
+        val tvCardAITitle = rootRootView.findViewById<TextView>(R.id.tvCardAITitle)
+
         if (palette.isDark) {
+            btnCardVoice?.setBackgroundResource(R.drawable.bg_lang_pill_dark)
+            btnCardSearch?.setBackgroundResource(R.drawable.bg_lang_pill_dark)
+            btnCardAI?.setBackgroundResource(R.drawable.bg_lang_pill_dark)
+
             btnCardVoice?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
             btnCardSearch?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
             btnCardAI?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
+
+            val titleColor = if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE
+            tvCardVoiceTitle?.setTextColor(titleColor)
+            tvCardSearchTitle?.setTextColor(titleColor)
+            tvCardAITitle?.setTextColor(titleColor)
         } else {
+            btnCardVoice?.setBackgroundResource(R.drawable.bg_card_voice)
+            btnCardSearch?.setBackgroundResource(R.drawable.bg_card_search)
+            btnCardAI?.setBackgroundResource(R.drawable.bg_card_ai)
+
             btnCardVoice?.backgroundTintList = null
             btnCardSearch?.backgroundTintList = null
             btnCardAI?.backgroundTintList = null
-        }
 
-        fun updateCardTexts(container: View?) {
-            if (container is ViewGroup) {
-                for (i in 0 until container.childCount) {
-                    val child = container.getChildAt(i)
-                    if (child is TextView) {
-                        val txt = child.text?.toString() ?: ""
-                        if (txt != "🎙" && txt != "🌐" && txt != "✨") {
-                            child.setTextColor(palette.keyText)
-                        }
-                    } else if (child is ViewGroup) {
-                        updateCardTexts(child)
-                    }
-                }
-            }
+            val titleColor = android.graphics.Color.parseColor("#1E293B")
+            tvCardVoiceTitle?.setTextColor(titleColor)
+            tvCardSearchTitle?.setTextColor(titleColor)
+            tvCardAITitle?.setTextColor(titleColor)
         }
-        updateCardTexts(btnCardVoice)
-        updateCardTexts(btnCardSearch)
-        updateCardTexts(btnCardAI)
 
         // 3. Source & Target Language Pill Cards & Labels
         val cardSourceLang = rootRootView.findViewById<View>(R.id.cardSourceLang)
@@ -1172,25 +1193,33 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val tvLangArrow = rootRootView.findViewById<TextView>(R.id.tvLangArrow)
 
         if (palette.isDark) {
+            cardSourceLang?.setBackgroundResource(R.drawable.bg_lang_pill_dark)
+            cardTargetLang?.setBackgroundResource(R.drawable.bg_lang_pill_dark)
             cardSourceLang?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
             cardTargetLang?.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.cardBg)
+
             lblSourceLang?.setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
             lblTargetLang?.setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
+            tvLangArrow?.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
         } else {
+            cardSourceLang?.setBackgroundResource(R.drawable.bg_lang_pill)
+            cardTargetLang?.setBackgroundResource(R.drawable.bg_lang_pill)
             cardSourceLang?.backgroundTintList = null
             cardTargetLang?.backgroundTintList = null
+
             lblSourceLang?.setTextColor(android.graphics.Color.parseColor("#64748B"))
             lblTargetLang?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+            tvLangArrow?.setTextColor(android.graphics.Color.parseColor("#1E293B"))
         }
-        tvLangArrow?.setTextColor(palette.ctrlKeyText)
 
         // Refresh Language Spinners
         val spinnerSource = rootRootView.findViewById<Spinner>(R.id.spinnerSourceLang)
         val spinnerTarget = rootRootView.findViewById<Spinner>(R.id.spinnerTargetLang)
         (spinnerSource?.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
         (spinnerTarget?.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
-        (spinnerSource?.selectedView as? TextView)?.setTextColor(palette.keyText)
-        (spinnerTarget?.selectedView as? TextView)?.setTextColor(palette.keyText)
+        val spinnerTextColor = if (palette.isDark) (if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE) else android.graphics.Color.parseColor("#1E293B")
+        (spinnerSource?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
+        (spinnerTarget?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
 
         // 4. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
         val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnSwitchIme, R.id.btnCycleTheme)
