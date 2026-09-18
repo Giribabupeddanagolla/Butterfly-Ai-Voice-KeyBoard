@@ -1147,7 +1147,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (container is ViewGroup) {
                 for (i in 0 until container.childCount) {
                     val child = container.getChildAt(i)
-                    if (child is TextView && child.textStyle == android.graphics.Typeface.BOLD) {
+                    if (child is TextView && child.typeface?.style == android.graphics.Typeface.BOLD) {
                         child.setTextColor(palette.keyText)
                     }
                 }
