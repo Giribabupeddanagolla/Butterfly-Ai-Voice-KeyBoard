@@ -318,81 +318,21 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- QUICK ACTION TOOLBAR ROW (⌨ | Snippets | Switch) -->
+    <!-- Hidden legacy compatibility toolbar -->
     <LinearLayout
         android:id="@+id/layoutActionButtons"
-        android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="3dp"
-        android:visibility="visible">
-
-        <!-- Keyboard Grid Toggle -->
-        <Button
-            android:id="@+id/btnToggleKeyboard"
-            android:layout_width="38dp"
-            android:layout_height="match_parent"
-            android:background="@drawable/bg_quick_toolbar_pill"
-            android:text="⌨"
-            android:textColor="#1E293B"
-            android:textSize="14sp"
-            android:layout_marginEnd="4dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:padding="0dp" />
-
-        <!-- Snippets Shortcut -->
-        <Button
-            android:id="@+id/btnSnippets"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/bg_quick_toolbar_pill"
-            android:text="📄 SNIPPETS  |  文A"
-            android:textColor="#334155"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:layout_marginEnd="4dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:padding="0dp" />
-
-        <!-- Undo & Globe Switcher -->
-        <Button
-            android:id="@+id/btnSwitchIme"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/bg_quick_toolbar_pill"
-            android:text="↶  |  🌐"
-            android:textColor="#334155"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:padding="0dp" />
-
-        <!-- Hidden legacy compatibility items -->
-        <LinearLayout android:id="@+id/btnTapToSpeak" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone">
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
+        <Button android:id="@+id/btnToggleKeyboard" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/btnSnippets" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/btnSwitchIme" android:layout_width="0dp" android:layout_height="0dp" />
+        <LinearLayout android:id="@+id/btnTapToSpeak" android:layout_width="0dp" android:layout_height="0dp">
             <ImageView android:id="@+id/imgMicIconMain" android:layout_width="0dp" android:layout_height="0dp" />
             <TextView android:id="@+id/tvTapToSpeak" android:layout_width="0dp" android:layout_height="0dp" />
         </LinearLayout>
-        <LinearLayout android:id="@+id/btnPolish" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
-        <LinearLayout android:id="@+id/btnAskAI" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
-
+        <LinearLayout android:id="@+id/btnPolish" android:layout_width="0dp" android:layout_height="0dp" />
+        <LinearLayout android:id="@+id/btnAskAI" android:layout_width="0dp" android:layout_height="0dp" />
     </LinearLayout>
 
     <!-- RECORDING ACTIVE STATE CARD -->
