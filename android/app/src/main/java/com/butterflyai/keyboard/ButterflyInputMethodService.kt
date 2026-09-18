@@ -1229,8 +1229,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         (spinnerSource?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
         (spinnerTarget?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
 
-        // 4. Action Toolbar Buttons (⌨, Gear)
-        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnCycleTheme)
+        // 4. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
+        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnSwitchIme, R.id.btnCycleTheme)
         for (id in toolbarIds) {
             val btn = rootRootView.findViewById<Button>(id)
             if (btn != null) {
