@@ -248,8 +248,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.textSize = 13.5f
-                    v.setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
+                    v.textSize = 11.5f
+                    v.includeFontPadding = false
+                    v.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5))
                     if (palette.isDark) {
                         v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
                         v.setBackgroundColor(palette.cardBg)
@@ -281,8 +282,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.textSize = 13.5f
-                    v.setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
+                    v.textSize = 11.5f
+                    v.includeFontPadding = false
+                    v.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5))
                     if (palette.isDark) {
                         v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
                         v.setBackgroundColor(palette.cardBg)

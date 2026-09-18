@@ -77,8 +77,9 @@ class SettingsActivity : AppCompatActivity() {
                 if (v is TextView) {
                     v.setTextColor(android.graphics.Color.WHITE)
                     v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
-                    v.textSize = 13.5f
-                    v.setPadding(24, 20, 24, 20)
+                    v.textSize = 11.5f
+                    v.includeFontPadding = false
+                    v.setPadding(16, 10, 16, 10)
                 }
                 return v
             }
