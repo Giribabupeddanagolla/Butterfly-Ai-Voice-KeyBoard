@@ -248,9 +248,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
+                    v.textSize = 13.5f
+                    v.setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
                     if (palette.isDark) {
-                        v.setTextColor(android.graphics.Color.WHITE)
-                        v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                        v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
+                        v.setBackgroundColor(palette.cardBg)
                     } else {
                         v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
                         v.setBackgroundColor(android.graphics.Color.WHITE)
@@ -258,6 +260,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 }
                 return v
             }
+        }.apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
         }
 
         val mainTargetAdapter = object : ArrayAdapter<String>(this, R.layout.spinner_item, langNames) {
@@ -277,9 +281,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
+                    v.textSize = 13.5f
+                    v.setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
                     if (palette.isDark) {
-                        v.setTextColor(android.graphics.Color.WHITE)
-                        v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                        v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
+                        v.setBackgroundColor(palette.cardBg)
                     } else {
                         v.setTextColor(android.graphics.Color.parseColor("#1E293B"))
                         v.setBackgroundColor(android.graphics.Color.WHITE)
@@ -287,6 +293,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 }
                 return v
             }
+        }.apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
         }
 
         spinnerSourceLang.adapter = mainSourceAdapter
@@ -1221,8 +1229,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         (spinnerSource?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
         (spinnerTarget?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
 
-        // 4. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
-        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnSwitchIme, R.id.btnCycleTheme)
+        // 4. Action Toolbar Buttons (⌨, Gear)
+        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnCycleTheme)
         for (id in toolbarIds) {
             val btn = rootRootView.findViewById<Button>(id)
             if (btn != null) {

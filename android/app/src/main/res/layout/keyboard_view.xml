@@ -318,7 +318,7 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- QUICK ACTION TOOLBAR ROW (⌨ | Snippets | Undo/Switch) -->
+    <!-- QUICK ACTION TOOLBAR ROW (⌨) -->
     <LinearLayout
         android:id="@+id/layoutActionToolbar"
         android:layout_width="match_parent"
@@ -336,46 +336,6 @@
             android:text="⌨"
             android:textColor="#1E293B"
             android:textSize="14sp"
-            android:layout_marginEnd="4dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:padding="0dp" />
-
-        <!-- Snippets Shortcut -->
-        <Button
-            android:id="@+id/btnSnippets"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1.2"
-            android:background="@drawable/bg_quick_toolbar_pill"
-            android:text="📄 SNIPPETS  |  文A"
-            android:textColor="#334155"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:layout_marginEnd="4dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:padding="0dp" />
-
-        <!-- Undo & Globe Switcher -->
-        <Button
-            android:id="@+id/btnSwitchIme"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1.0"
-            android:background="@drawable/bg_quick_toolbar_pill"
-            android:text="↶  |  🌐"
-            android:textColor="#334155"
-            android:textSize="11sp"
-            android:textStyle="bold"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:insetTop="0dp"
