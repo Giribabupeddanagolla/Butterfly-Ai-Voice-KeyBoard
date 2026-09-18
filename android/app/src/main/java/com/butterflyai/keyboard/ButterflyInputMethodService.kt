@@ -271,7 +271,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvTapToSpeak.setOnClickListener(startVoiceRecordingAction)
         imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
         inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
-        inputView.findViewById<View>(R.id.btnSearchMic)?.setOnClickListener(startVoiceRecordingAction)
 
         // Feature Card 2: Web Search -> AI Ask Prompt
         inputView.findViewById<View>(R.id.btnCardSearch)?.setOnClickListener {
