@@ -4021,6 +4021,30 @@ background-color 0.2s ease;
     text-transform: uppercase;
 }
 
+.butterfly-side-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.6));
+    transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.left-butterfly {
+    transform: none;
+}
+
+.right-butterfly {
+    transform: scaleX(-1);
+}
+
+body.dark-theme .butterfly-side-icon {
+    filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.7));
+}
+
+body.light-theme .butterfly-side-icon {
+    filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.5));
+}
+
 .ime-inner-card {
     background: #F0F4FE;
     padding: 14px 16px;

@@ -1152,11 +1152,20 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
         }
 
-        // 1. Header Title & Subtitle Text Color
+        // 1. Header Title, Subtitle & Left/Right Butterfly Designs Tinting
         val tvHeaderTitle = rootRootView.findViewById<TextView>(R.id.tvHeaderTitle)
         tvHeaderTitle?.setTextColor(palette.ctrlKeyText)
         val tvHeaderSubtitle = rootRootView.findViewById<TextView>(R.id.tvHeaderSubtitle)
         tvHeaderSubtitle?.setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B"))
+
+        val imgButterflyLeft = rootRootView.findViewById<ImageView>(R.id.imgButterflyLeft)
+        val imgButterflyRight = rootRootView.findViewById<ImageView>(R.id.imgButterflyRight)
+        if (imgButterflyLeft != null) {
+            imgButterflyLeft.imageTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyText)
+        }
+        if (imgButterflyRight != null) {
+            imgButterflyRight.imageTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyText)
+        }
 
         // 2. Feature Cards Backgrounds & Titles (Voice | Search | AI Answer)
         val btnCardVoice = rootRootView.findViewById<View>(R.id.btnCardVoice)
