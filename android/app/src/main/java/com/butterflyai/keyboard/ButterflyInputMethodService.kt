@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.inputmethodservice.InputMethodService
 import android.media.MediaRecorder
 import android.os.Build
@@ -64,6 +66,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     // Voice Result Widget Controls
     private lateinit var layoutVoiceResult: LinearLayout
+    private lateinit var lblOriginalHeader: TextView
     private lateinit var tvOriginalText: TextView
     private lateinit var tvTranslatedText: TextView
     private lateinit var lblTranslationHeader: TextView
@@ -72,6 +75,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnCopyText: Button
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
+
+    private var isAiAnswerLoading = false
 
     private lateinit var btnToggleKeyboard: Button
     private lateinit var keyboardKeysLayout: LinearLayout
@@ -267,6 +272,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvProcessingStatus = inputView.findViewById(R.id.tvProcessingStatus)
 
         layoutVoiceResult = inputView.findViewById(R.id.layoutVoiceResult)
+        lblOriginalHeader = inputView.findViewById(R.id.lblOriginalHeader)
         tvOriginalText = inputView.findViewById(R.id.tvOriginalText)
         tvTranslatedText = inputView.findViewById(R.id.tvTranslatedText)
         lblTranslationHeader = inputView.findViewById(R.id.lblTranslationHeader)
@@ -386,18 +392,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
         inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
 
-        // Feature Card 2: Web Search -> AI Ask Prompt
+        // Feature Card 2: Web Search -> DuckDuckGo in external browser
         inputView.findViewById<View>(R.id.btnCardSearch)?.setOnClickListener {
-            if (currentState == KeyboardState.IDLE || currentState == KeyboardState.RESULT) {
-                handleAiAsk()
-            }
+            handleSearchButtonClick()
         }
 
-        // Feature Card 3: AI Answer -> AI Polish
+        // Feature Card 3: AI Answer -> Butterfly AI backend to in-keyboard widget
         inputView.findViewById<View>(R.id.btnCardAI)?.setOnClickListener {
-            if (currentState == KeyboardState.IDLE || currentState == KeyboardState.RESULT) {
-                handleAiPolish()
-            }
+            handleAiAnswerButtonClick()
         }
 
         // Online Status Pill Click Listener & Connection Check
@@ -1035,6 +1037,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         }
 
                         // Update Voice Result View
+                        if (::lblOriginalHeader.isInitialized) {
+                            lblOriginalHeader.text = "You said:"
+                            lblOriginalHeader.visibility = View.VISIBLE
+                        }
+                        lblTranslationHeader.text = "Translation:"
                         tvOriginalText.text = lastOriginalText
                         if (isTranslateOn && lastTranslatedText.isNotBlank() && lastTranslatedText != lastOriginalText) {
                             lblTranslationHeader.visibility = View.VISIBLE
@@ -1134,37 +1141,113 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
-    private fun handleAiAsk() {
+    private fun handleSearchButtonClick() {
+        try {
+            val ic = currentInputConnection
+            val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
+            val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+            val currentInputText = if (selectedText.isNotBlank()) selectedText else beforeCursor
+            val query = currentInputText.trim()
+
+            val url = if (query.isNotEmpty()) {
+                "https://duckduckgo.com/?q=" + Uri.encode(query)
+            } else {
+                "https://duckduckgo.com/"
+            }
+
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("ButterflyIME", "Search button error: ${e.message}", e)
+            Toast.makeText(this, "Unable to open browser", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun handleAiAnswerButtonClick() {
+        if (isAiAnswerLoading) {
+            return
+        }
+
         val ic = currentInputConnection
         val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
         val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
-        val prompt = when {
-            selectedText.isNotBlank() -> selectedText
-            beforeCursor.isNotBlank() -> beforeCursor.trim()
-            else -> lastFinalText
+        val currentInputText = if (selectedText.isNotBlank()) selectedText else beforeCursor
+        val question = currentInputText.trim()
+
+        if (question.isEmpty()) {
+            Toast.makeText(this, "Enter a question first.", Toast.LENGTH_SHORT).show()
+            tvInsertedNotice.text = "⚠️ Enter a question first."
+            tvInsertedNotice.visibility = View.VISIBLE
+            if (::lblOriginalHeader.isInitialized) {
+                lblOriginalHeader.visibility = View.GONE
+            }
+            tvOriginalText.visibility = View.GONE
+            lblTranslationHeader.visibility = View.GONE
+            tvTranslatedText.visibility = View.GONE
+            layoutVoiceResult.visibility = View.VISIBLE
+            setKeyboardState(KeyboardState.RESULT)
+            return
         }
 
-        if (prompt.isNotBlank()) {
-            tvTapToSpeak.text = "⏳ Asking AI..."
-            val srcLang = languages[spinnerSourceLang.selectedItemPosition].first
-            serviceScope.launch {
-                try {
-                    val res = networkService.askAI(prompt, srcLang)
-                    tvTapToSpeak.text = "🎙  TAP TO SPEAK"
-                    if (res.success && res.answer.isNotBlank()) {
-                        currentInputConnection?.commitText("\n" + res.answer, 1)
-                        Toast.makeText(this@ButterflyInputMethodService, "🤖 Answer inserted!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@ButterflyInputMethodService, res.error ?: "Ask AI failed", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    tvTapToSpeak.text = "🎙  TAP TO SPEAK"
-                    Toast.makeText(this@ButterflyInputMethodService, "Ask AI error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } else {
-            Toast.makeText(this, "Type a question or speak first", Toast.LENGTH_SHORT).show()
+        isAiAnswerLoading = true
+
+        if (::lblOriginalHeader.isInitialized) {
+            lblOriginalHeader.text = "Question:"
+            lblOriginalHeader.visibility = View.VISIBLE
         }
+        tvOriginalText.text = question
+        tvOriginalText.visibility = View.VISIBLE
+
+        lblTranslationHeader.text = "AI Answer:"
+        lblTranslationHeader.visibility = View.VISIBLE
+        tvTranslatedText.text = "Thinking..."
+        tvTranslatedText.visibility = View.VISIBLE
+
+        tvInsertedNotice.visibility = View.GONE
+        layoutVoiceResult.visibility = View.VISIBLE
+        setKeyboardState(KeyboardState.RESULT)
+
+        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+
+        serviceScope.launch {
+            try {
+                val res = networkService.askAI(question, srcLang)
+
+                if (res.success && res.answer.isNotBlank()) {
+                    tvTranslatedText.text = res.answer
+                    lastFinalText = res.answer
+                    tvInsertedNotice.text = "✓ AI Response Ready"
+                    tvInsertedNotice.visibility = View.VISIBLE
+                } else {
+                    val rawError = res.error ?: ""
+                    val errorMsg = when {
+                        rawError.contains("API key", ignoreCase = true) ||
+                        rawError.contains("OPENAI_API_KEY", ignoreCase = true) ||
+                        rawError.contains("Configure your OpenAI", ignoreCase = true) -> {
+                            "Configure your OpenAI API key in Settings."
+                        }
+                        else -> {
+                            "AI service unavailable. Check your connection."
+                        }
+                    }
+                    tvTranslatedText.text = errorMsg
+                    Toast.makeText(this@ButterflyInputMethodService, errorMsg, Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "AI Answer error: ${e.message}", e)
+                val errorMsg = "AI service unavailable. Check your connection."
+                tvTranslatedText.text = errorMsg
+                Toast.makeText(this@ButterflyInputMethodService, errorMsg, Toast.LENGTH_LONG).show()
+            } finally {
+                isAiAnswerLoading = false
+            }
+        }
+    }
+
+    private fun handleAiAsk() {
+        handleAiAnswerButtonClick()
     }
 
     private fun retranslateAndUpdate() {
