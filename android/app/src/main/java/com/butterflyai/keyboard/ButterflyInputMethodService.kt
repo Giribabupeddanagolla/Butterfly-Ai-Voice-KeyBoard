@@ -1152,20 +1152,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             layoutHeaderBanner?.setBackgroundColor(palette.headerBg)
         }
 
-        // 1. Header Title, Subtitle & Left/Right Butterfly Designs Tinting
+        // 1. Header Title & Subtitle Text Color
         val tvHeaderTitle = rootRootView.findViewById<TextView>(R.id.tvHeaderTitle)
         tvHeaderTitle?.setTextColor(palette.ctrlKeyText)
         val tvHeaderSubtitle = rootRootView.findViewById<TextView>(R.id.tvHeaderSubtitle)
         tvHeaderSubtitle?.setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B"))
-
-        val imgButterflyLeft = rootRootView.findViewById<ImageView>(R.id.imgButterflyLeft)
-        val imgButterflyRight = rootRootView.findViewById<ImageView>(R.id.imgButterflyRight)
-        if (imgButterflyLeft != null) {
-            imgButterflyLeft.imageTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyText)
-        }
-        if (imgButterflyRight != null) {
-            imgButterflyRight.imageTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyText)
-        }
 
         // 2. Feature Cards Backgrounds & Titles (Voice | Search | AI Answer)
         val btnCardVoice = rootRootView.findViewById<View>(R.id.btnCardVoice)
@@ -1230,6 +1221,23 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             lblTargetLang?.setTextColor(android.graphics.Color.parseColor("#64748B"))
             tvLangArrow?.setTextColor(android.graphics.Color.parseColor("#1E293B"))
         }
+
+        // Dynamic Butterfly Icon Tinting across Themes (Voice, Search, AI Answer, Source, Target)
+        val iconColor = if (palette.isDark) {
+            if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF")
+            else if (currentThemeKey == "oled") android.graphics.Color.parseColor("#38BDF8")
+            else if (currentThemeKey == "sunset") android.graphics.Color.parseColor("#F472B6")
+            else android.graphics.Color.parseColor("#60A5FA")
+        } else {
+            android.graphics.Color.parseColor("#1D4ED8")
+        }
+        val butterflyTint = android.content.res.ColorStateList.valueOf(iconColor)
+
+        rootRootView.findViewById<ImageView>(R.id.tvCardVoiceIcon)?.imageTintList = butterflyTint
+        rootRootView.findViewById<ImageView>(R.id.tvCardSearchIcon)?.imageTintList = butterflyTint
+        rootRootView.findViewById<ImageView>(R.id.tvCardAIIcon)?.imageTintList = butterflyTint
+        rootRootView.findViewById<ImageView>(R.id.imgSourceLangIcon)?.imageTintList = butterflyTint
+        rootRootView.findViewById<ImageView>(R.id.imgTargetLangIcon)?.imageTintList = butterflyTint
 
         // Refresh Language Spinners
         val spinnerSource = rootRootView.findViewById<Spinner>(R.id.spinnerSourceLang)

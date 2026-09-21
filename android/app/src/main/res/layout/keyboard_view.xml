@@ -7,7 +7,7 @@
     android:background="@drawable/bg_keyboard_soft_sky"
     android:padding="3dp">
 
-    <!-- HEADER BANNER: Butterfly Designs (Left & Right), Logo, Title, Online Status, Settings -->
+    <!-- HEADER BANNER: Logo, Title, Online Status, Settings -->
     <LinearLayout
         android:id="@+id/layoutHeaderBanner"
         android:layout_width="match_parent"
@@ -17,18 +17,9 @@
         android:paddingHorizontal="2dp"
         android:layout_marginBottom="2dp">
 
-        <!-- Left Decorative Butterfly Design -->
         <ImageView
-            android:id="@+id/imgButterflyLeft"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:src="@drawable/ic_butterfly_side"
-            android:contentDescription="Left Butterfly"
-            android:layout_marginEnd="4dp" />
-
-        <ImageView
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/ic_butterfly_favicon"
             android:contentDescription="Butterfly AI Logo"
             android:layout_marginEnd="4dp" />
@@ -65,7 +56,7 @@
             android:background="@drawable/bg_status_online_pill"
             android:gravity="center"
             android:paddingHorizontal="8dp"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="6dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -82,8 +73,8 @@
         <!-- Theme / Settings Gear Button -->
         <Button
             android:id="@+id/btnCycleTheme"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:insetTop="0dp"
@@ -92,19 +83,9 @@
             android:insetRight="0dp"
             android:text="⚙"
             android:textColor="#1D4ED8"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:background="@drawable/bg_quick_toolbar_pill"
-            android:padding="0dp"
-            android:layout_marginEnd="4dp" />
-
-        <!-- Right Decorative Butterfly Design (Mirrored) -->
-        <ImageView
-            android:id="@+id/imgButterflyRight"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:src="@drawable/ic_butterfly_side"
-            android:scaleX="-1"
-            android:contentDescription="Right Butterfly" />
+            android:padding="0dp" />
     </LinearLayout>
 
     <!-- 3 FEATURE CARDS ROW (Voice Keyboard | Web Search | AI Answer) - Mini Pill Bar -->
@@ -130,14 +111,6 @@
             android:focusable="true"
             android:layout_marginEnd="3dp">
 
-            <ImageView
-                android:id="@+id/tvCardVoiceIcon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_voice_favicon"
-                android:contentDescription="Voice Icon"
-                android:layout_marginEnd="4dp" />
-
             <TextView
                 android:id="@+id/tvCardVoiceTitle"
                 android:layout_width="wrap_content"
@@ -146,6 +119,14 @@
                 android:textColor="#1E293B"
                 android:textSize="9.5sp"
                 android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/tvCardVoiceIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/ic_butterfly_side_icon"
+                android:contentDescription="Voice Icon"
+                android:layout_marginStart="3dp" />
         </LinearLayout>
 
         <!-- Card 2: Web Search -->
@@ -162,14 +143,6 @@
             android:focusable="true"
             android:layout_marginEnd="3dp">
 
-            <ImageView
-                android:id="@+id/tvCardSearchIcon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_search_favicon"
-                android:contentDescription="Search Icon"
-                android:layout_marginEnd="4dp" />
-
             <TextView
                 android:id="@+id/tvCardSearchTitle"
                 android:layout_width="wrap_content"
@@ -178,6 +151,14 @@
                 android:textColor="#1E293B"
                 android:textSize="9.5sp"
                 android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/tvCardSearchIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/ic_butterfly_side_icon"
+                android:contentDescription="Search Icon"
+                android:layout_marginStart="3dp" />
         </LinearLayout>
 
         <!-- Card 3: AI Answer -->
@@ -193,14 +174,6 @@
             android:clickable="true"
             android:focusable="true">
 
-            <ImageView
-                android:id="@+id/tvCardAIIcon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_ai_answer_favicon"
-                android:contentDescription="AI Answer Icon"
-                android:layout_marginEnd="4dp" />
-
             <TextView
                 android:id="@+id/tvCardAITitle"
                 android:layout_width="wrap_content"
@@ -209,6 +182,14 @@
                 android:textColor="#1E293B"
                 android:textSize="9.5sp"
                 android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/tvCardAIIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/ic_butterfly_side_icon"
+                android:contentDescription="AI Answer Icon"
+                android:layout_marginStart="3dp" />
         </LinearLayout>
 
     </LinearLayout>
@@ -232,14 +213,6 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="5dp">
-
-            <ImageView
-                android:id="@+id/imgSourceLangIcon"
-                android:layout_width="13dp"
-                android:layout_height="13dp"
-                android:src="@drawable/ic_source_favicon"
-                android:contentDescription="Source Icon"
-                android:layout_marginEnd="3dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -266,6 +239,14 @@
                     android:padding="0dp" />
             </LinearLayout>
 
+            <ImageView
+                android:id="@+id/imgSourceLangIcon"
+                android:layout_width="13dp"
+                android:layout_height="13dp"
+                android:src="@drawable/ic_butterfly_side_icon"
+                android:contentDescription="Source Icon"
+                android:layout_marginStart="3dp" />
+
         </LinearLayout>
 
         <!-- Central Directional Arrow -->
@@ -289,14 +270,6 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="5dp">
-
-            <ImageView
-                android:id="@+id/imgTargetLangIcon"
-                android:layout_width="13dp"
-                android:layout_height="13dp"
-                android:src="@drawable/ic_source_favicon"
-                android:contentDescription="Target Icon"
-                android:layout_marginEnd="3dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -322,6 +295,14 @@
                     android:background="@android:color/transparent"
                     android:padding="0dp" />
             </LinearLayout>
+
+            <ImageView
+                android:id="@+id/imgTargetLangIcon"
+                android:layout_width="13dp"
+                android:layout_height="13dp"
+                android:src="@drawable/ic_butterfly_side_icon"
+                android:contentDescription="Target Icon"
+                android:layout_marginStart="3dp" />
 
         </LinearLayout>
 
