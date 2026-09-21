@@ -1462,7 +1462,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji,
             R.id.btnBackspaceQwerty, R.id.btnBackspaceNum, R.id.btnBackspaceEmoji,
             R.id.btnEnterQwerty, R.id.btnEnterNum,
-            R.id.tabEmojiSmileys, R.id.tabEmojiGestures, R.id.tabEmojiHearts, R.id.tabEmojiParty, R.id.tabEmojiSymbols
+            R.id.tabEmojiSmileys, R.id.tabEmojiPeople, R.id.tabEmojiAnimals,
+            R.id.tabEmojiFood, R.id.tabEmojiTravel, R.id.tabEmojiActivities,
+            R.id.tabEmojiObjects, R.id.tabEmojiSymbols, R.id.tabEmojiFlags
         )
 
         for (id in controlKeyIds) {
