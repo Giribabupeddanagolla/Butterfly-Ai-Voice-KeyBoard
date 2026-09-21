@@ -1228,6 +1228,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         rawError.contains("Configure your OpenAI", ignoreCase = true) -> {
                             "Configure your OpenAI API key in Settings."
                         }
+                        rawError.isNotBlank() && !rawError.contains("HTTP", ignoreCase = true) -> {
+                            rawError
+                        }
                         else -> {
                             "AI service unavailable. Check your connection."
                         }

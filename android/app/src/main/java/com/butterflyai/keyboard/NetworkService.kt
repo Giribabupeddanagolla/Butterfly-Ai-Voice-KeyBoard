@@ -113,30 +113,46 @@ class NetworkService(private val context: Context) {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return@withContext TranscriptionResult(false, error = "Backend HTTP error ${response.code}")
+                val bodyString = response.body?.string() ?: ""
+                var jsonErr: String? = null
+                var jsonObj: JsonObject? = null
+                if (bodyString.isNotBlank()) {
+                    try {
+                        jsonObj = gson.fromJson(bodyString, JsonObject::class.java)
+                        if (jsonObj != null) {
+                            if (jsonObj.has("error")) {
+                                jsonErr = jsonObj.get("error")?.asString
+                            } else if (jsonObj.has("detail")) {
+                                jsonErr = jsonObj.get("detail")?.asString
+                            }
+                        }
+                    } catch (e: Exception) {}
                 }
 
-                val bodyString = response.body?.string() ?: return@withContext TranscriptionResult(false, error = "Empty response")
-                val json = gson.fromJson(bodyString, JsonObject::class.java)
+                if (!response.isSuccessful) {
+                    return@withContext TranscriptionResult(false, error = jsonErr ?: "Backend HTTP error ${response.code}")
+                }
 
-                if (json.has("success") && !json.get("success").asBoolean) {
-                    val err = json.get("error")?.asString ?: "Transcription failed"
+                if (jsonObj == null) {
+                    return@withContext TranscriptionResult(false, error = "Empty response from server")
+                }
+
+                if (jsonObj.has("success") && !jsonObj.get("success").asBoolean) {
+                    val err = jsonErr ?: "Transcription failed"
                     return@withContext TranscriptionResult(false, error = err)
                 }
 
-                val originalText = json.get("text")?.asString
-                    ?: json.get("transcription")?.asString
-                    ?: json.get("original_text")?.asString
+                val originalText = jsonObj.get("text")?.asString
+                    ?: jsonObj.get("transcription")?.asString
+                    ?: jsonObj.get("original_text")?.asString
                     ?: ""
 
-                val detectedLang = json.get("language")?.asString ?: sourceLanguage
+                val detectedLang = jsonObj.get("language")?.asString ?: sourceLanguage
 
-                var finalTranslatedText = json.get("translation")?.asString
-                    ?: json.get("translated_text")?.asString
+                var finalTranslatedText = jsonObj.get("translation")?.asString
+                    ?: jsonObj.get("translated_text")?.asString
                     ?: originalText
 
-                // Perform separate translation if Translation is ON and backend did not return translation directly
                 if (isTranslateOn && originalText.isNotBlank() && (finalTranslatedText == originalText || finalTranslatedText.isBlank())) {
                     val translated = translateTextDirect(originalText, detectedLang, targetLanguage)
                     if (!translated.isNullOrBlank()) {
@@ -206,15 +222,29 @@ class NetworkService(private val context: Context) {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    val bodyString = response.body?.string() ?: return@withContext PolishResult(false, error = "Empty response")
-                    val json = gson.fromJson(bodyString, JsonObject::class.java)
-                    if (json.has("success") && json.get("success").asBoolean) {
-                        val polished = json.get("polished_text")?.asString ?: text
+                val bodyString = response.body?.string() ?: ""
+                var jsonObj: JsonObject? = null
+                var errStr: String? = null
+                if (bodyString.isNotBlank()) {
+                    try {
+                        jsonObj = gson.fromJson(bodyString, JsonObject::class.java)
+                        if (jsonObj != null) {
+                            if (jsonObj.has("error")) {
+                                errStr = jsonObj.get("error")?.asString
+                            } else if (jsonObj.has("detail")) {
+                                errStr = jsonObj.get("detail")?.asString
+                            }
+                        }
+                    } catch (e: Exception) {}
+                }
+
+                if (response.isSuccessful && jsonObj != null) {
+                    if (jsonObj.has("success") && jsonObj.get("success").asBoolean) {
+                        val polished = jsonObj.get("polished_text")?.asString ?: text
                         return@withContext PolishResult(true, polishedText = polished)
                     }
                 }
-                return@withContext PolishResult(false, error = "Polish request failed with HTTP ${response.code}")
+                return@withContext PolishResult(false, error = errStr ?: "Polish request failed (HTTP ${response.code})")
             }
         } catch (e: Exception) {
             Log.e("NetworkService", "Polish text error: ${e.message}", e)
@@ -237,15 +267,29 @@ class NetworkService(private val context: Context) {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    val bodyString = response.body?.string() ?: return@withContext AskResult(false, error = "Empty response")
-                    val json = gson.fromJson(bodyString, JsonObject::class.java)
-                    if (json.has("success") && json.get("success").asBoolean) {
-                        val answer = json.get("answer")?.asString ?: ""
+                val bodyString = response.body?.string() ?: ""
+                var jsonObj: JsonObject? = null
+                var errStr: String? = null
+                if (bodyString.isNotBlank()) {
+                    try {
+                        jsonObj = gson.fromJson(bodyString, JsonObject::class.java)
+                        if (jsonObj != null) {
+                            if (jsonObj.has("error")) {
+                                errStr = jsonObj.get("error")?.asString
+                            } else if (jsonObj.has("detail")) {
+                                errStr = jsonObj.get("detail")?.asString
+                            }
+                        }
+                    } catch (e: Exception) {}
+                }
+
+                if (response.isSuccessful && jsonObj != null) {
+                    if (jsonObj.has("success") && jsonObj.get("success").asBoolean) {
+                        val answer = jsonObj.get("answer")?.asString ?: ""
                         return@withContext AskResult(true, answer = answer)
                     }
                 }
-                return@withContext AskResult(false, error = "Ask AI failed with HTTP ${response.code}")
+                return@withContext AskResult(false, error = errStr ?: "Ask AI failed (HTTP ${response.code})")
             }
         } catch (e: Exception) {
             Log.e("NetworkService", "Ask AI error: ${e.message}", e)
