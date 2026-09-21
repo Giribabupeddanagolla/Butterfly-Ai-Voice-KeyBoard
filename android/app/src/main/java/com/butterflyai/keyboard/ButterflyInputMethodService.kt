@@ -120,24 +120,76 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕",
             "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃"
         ),
-        "gestures" to listOf(
-            "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✌️", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️",
-            "✋", "🤚", "🖐", "🖖", "👋", "💪", "🦾", "✍️", "👊", "✊", "🤛", "🤜", "🤝", "🫰", "🫵", "🫶", "🫱", "🫲",
-            "🖐️", "✊", "🏽", "🏿", "🏻", "🏼"
+        "people" to listOf(
+            "👋", "🤚", "🖐", "✋", "🖖", "🫲", "🫱", "👌", "🤌", "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉",
+            "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "🫶", "👐", "🤲", "🤝", "🙏", "✍️",
+            "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🫀", "🫁", "🦷", "🦴", "👀", "👁️", "👅",
+            "👄", "👶", "🧒", "👦", "👧", "🧑", "👱", "👨", "🧔", "👩", "🧓", "👴", "👵", "🙍", "🗣️", "👤", "👥", "🫂"
         ),
-        "hearts" to listOf(
-            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝",
-            "💟", "🫀", "🫁", "💌", "💋", "💏", "💑", "👨‍❤️‍👨", "👩‍❤️‍👩", "🔥", "💥", "✨", "💫", "💢", "💦", "💨", "🩸"
+        "animals" to listOf(
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊",
+            "🐒", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋",
+            "🐌", "🐞", "🐜", "🪰", "🪲", "🪳", "🦟", "🦗", "🕷️", "🦂", "🐢", "🐍", "🦎", "🐙", "🦑", "🦞", "🦀", "🐡",
+            "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🦭", "🐊", "🐅", "🐆", "🦍", "🦧", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒",
+            "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🦙", "🐐", "🦌", "🐕", "🐩", "🦮", "🐈", "🦚", "🦜",
+            "🦩", "🕊️", "🐇", "🦝", "🦨", "🦡", "🦦", "🦥", "🦔", "🌵", "🎄", "🌲", "🌳", "🌴", "🌱", "🌿", "☘️", "🍀",
+            "🎍", "🪴", "🎋", "🍃", "🍂", "🍁", "🍄", "🌾", "💐", "🌷", "🌹", "🥀", "🌺", "🌸", "🌼", "🌻", "🌞", "🌝",
+            "🌛", "🌜", "🌚", "🌕", "🌖", "🌗", "🌘", "🌑", "🌒", "🌓", "🌔", "🌙", "🌎", "🌍", "🌏", "🪐", "💫", "⭐",
+            "🌟", "✨", "⚡", "☄️", "💥", "🔥", "🌪️", "🌈", "☀️", "🌤️", "⛅", "🌥️", "☁️", "🌦️", "🌧️", "⛈️", "🌨️", "❄️",
+            "☃️", "⛄", "🌬️", "💨", "💧", "💦", "🌊"
         ),
-        "party" to listOf(
-            "🎉", "🎊", "🎈", "🎂", "🍰", "🧁", "🎁", "🍾", "🥂", "🍻", "🍺", "🍷", "🍸", "🍹", "🥃", "🍕", "🍔", "🍟",
-            "🌭", "🍿", "🍩", "🍪", "🍫", "🍬", "🍭", "🍨", "🍧", "🍦", "🍓", "🍉", "🍎", "🍇", "🥭", "🍍", "🥥", "🥑",
-            "🌮", "🌯", "🥗", "🥘", "🍝", "🍜", "🍣", "🍱", "🥟", "☕", "🍵", "🧃", "🥤"
+        "food" to listOf(
+            "🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍎", "🍏", "🍐", "🍑", "🍒", "🍓", "🫐", "🥝", "🍅", "🫒",
+            "🥥", "🥑", "🍆", "🥔", "🥕", "🌽", "🌶️", "🫑", "🥒", "🥬", "🥦", "🧄", "🧅", "🥜", "🌰", "🍞", "🥐", "🥖",
+            "🫓", "🥨", "🥯", "🥞", "🧇", "🧀", "🍖", "🍗", "🥩", "🥓", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🫔",
+            "🥙", "🧆", "🥚", "🍳", "🥘", "🍲", "🫕", "🥣", "🥗", "🍿", "🧂", "🥫", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜",
+            "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰",
+            "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕", "🫖", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺",
+            "🍻", "🥂", "🥃", "🥤", "🧋", "🧃", "🧉", "🧊"
+        ),
+        "travel" to listOf(
+            "🚗", "🚕", "🚙", "🚌", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🛴", "🚲", "🛵", "🏍️", "🛺",
+            "🚨", "🚔", "🚍", "🚘", "🚖", "🚡", "🚠", "🚟", "🚃", "🚋", "🚝", "🚅", "🚆", "🚇", "🚈", "🚉", "✈️",
+            "🛫", "🛬", "🪂", "🚁", "🏣", "🏢", "🏥", "🏦", "🏨", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "💒", "🗼", "🗽",
+            "⛪", "🕌", "🛕", "🕍", "⛩️", "🕋", "⛲", "⛺", "🌁", "🌃", "🏙️", "🌄", "🌅", "🌆", "🌇", "🌉", "♨️", "🎠",
+            "🎡", "🎢", "💈", "🎪", "🚀", "🛸", "🛰️", "🌋", "⛰️", "🏔️", "🗻", "🏕️", "🏖️", "🏜️", "🏝️", "🏞️", "🏟️",
+            "🏛️", "🏗️", "🧱", "🏠", "🏡", "🏘️", "🏚️", "🌐", "🗺️", "🧭"
+        ),
+        "activities" to listOf(
+            "⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓", "🏸", "🏒", "🥍", "🏏", "🪃", "🥅",
+            "⛳", "🪁", "🏹", "🎣", "🤿", "🥊", "🥋", "🎽", "🛹", "🛼", "🛷", "⛸️", "🎿", "⛷️", "🏂", "🪂", "🏋️", "🤼",
+            "🤸", "⛹️", "🤺", "🤾", "🏌️", "🏇", "🧘", "🏄", "🏊", "🚣", "🧗", "🚵", "🚴", "🏆", "🥇", "🥈", "🥉",
+            "🏅", "🎖️", "🏵️", "🎗️", "🎫", "🎟️", "🎪", "🤹", "🎭", "🩰", "🎨", "🎬", "🎤", "🎧", "🎼", "🎵", "🎶", "🥁",
+            "🎷", "🎺", "🎸", "🪕", "🎻", "🎲", "♟️", "🎯", "🎳", "🎮", "🎰", "🧩", "🎉", "🎊", "🎈", "🎂", "🎄",
+            "🎆", "🎇", "🧨", "✨", "🎃", "🎀", "🎁"
+        ),
+        "objects" to listOf(
+            "👓", "🕶️", "🥽", "🥼", "👔", "👕", "👖", "🧣", "🧤", "🧥", "🦺", "👑", "👒", "🎩", "🎓", "🧢", "⛑️", "💍",
+            "💼", "🎒", "🧳", "☂️", "☔", "📱", "📲", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🕹️", "🎙️", "🎚️", "🎛️", "📺",
+            "📷", "📸", "📹", "📼", "🔍", "🔎", "🕯️", "💡", "🔦", "🏮", "📔", "📕", "📖", "📗", "📘", "📙", "📚", "📓",
+            "📒", "📃", "📜", "📄", "📰", "🗞️", "📑", "🔖", "🏷️", "💰", "🪙", "<ctrl42>", "💵", "💶", "💷", "💸", "💳", "🧾",
+            "✉️", "📧", "📨", "📩", "📤", "📥", "📦", "📫", "📬", "📭", "📮", "📝", "✏️", "✒️", "🖊️", "🖌️", "🖍️", "📌",
+            "📍", "📎", "🖇️", "📐", "📏", "🧮", "✂️", "🗑️", "🔒", "🔓", "🔏", "🔐", "🔑", "🗝️", "🔨", "🪓", "⛏️", "⚒️",
+            "🛠️", "🗡️", "⚔️", "💣", "🛡️", "⚙️", "🧱", "⛓️", "🧲", "⚗️", "🧪", "🧫", "🧬", "🔬", "🔭", "📡", "💉", "🩸",
+            "💊", "🩹", "🩺", "🚪", "🛗", "🪞", "🪟", "🛏️", "🛋️", "🚽", "🚰", "🛁", "🧼", "🪥", "🪒", "🧽", "🪣", "🧴",
+            "🔮", "🚬", "🪦", "⚱️", "🗿"
         ),
         "symbols" to listOf(
-            "✨", "🔥", "⭐", "🌟", "💫", "⚡", "💥", "💯", "✅", "❌", "⚠️", "⛔", "⭕", "❗", "❓", "🎵", "🎶", "💬",
-            "💭", "🚀", "🛸", "🏆", "🥇", "🎯", "🎮", "🎲", "👑", "💎", "💍", "💡", "💰", "💵", "💳", "📱", "💻", "🖥️",
-            "🌍", "✈️", "🚗", "🛵", "🏍️", "🚲", "🇮🇳", "🇺🇸", "🇬🇧", "🇨🇦", "🇦🇺", "🇯🇵", "🇰🇷", "🇩🇪", "🇫🇷", "🇧🇷"
+            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝",
+            "💟", "☮️", "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐", "<ctrl42>", "♈", "♉", "♊", "♋", "♌",
+            "♍", "♎", "♏", "♐", "♑", "♒", "♓", "🆔", "⚛️", "📴", "📳", "✴️", "🆚", "💮", "🅰️", "🅱️", "🆎", "🆑",
+            "🅾️", "🆘", "❌", "⭕", "🛑", "⛔", "📛", "🚫", "💯", "💢", "♨️", "🚷", "🚯", "🚳", "🚱", "🔞", "📵", "🚭",
+            "❗", "❕", "❓", "❔", "‼️", "⁉️", "🔅", "🔆", "〽️", "⚠️", "🚸", "🔱", "⚜️", "🔰", "♻️", "✅", "❇️", "✳️",
+            "❎", "🌐", "💠", "Ⓜ️", "🌀", "💤", "🏧", "🚾", "♿", "🅿️", "🈳", "<ctrl42>", "🛃", "🛄", "🛅", "🚹", "🚺", "🚼",
+            "🚻", "▶️", "⏩", "⏭️", "⏯️", "◀️", "⏪", "⏮️", "🔼", "⏫", "🔽", "⏬", "⏸️", "⏹️", "⏺️", "⏏️", "♀️", "♂️",
+            "⚕️", "♾️", "🔀", "🔁", "🔂", "🔄", "➕", "➖", "➗", "✖️", "💲", "💱", "🪬", "🧿", "🔮", "⭐", "🌟", "✨",
+            "⚡", "💥"
+        ),
+        "flags" to listOf(
+            "🏁", "🚩", "🎌", "🏴", "🏳️", "🏳️‍🌈", "🏳️‍⚧️", "🏴‍☠️", "🇮🇳", "🇺🇸", "🇬🇧", "🇨🇦", "🇦🇺", "🇯🇵", "🇰🇷", "🇩🇪",
+            "🇫🇷", "🇧🇷", "🇮🇹", "🇪🇸", "🇷🇺", "🇨🇳", "🇲🇽", "🇿🇦", "🇸🇬", "🇳🇿", "🇦🇪", "🇸🇦", "🇳🇵", "🇧🇩", "🇱🇰", "🇵🇰",
+            "🇮🇩", "🇲🇾", "🇵🇭", "🇹🇭", "🇻🇳", "🇹🇷", "🇪🇬", "🇳🇬", "🇰🇪", "🇦🇷", "🇨🇱", "🇨🇴", "🇵🇪", "🇺🇦", "🇵🇱", "🇳🇱",
+            "🇸🇪", "🇨🇭"
         )
     )
 
@@ -611,23 +663,31 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             setOnClickListener(emojiModeListener)
         }
 
-        // 5. Emoji Category Tab Buttons
+        // 5. Emoji Category Tab Buttons (9 Standard Categories)
         val emojiTabIds = listOf(
             R.id.tabEmojiSmileys,
-            R.id.tabEmojiGestures,
-            R.id.tabEmojiHearts,
-            R.id.tabEmojiParty,
-            R.id.tabEmojiSymbols
+            R.id.tabEmojiPeople,
+            R.id.tabEmojiAnimals,
+            R.id.tabEmojiFood,
+            R.id.tabEmojiTravel,
+            R.id.tabEmojiActivities,
+            R.id.tabEmojiObjects,
+            R.id.tabEmojiSymbols,
+            R.id.tabEmojiFlags
         )
         emojiTabIds.forEach { id ->
             view.findViewById<Button>(id)?.isAllCaps = false
         }
 
         view.findViewById<Button>(R.id.tabEmojiSmileys)?.setOnClickListener { loadEmojiCategory("smileys", view) }
-        view.findViewById<Button>(R.id.tabEmojiGestures)?.setOnClickListener { loadEmojiCategory("gestures", view) }
-        view.findViewById<Button>(R.id.tabEmojiHearts)?.setOnClickListener { loadEmojiCategory("hearts", view) }
-        view.findViewById<Button>(R.id.tabEmojiParty)?.setOnClickListener { loadEmojiCategory("party", view) }
+        view.findViewById<Button>(R.id.tabEmojiPeople)?.setOnClickListener { loadEmojiCategory("people", view) }
+        view.findViewById<Button>(R.id.tabEmojiAnimals)?.setOnClickListener { loadEmojiCategory("animals", view) }
+        view.findViewById<Button>(R.id.tabEmojiFood)?.setOnClickListener { loadEmojiCategory("food", view) }
+        view.findViewById<Button>(R.id.tabEmojiTravel)?.setOnClickListener { loadEmojiCategory("travel", view) }
+        view.findViewById<Button>(R.id.tabEmojiActivities)?.setOnClickListener { loadEmojiCategory("activities", view) }
+        view.findViewById<Button>(R.id.tabEmojiObjects)?.setOnClickListener { loadEmojiCategory("objects", view) }
         view.findViewById<Button>(R.id.tabEmojiSymbols)?.setOnClickListener { loadEmojiCategory("symbols", view) }
+        view.findViewById<Button>(R.id.tabEmojiFlags)?.setOnClickListener { loadEmojiCategory("flags", view) }
 
         // 6. Punctuation Keys (, and .)
         val commaListener = View.OnClickListener { currentInputConnection?.commitText(",", 1) }
@@ -794,10 +854,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         // Highlight active category tab button
         val tabs = mapOf(
             "smileys" to R.id.tabEmojiSmileys,
-            "gestures" to R.id.tabEmojiGestures,
-            "hearts" to R.id.tabEmojiHearts,
-            "party" to R.id.tabEmojiParty,
-            "symbols" to R.id.tabEmojiSymbols
+            "people" to R.id.tabEmojiPeople,
+            "animals" to R.id.tabEmojiAnimals,
+            "food" to R.id.tabEmojiFood,
+            "travel" to R.id.tabEmojiTravel,
+            "activities" to R.id.tabEmojiActivities,
+            "objects" to R.id.tabEmojiObjects,
+            "symbols" to R.id.tabEmojiSymbols,
+            "flags" to R.id.tabEmojiFlags
         )
         for ((key, tabId) in tabs) {
             val tabBtn = rootView.findViewById<Button>(tabId) ?: continue

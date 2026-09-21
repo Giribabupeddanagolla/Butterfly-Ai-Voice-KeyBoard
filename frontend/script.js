@@ -138,34 +138,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (this.isEmoji) {
                 const capsBadge = document.getElementById('capsBadge');
-                if (capsBadge) capsBadge.textContent = 'EMOJI (' + (this.emojiCategory + 1) + '/4)';
+                if (capsBadge) capsBadge.textContent = 'EMOJI (' + (this.emojiCategory + 1) + '/9)';
 
                 if (this.emojiCategory === 0) {
-                    // Category 1: Smileys & Emotions
+                    // Category 1: Smileys & Emotions (😀)
                     const row1 = ['😊', '😂', '🤣', '❤️', '😍', '🥰', '😘', '😁', '😎', '🥳'];
                     const row2 = ['🤔', '🥺', '😭', '🤯', '😱', '😈', '😴', '🙄', '😬', '🤩'];
-                    const row3 = ['abc', '▶ 2/4', '🔥', '✨', '👍', '🙏', '🎉', '🚀', 'backspace'];
+                    const row3 = ['abc', '▶ 2/9', '🔥', '✨', '👍', '🙏', '🎉', '🚀', 'backspace'];
                     const row4 = ['123', 'emoji', 'space', 'search'];
                     rows = [row1, row2, row3, row4];
                 } else if (this.emojiCategory === 1) {
-                    // Category 2: Gestures & Hands
-                    const row1 = ['👍', '👎', '👏', '🙌', '🙏', '💪', '👌', '✌️', '🤞', '🤝'];
-                    const row2 = ['👋', '👊', '✊', '🖐️', '👆', '👇', '👈', '👉', '🤙', '💖'];
-                    const row3 = ['abc', '▶ 3/4', '💯', '💩', '👻', '💀', '🤡', '🔥', 'backspace'];
+                    // Category 2: People & Body (👋)
+                    const row1 = ['👋', '🤚', '🖐️', '✋', '✌️', '🤞', '🤟', '🤘', '🤙', '🤝'];
+                    const row2 = ['👈', '👉', '👆', '👇', '👍', '👎', '✊', '👊', '👏', '🙌'];
+                    const row3 = ['abc', '▶ 3/9', '💪', '🙏', '🫶', '✍️', '👤', '🗣️', 'backspace'];
                     const row4 = ['123', 'emoji', 'space', 'search'];
                     rows = [row1, row2, row3, row4];
                 } else if (this.emojiCategory === 2) {
-                    // Category 3: Objects & Symbols
-                    const row1 = ['🔥', '✨', '⭐', '🌟', '💥', '⚡', '💯', '🎯', '🏆', '🎉'];
-                    const row2 = ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💘'];
-                    const row3 = ['abc', '▶ 4/4', '💡', '💬', '🔔', '📌', '🎁', '🎈', 'backspace'];
+                    // Category 3: Animals & Nature (🐶)
+                    const row1 = ['🐶', '🐱', '🐭', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁'];
+                    const row2 = ['🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦅', '🦉', '🦇'];
+                    const row3 = ['abc', '▶ 4/9', '🦋', '🐝', '🐞', '🌸', '🌹', '🌻', 'backspace'];
+                    const row4 = ['123', 'emoji', 'space', 'search'];
+                    rows = [row1, row2, row3, row4];
+                } else if (this.emojiCategory === 3) {
+                    // Category 4: Food & Drink (🍔)
+                    const row1 = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍒', '🥑', '🍆', '🌽', '🍕'];
+                    const row2 = ['🍔', '🍟', '🌭', '🍿', '🍩', '🍪', '🎂', '🍰', '🧁', '🍦'];
+                    const row3 = ['abc', '▶ 5/9', '☕', '🍵', '🧃', '🥤', '🍺', '🍻', 'backspace'];
+                    const row4 = ['123', 'emoji', 'space', 'search'];
+                    rows = [row1, row2, row3, row4];
+                } else if (this.emojiCategory === 4) {
+                    // Category 5: Travel & Places (🚀)
+                    const row1 = ['🚀', '🛸', '🚗', '🚕', '🚌', '🏎️', '🚓', '🚑', '🚒', '🚲'];
+                    const row2 = ['🛵', '🏍️', '✈️', '🛫', '🛬', '⛵', '🏠', '🏢', '🏥', '🏦'];
+                    const row3 = ['abc', '▶ 6/9', '🗽', '🗼', '⛩️', '🌍', '🌅', '🌋', 'backspace'];
+                    const row4 = ['123', 'emoji', 'space', 'search'];
+                    rows = [row1, row2, row3, row4];
+                } else if (this.emojiCategory === 5) {
+                    // Category 6: Activities & Events (⚽)
+                    const row1 = ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸'];
+                    const row2 = ['🏆', '🥇', '🥈', '🥉', '🏅', '🎯', '🎮', '🎲', '🧩', '🎨'];
+                    const row3 = ['abc', '▶ 7/9', '🎬', '🎤', '🎧', '🎷', '🎸', '🎉', 'backspace'];
+                    const row4 = ['123', 'emoji', 'space', 'search'];
+                    rows = [row1, row2, row3, row4];
+                } else if (this.emojiCategory === 6) {
+                    // Category 7: Objects (💡)
+                    const row1 = ['📱', '💻', '🖥️', '📷', '📹', '📺', '💡', '🔦', '📖', '📚'];
+                    const row2 = ['💰', '💵', '💳', '✉️', '📦', '📝', '✏️', '📌', '🔍', '🔑'];
+                    const row3 = ['abc', '▶ 8/9', '🔨', '⚔️', '⚙️', '🧬', '🚪', '🔮', 'backspace'];
+                    const row4 = ['123', 'emoji', 'space', 'search'];
+                    rows = [row1, row2, row3, row4];
+                } else if (this.emojiCategory === 7) {
+                    // Category 8: Symbols (✨)
+                    const row1 = ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💘'];
+                    const row2 = ['✨', '⭐', '🌟', '💥', '⚡', '💯', '✅', '❌', '⚠️', '❗'];
+                    const row3 = ['abc', '▶ 9/9', '❓', '🎵', '🎶', '💬', '🔄', '➕', 'backspace'];
                     const row4 = ['123', 'emoji', 'space', 'search'];
                     rows = [row1, row2, row3, row4];
                 } else {
-                    // Category 4: Food, Travel & Nature
-                    const row1 = ['🚀', '🚗', '✈️', '⛵', '🏠', '🌍', '☀️', '🌙', '⭐', '🌈'];
-                    const row2 = ['🍕', '🍔', '🍟', '🍦', '🍩', '☕', '🍺', '🍿', '🍎', '🎂'];
-                    const row3 = ['abc', '◀ 1/4', '🍀', '🌺', '🐶', '🐱', '🦋', '⚽', 'backspace'];
+                    // Category 9: Flags (🚩)
+                    const row1 = ['🇮🇳', '🇺🇸', '🇬🇧', '🇨🇦', '🇦🇺', '🇯🇵', '🇰🇷', '🇩🇪', '🇫🇷', '🇧🇷'];
+                    const row2 = ['🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🇲🇽', '🇿🇦', '🇦🇪', '🇸🇦'];
+                    const row3 = ['abc', '◀ 1/9', '🇳🇵', '🇧🇩', '🇱🇰', '🇵🇰', '🇸🇬', '🇳🇿', 'backspace'];
                     const row4 = ['123', 'emoji', 'space', 'search'];
                     rows = [row1, row2, row3, row4];
                 }
@@ -252,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         btn.onclick = (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            this.emojiCategory = (this.emojiCategory + 1) % 4;
+                            this.emojiCategory = (this.emojiCategory + 1) % 9;
                             this.render();
                         };
                     } else if (key === '123' || key === 'abc') {

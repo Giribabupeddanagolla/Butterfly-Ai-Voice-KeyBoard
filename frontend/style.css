@@ -2759,6 +2759,51 @@ body {
     box-shadow: var(--shadow-glow) !important;
 }
 
+/* Language Toolbar Styling */
+.ime-row-languages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.ime-lang-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color, rgba(0, 210, 255, 0.2));
+    border-radius: var(--radius-full, 9999px);
+    padding: 4px 10px;
+    position: relative;
+}
+
+.ime-lang-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted, #94A3B8);
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.ime-select {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #F8FAFC);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ime-icon-right {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
 .btn-bottom-action.btn-search-primary:hover {
     transform: translateY(-2px) scale(1.04);
 }
