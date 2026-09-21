@@ -1222,22 +1222,17 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             tvLangArrow?.setTextColor(android.graphics.Color.parseColor("#1E293B"))
         }
 
-        // Dynamic Butterfly Icon Tinting across Themes (Voice, Search, AI Answer, Source, Target)
-        val iconColor = if (palette.isDark) {
-            if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF")
-            else if (currentThemeKey == "oled") android.graphics.Color.parseColor("#38BDF8")
-            else if (currentThemeKey == "sunset") android.graphics.Color.parseColor("#F472B6")
-            else android.graphics.Color.parseColor("#60A5FA")
-        } else {
-            android.graphics.Color.parseColor("#1D4ED8")
-        }
-        val butterflyTint = android.content.res.ColorStateList.valueOf(iconColor)
+        // Tint all 5 Right-Aligned Butterfly Card Icons to Match Active Theme Palette
+        val tvCardVoiceIcon = rootRootView.findViewById<ImageView>(R.id.tvCardVoiceIcon)
+        val tvCardSearchIcon = rootRootView.findViewById<ImageView>(R.id.tvCardSearchIcon)
+        val tvCardAIIcon = rootRootView.findViewById<ImageView>(R.id.tvCardAIIcon)
+        val imgSourceLangIcon = rootRootView.findViewById<ImageView>(R.id.imgSourceLangIcon)
+        val imgTargetLangIcon = rootRootView.findViewById<ImageView>(R.id.imgTargetLangIcon)
 
-        rootRootView.findViewById<ImageView>(R.id.tvCardVoiceIcon)?.imageTintList = butterflyTint
-        rootRootView.findViewById<ImageView>(R.id.tvCardSearchIcon)?.imageTintList = butterflyTint
-        rootRootView.findViewById<ImageView>(R.id.tvCardAIIcon)?.imageTintList = butterflyTint
-        rootRootView.findViewById<ImageView>(R.id.imgSourceLangIcon)?.imageTintList = butterflyTint
-        rootRootView.findViewById<ImageView>(R.id.imgTargetLangIcon)?.imageTintList = butterflyTint
+        val cardIconTint = android.content.res.ColorStateList.valueOf(palette.accentColor)
+        listOf(tvCardVoiceIcon, tvCardSearchIcon, tvCardAIIcon, imgSourceLangIcon, imgTargetLangIcon).forEach { iconView ->
+            iconView?.imageTintList = cardIconTint
+        }
 
         // Refresh Language Spinners
         val spinnerSource = rootRootView.findViewById<Spinner>(R.id.spinnerSourceLang)

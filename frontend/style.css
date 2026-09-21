@@ -4068,10 +4068,14 @@ body.dark-theme .ime-lang-group label {
 }
 
 .ime-lang-group .ime-icon,
-.ime-lang-group svg {
+.ime-lang-group svg,
+.ime-icon-right {
     width: 14px;
     height: 14px;
-    color: #2563EB;
+    object-fit: contain;
+    color: var(--primary-color, #2563EB);
+    margin-left: 3px;
+    filter: drop-shadow(0 0 4px var(--primary-color, #2563EB));
 }
 
 .ime-select {
