@@ -888,8 +888,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 minHeight = 0
                 isClickable = true
                 isFocusable = true
-                background = ContextCompat.getDrawable(this@ButterflyInputMethodService, R.drawable.bg_keycap_soft_white)
-                backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
+                background = null
+                val outValue = android.util.TypedValue()
+                if (theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true)) {
+                    setBackgroundResource(outValue.resourceId)
+                }
                 val params = GridLayout.LayoutParams()
                 params.width = dpToPx(44)
                 params.height = dpToPx(44)

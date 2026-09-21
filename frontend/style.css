@@ -2871,14 +2871,31 @@ body {
     gap: 4px;
 }
 
-.vk-key.emoji-key,
-.vk-key.emoji-item-key {
+.vk-key.emoji-key {
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Android Emoji", sans-serif;
     font-size: 1.3rem;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.vk-key.emoji-item-key {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Android Emoji", sans-serif;
+    font-size: 1.35rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.vk-key.emoji-item-key:hover {
+    background: rgba(0, 210, 255, 0.15) !important;
+    border-radius: 50% !important;
+    transform: scale(1.15) !important;
 }
 
 .vk-key.key-space {
