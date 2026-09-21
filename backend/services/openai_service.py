@@ -11,10 +11,14 @@ class OpenAIService:
         self.client = None
         self.openai_failed = False
 
+    def get_api_key(self) -> str:
+        env_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if env_key:
+            return env_key
+        return (config.OPENAI_API_KEY or "").strip()
+
     def get_client(self):
-        if self.openai_failed:
-            return None
-        current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
+        current_key = self.get_api_key()
         if current_key:
             if not self.client or self.api_key != current_key:
                 try:
@@ -29,12 +33,9 @@ class OpenAIService:
             self.api_key = None
         return self.client
 
-
     def is_configured(self) -> bool:
-        if self.openai_failed:
-            return False
-        client = self.get_client()
-        return client is not None and bool(self.api_key and self.api_key.startswith("sk-"))
+        current_key = self.get_api_key()
+        return bool(current_key and current_key.startswith("sk-"))
 
     def transcribe_audio(self, audio_file_path: str, prompt: Optional[str] = None, language: Optional[str] = None) -> Dict[str, Any]:
         """Transcribe audio using OpenAI Whisper API."""
