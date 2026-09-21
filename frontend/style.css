@@ -3052,8 +3052,8 @@ body {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 12px !important;
-    padding: 6px 0 !important;
+    gap: 10px !important;
+    padding: 3px 0 !important;
     margin: 0 !important;
     border-bottom: none !important;
     width: 100% !important;
@@ -3062,12 +3062,12 @@ body {
 }
 
 .voice-setting-row label {
-    font-size: 0.85rem !important;
+    font-size: 0.8rem !important;
     font-weight: 600 !important;
     color: var(--text-primary) !important;
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     white-space: nowrap !important;
     margin: 0 !important;
     flex: 1 1 auto !important;
@@ -3076,29 +3076,29 @@ body {
 }
 
 .voice-setting-row .vk-select {
-    width: 160px !important;
-    max-width: 160px !important;
-    min-width: 160px !important;
-    flex: 0 0 160px !important;
-    height: 34px !important;
-    min-height: 34px !important;
-    max-height: 34px !important;
-    font-size: 0.82rem !important;
+    width: 145px !important;
+    max-width: 145px !important;
+    min-width: 145px !important;
+    flex: 0 0 145px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    font-size: 0.78rem !important;
     font-weight: 500 !important;
     color: #F8FAFC !important;
     background-color: #0F172A !important;
     border: 1px solid rgba(0, 210, 255, 0.35) !important;
-    border-radius: 8px !important;
-    padding: 0 28px 0 10px !important;
+    border-radius: 6px !important;
+    padding: 0 24px 0 8px !important;
     margin: 0 !important;
     box-sizing: border-box !important;
     outline: none !important;
     appearance: none !important;
     -webkit-appearance: none !important;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300D2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300D2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
     background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
-    background-size: 14px !important;
+    background-position: right 8px center !important;
+    background-size: 12px !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
 }
@@ -3699,11 +3699,11 @@ body.light-theme .search-result-title {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 210, 255, 0.2);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 6px 10px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 210, 255, 0.05);
     transition: all var(--transition-fast);
 }
@@ -3722,17 +3722,17 @@ body.light-theme .search-result-title {
 #originalSpeechCard .speech-card-title {
     color: #00D2FF;
     font-weight: 700;
-    font-size: 0.76rem;
-    letter-spacing: 0.05em;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
 }
 
 #originalSpeechCard .speech-lang-tag {
     background: rgba(0, 210, 255, 0.15);
     border: 1px solid rgba(0, 210, 255, 0.35);
     color: #00D2FF;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 0.62rem;
     font-weight: 600;
 }
 
@@ -3745,32 +3745,32 @@ body.light-theme .search-result-title {
 #translationSpeechCard .speech-card-title {
     color: #E024C3;
     font-weight: 700;
-    font-size: 0.76rem;
-    letter-spacing: 0.05em;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
 }
 
 #translationSpeechCard .speech-lang-tag {
     background: rgba(224, 36, 195, 0.15);
     border: 1px solid rgba(224, 36, 195, 0.35);
     color: #E024C3;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 0.62rem;
     font-weight: 600;
 }
 
 /* Textareas inside cards */
 .voice-speech-card .voice-transcription-textarea {
-    min-height: 42px;
-    max-height: 70px;
-    height: 48px;
-    padding: 6px 10px;
-    font-size: 0.88rem;
-    line-height: 1.4;
+    min-height: 32px;
+    max-height: 60px;
+    height: 38px;
+    padding: 4px 8px;
+    font-size: 0.82rem;
+    line-height: 1.35;
     resize: vertical;
     background: rgba(5, 10, 20, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     color: #F8FAFC;
     transition: border-color var(--transition-fast);
 }
@@ -3859,18 +3859,6 @@ body.light-theme .search-result-title {
 
 
 
-
-#translationSpeechCard .btn-primary-pill {
-    background: linear-gradient(135deg, #E024C3 0%, #7928CA 100%);
-    border: none;
-    color: #FFFFFF;
-    box-shadow: 0 2px 10px rgba(224, 36, 195, 0.35);
-}
-
-#translationSpeechCard .btn-primary-pill:hover {
-    box-shadow: 0 4px 15px rgba(224, 36, 195, 0.55);
-    color: #FFFFFF;
-}
 
 /* Light Theme Specific Overrides for Result Cards */
 body.light-theme #originalSpeechCard {
@@ -4052,8 +4040,8 @@ body.dark-theme .ime-inner-card {
     justify-content: space-between;
     background: #FFFFFF;
     border: 1.5px solid #CBD5E1;
-    border-radius: 12px;
-    padding: 6px 14px;
+    border-radius: 8px;
+    padding: 4px 10px;
 }
 
 body.dark-theme .ime-row-languages {
@@ -4064,12 +4052,12 @@ body.dark-theme .ime-row-languages {
 .ime-lang-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     flex: 1;
 }
 
 .ime-lang-group label {
-    font-size: 0.88rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: #334155;
     white-space: nowrap;
@@ -4081,21 +4069,27 @@ body.dark-theme .ime-lang-group label {
 
 .ime-lang-group .ime-icon,
 .ime-lang-group svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     color: #2563EB;
 }
 
 .ime-select {
     background: #F8FAFC;
     border: 1px solid #CBD5E1;
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 0.85rem;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.78rem;
     font-weight: 600;
     color: #1E293B;
+    height: 26px;
     outline: none;
     cursor: pointer;
+}
+
+.ime-select option {
+    padding: 3px 6px;
+    font-size: 0.8rem;
 }
 
 body.dark-theme .ime-select {
@@ -4106,9 +4100,9 @@ body.dark-theme .ime-select {
 
 .ime-divider {
     width: 1.5px;
-    height: 24px;
+    height: 18px;
     background: #CBD5E1;
-    margin: 0 12px;
+    margin: 0 8px;
 }
 
 /* Row 2: Action Buttons */
