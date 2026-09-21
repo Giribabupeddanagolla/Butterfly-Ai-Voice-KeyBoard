@@ -301,8 +301,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
-        spinnerSourceLang.dropDownHeight = dpToPx(180)
-        spinnerTargetLang.dropDownHeight = dpToPx(180)
         spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {

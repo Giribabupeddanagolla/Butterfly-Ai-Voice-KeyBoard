@@ -86,7 +86,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         themeAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerKeyboardTheme.adapter = themeAdapter
-        spinnerKeyboardTheme.dropDownHeight = 160
 
         val savedTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
         val initialIndex = themeOptions.indexOfFirst { it.first == savedTheme }.let { if (it >= 0) it else 0 }
