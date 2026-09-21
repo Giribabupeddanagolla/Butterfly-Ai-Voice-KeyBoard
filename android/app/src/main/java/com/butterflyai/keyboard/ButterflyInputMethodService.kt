@@ -602,10 +602,27 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         view.findViewById<Button>(R.id.btnAbcFromEmojiBottom)?.setOnClickListener(abcModeListener)
 
         val emojiModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.EMOJI, view) }
-        view.findViewById<Button>(R.id.btnEmojiMode)?.setOnClickListener(emojiModeListener)
-        view.findViewById<Button>(R.id.btnEmojiModeNum)?.setOnClickListener(emojiModeListener)
+        view.findViewById<Button>(R.id.btnEmojiMode)?.apply {
+            isAllCaps = false
+            setOnClickListener(emojiModeListener)
+        }
+        view.findViewById<Button>(R.id.btnEmojiModeNum)?.apply {
+            isAllCaps = false
+            setOnClickListener(emojiModeListener)
+        }
 
         // 5. Emoji Category Tab Buttons
+        val emojiTabIds = listOf(
+            R.id.tabEmojiSmileys,
+            R.id.tabEmojiGestures,
+            R.id.tabEmojiHearts,
+            R.id.tabEmojiParty,
+            R.id.tabEmojiSymbols
+        )
+        emojiTabIds.forEach { id ->
+            view.findViewById<Button>(id)?.isAllCaps = false
+        }
+
         view.findViewById<Button>(R.id.tabEmojiSmileys)?.setOnClickListener { loadEmojiCategory("smileys", view) }
         view.findViewById<Button>(R.id.tabEmojiGestures)?.setOnClickListener { loadEmojiCategory("gestures", view) }
         view.findViewById<Button>(R.id.tabEmojiHearts)?.setOnClickListener { loadEmojiCategory("hearts", view) }
@@ -774,10 +791,40 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val emojis = emojiCategories[catKey] ?: return
         val palette = getThemePalette(currentThemeKey)
 
+        // Highlight active category tab button
+        val tabs = mapOf(
+            "smileys" to R.id.tabEmojiSmileys,
+            "gestures" to R.id.tabEmojiGestures,
+            "hearts" to R.id.tabEmojiHearts,
+            "party" to R.id.tabEmojiParty,
+            "symbols" to R.id.tabEmojiSymbols
+        )
+        for ((key, tabId) in tabs) {
+            val tabBtn = rootView.findViewById<Button>(tabId) ?: continue
+            tabBtn.isAllCaps = false
+            if (key == catKey) {
+                tabBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
+                tabBtn.setTextColor(android.graphics.Color.WHITE)
+            } else {
+                tabBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                tabBtn.setTextColor(palette.ctrlKeyText)
+            }
+        }
+
         for (emojiStr in emojis) {
-            val btn = Button(this).apply {
+            val cell = TextView(this).apply {
                 text = emojiStr
-                textSize = 20f
+                textSize = 22f
+                gravity = android.view.Gravity.CENTER
+                includeFontPadding = false
+                isAllCaps = false
+                transformationMethod = null
+                setPadding(0, 0, 0, 0)
+                minWidth = 0
+                minHeight = 0
+                isClickable = true
+                isFocusable = true
+                background = ContextCompat.getDrawable(this@ButterflyInputMethodService, R.drawable.bg_keycap_soft_white)
                 backgroundTintList = android.content.res.ColorStateList.valueOf(palette.keyBg)
                 val params = GridLayout.LayoutParams()
                 params.width = dpToPx(44)
@@ -788,7 +835,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     currentInputConnection?.commitText(emojiStr, 1)
                 }
             }
-            gridEmoji.addView(btn)
+            gridEmoji.addView(cell)
         }
     }
 

@@ -2826,8 +2826,14 @@ body {
     gap: 4px;
 }
 
-.vk-key.emoji-key {
-    font-size: 1.15rem;
+.vk-key.emoji-key,
+.vk-key.emoji-item-key {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Android Emoji", sans-serif;
+    font-size: 1.3rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .vk-key.key-space {

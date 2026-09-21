@@ -283,6 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.isSymbol && !this.isEmoji) {
                             label = (this.isShift || this.isCaps) ? key.toUpperCase() : key.toLowerCase();
                         }
+                        if (this.isEmoji && key !== 'backspace' && key !== 'abc' && key !== '123' && !key.startsWith('▶') && !key.startsWith('◀')) {
+                            btn.className += ' emoji-item-key';
+                        }
                         btn.textContent = label;
                         btn.onclick = (e) => {
                             e.preventDefault();
