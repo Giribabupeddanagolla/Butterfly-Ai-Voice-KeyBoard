@@ -18,6 +18,7 @@
         android:layout_marginBottom="2dp">
 
         <ImageView
+            android:id="@+id/imgHeaderLogo"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_butterfly_favicon"

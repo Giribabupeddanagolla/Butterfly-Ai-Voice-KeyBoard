@@ -54,6 +54,8 @@ class SettingsActivity : AppCompatActivity() {
         btnEnableIme = findViewById(R.id.btnEnableIme)
         btnSelectIme = findViewById(R.id.btnSelectIme)
         spinnerKeyboardTheme = findViewById(R.id.spinnerKeyboardTheme)
+        val imgSettingsLogo = findViewById<android.widget.ImageView>(R.id.imgSettingsLogo)
+        imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
         val currentUrl = prefs.getString("server_url", "http://192.168.1.105:8000")

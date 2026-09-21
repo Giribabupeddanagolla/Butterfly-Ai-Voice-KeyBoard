@@ -1222,7 +1222,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             tvLangArrow?.setTextColor(android.graphics.Color.parseColor("#1E293B"))
         }
 
-        // Tint all 5 Right-Aligned Butterfly Card Icons to Match Active Theme Palette
+        // Tint Header Butterfly Logo & Card Icons to Match Active Theme Palette
+        val imgHeaderLogo = rootRootView.findViewById<ImageView>(R.id.imgHeaderLogo)
         val tvCardVoiceIcon = rootRootView.findViewById<ImageView>(R.id.tvCardVoiceIcon)
         val tvCardSearchIcon = rootRootView.findViewById<ImageView>(R.id.tvCardSearchIcon)
         val tvCardAIIcon = rootRootView.findViewById<ImageView>(R.id.tvCardAIIcon)
@@ -1230,7 +1231,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val imgTargetLangIcon = rootRootView.findViewById<ImageView>(R.id.imgTargetLangIcon)
 
         val cardIconTint = android.content.res.ColorStateList.valueOf(palette.accentColor)
-        listOf(tvCardVoiceIcon, tvCardSearchIcon, tvCardAIIcon, imgSourceLangIcon, imgTargetLangIcon).forEach { iconView ->
+        listOf(imgHeaderLogo, tvCardVoiceIcon, tvCardSearchIcon, tvCardAIIcon, imgSourceLangIcon, imgTargetLangIcon).forEach { iconView ->
             iconView?.imageTintList = cardIconTint
         }
 
