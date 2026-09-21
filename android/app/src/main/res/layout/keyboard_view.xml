@@ -199,7 +199,7 @@
     <LinearLayout
         android:id="@+id/layoutLanguageRow"
         android:layout_width="match_parent"
-        android:layout_height="25dp"
+        android:layout_height="26dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:layout_marginBottom="2dp">
@@ -213,8 +213,7 @@
             android:background="@drawable/bg_lang_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="5dp"
-            android:paddingVertical="0dp">
+            android:paddingHorizontal="6dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -273,8 +272,7 @@
             android:background="@drawable/bg_lang_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="5dp"
-            android:paddingVertical="0dp">
+            android:paddingHorizontal="6dp">
 
             <LinearLayout
                 android:layout_width="0dp"
