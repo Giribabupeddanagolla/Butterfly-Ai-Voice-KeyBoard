@@ -77,15 +77,16 @@ class SettingsActivity : AppCompatActivity() {
                 if (v is TextView) {
                     v.setTextColor(android.graphics.Color.WHITE)
                     v.setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
-                    v.textSize = 11.5f
+                    v.textSize = 9.5f
                     v.includeFontPadding = false
-                    v.setPadding(16, 10, 16, 10)
+                    v.setPadding(12, 6, 12, 6)
                 }
                 return v
             }
         }
         themeAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerKeyboardTheme.adapter = themeAdapter
+        spinnerKeyboardTheme.dropDownHeight = 160
 
         val savedTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
         val initialIndex = themeOptions.indexOfFirst { it.first == savedTheme }.let { if (it >= 0) it else 0 }

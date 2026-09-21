@@ -168,6 +168,7 @@
                 android:id="@+id/spinnerKeyboardTheme"
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
+                android:dropDownHeight="160dp"
                 android:background="@drawable/bg_lang_pill"
                 android:backgroundTint="#0F172A"
                 android:paddingHorizontal="12dp" />

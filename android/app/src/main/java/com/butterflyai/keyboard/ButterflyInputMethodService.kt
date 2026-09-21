@@ -248,9 +248,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.textSize = 11.5f
+                    v.textSize = 9.5f
                     v.includeFontPadding = false
-                    v.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5))
+                    v.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
                     if (palette.isDark) {
                         v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
                         v.setBackgroundColor(palette.cardBg)
@@ -282,9 +282,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val v = super.getDropDownView(position, convertView, parent)
                 if (v is TextView) {
                     val palette = getThemePalette(currentThemeKey)
-                    v.textSize = 11.5f
+                    v.textSize = 9.5f
                     v.includeFontPadding = false
-                    v.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5))
+                    v.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
                     if (palette.isDark) {
                         v.setTextColor(if (currentThemeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.WHITE)
                         v.setBackgroundColor(palette.cardBg)
@@ -301,6 +301,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
+        spinnerSourceLang.dropDownHeight = dpToPx(180)
+        spinnerTargetLang.dropDownHeight = dpToPx(180)
         spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
