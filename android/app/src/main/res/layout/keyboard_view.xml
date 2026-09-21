@@ -199,10 +199,10 @@
     <LinearLayout
         android:id="@+id/layoutLanguageRow"
         android:layout_width="match_parent"
-        android:layout_height="32dp"
+        android:layout_height="25dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="3dp">
+        android:layout_marginBottom="2dp">
 
         <!-- Source Language Pill Card -->
         <LinearLayout
@@ -213,7 +213,8 @@
             android:background="@drawable/bg_lang_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:paddingHorizontal="5dp"
+            android:paddingVertical="0dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -228,14 +229,14 @@
                     android:layout_height="wrap_content"
                     android:text="Source"
                     android:textColor="#64748B"
-                    android:textSize="7.5sp"
+                    android:textSize="6.5sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
 
                 <Spinner
                     android:id="@+id/spinnerSourceLang"
                     android:layout_width="match_parent"
-                    android:layout_height="18dp"
+                    android:layout_height="14dp"
                     android:dropDownHeight="180dp"
                     android:background="@android:color/transparent"
                     android:padding="0dp" />
@@ -243,11 +244,11 @@
 
             <ImageView
                 android:id="@+id/imgSourceLangIcon"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
                 android:src="@drawable/ic_source_favicon"
                 android:contentDescription="Source Icon"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="3dp"
                 android:layout_gravity="center_vertical" />
 
         </LinearLayout>
@@ -259,9 +260,9 @@
             android:layout_height="wrap_content"
             android:text="➔"
             android:textColor="#475569"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:textStyle="bold"
-            android:layout_marginHorizontal="3dp" />
+            android:layout_marginHorizontal="2dp" />
 
         <!-- Target Language Pill Card -->
         <LinearLayout
@@ -272,7 +273,8 @@
             android:background="@drawable/bg_lang_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:paddingHorizontal="5dp"
+            android:paddingVertical="0dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -287,14 +289,14 @@
                     android:layout_height="wrap_content"
                     android:text="Target"
                     android:textColor="#64748B"
-                    android:textSize="7.5sp"
+                    android:textSize="6.5sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
 
                 <Spinner
                     android:id="@+id/spinnerTargetLang"
                     android:layout_width="match_parent"
-                    android:layout_height="18dp"
+                    android:layout_height="14dp"
                     android:dropDownHeight="180dp"
                     android:background="@android:color/transparent"
                     android:padding="0dp" />
@@ -302,11 +304,11 @@
 
             <ImageView
                 android:id="@+id/imgTargetLangIcon"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
                 android:src="@drawable/ic_source_favicon"
                 android:contentDescription="Target Icon"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="3dp"
                 android:layout_gravity="center_vertical" />
 
         </LinearLayout>
