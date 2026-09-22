@@ -12,10 +12,10 @@ class OpenAIService:
         self.openai_failed = False
 
     def get_api_key(self) -> str:
-        env_key = os.getenv("OPENAI_API_KEY_NEW_KEY", "").strip()
+        env_key = os.getenv("OPENAI_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY_NEW_KEY", "").strip()
         if env_key:
             return env_key
-        return (config.OPENAI_API_KEY_NEW_KEY or "").strip()
+        return (getattr(config, "OPENAI_API_KEY", "") or getattr(config, "OPENAI_API_KEY_NEW_KEY", "") or "").strip()
 
     def get_client(self):
         current_key = self.get_api_key()

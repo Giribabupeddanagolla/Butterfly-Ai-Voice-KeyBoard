@@ -151,6 +151,7 @@ def update_api_key(request: APIKeyRequest):
         raise HTTPException(status_code=400, detail="API key cannot be empty")
     
     # 1. Update config & services in memory
+    os.environ["OPENAI_API_KEY"] = new_key
     config.OPENAI_API_KEY = new_key
     openai_service.api_key = new_key
     openai_service.client = None

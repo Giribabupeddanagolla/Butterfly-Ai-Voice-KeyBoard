@@ -10,7 +10,14 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 load_dotenv(BASE_DIR / ".env")
 
 class Config:
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    @property
+    def OPENAI_API_KEY(self) -> str:
+        return getattr(self, "_openai_api_key", None) or os.getenv("OPENAI_API_KEY", "") or os.getenv("OPENAI_API_KEY_NEW_KEY", "")
+
+    @OPENAI_API_KEY.setter
+    def OPENAI_API_KEY(self, value: str):
+        self._openai_api_key = value
+
     AI_MODEL: str = os.getenv("AI_MODEL", "gpt-4o-mini")
     STT_MODEL: str = os.getenv("OPENAI_TRANSCRIPTION_MODEL", os.getenv("STT_MODEL", "whisper-1"))
     OPENAI_TRANSCRIPTION_MODEL: str = os.getenv("OPENAI_TRANSCRIPTION_MODEL", STT_MODEL)
