@@ -4425,4 +4425,200 @@ body.dark-theme .ime-ctrl-btn:hover {
         width: 15px !important;
         height: 15px !important;
     }
+}
+
+/* ==========================================================================
+   Redesigned Voice Recording Panel (Pro UI)
+   ========================================================================== */
+.voice-recording-card-pro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 24px;
+    margin: 12px 0;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(20, 10, 25, 0.95) 0%, rgba(30, 15, 35, 0.95) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    box-shadow: 0 14px 40px -10px rgba(239, 68, 68, 0.35), 0 0 25px rgba(239, 68, 68, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    animation: vrcFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@keyframes vrcFadeIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+body.light-theme .voice-recording-card-pro {
+    background: linear-gradient(135deg, #FFF0F0 0%, #FFE5E5 100%) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.18), 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+}
+
+.vrc-glow-aura {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+    animation: auraSpin 8s linear infinite;
+}
+
+@keyframes auraSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.vrc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+}
+
+.vrc-live-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #EF4444;
+    box-shadow: 0 0 12px #EF4444;
+    animation: liveDotBeacon 1.2s ease-in-out infinite;
+}
+
+@keyframes liveDotBeacon {
+    0% { transform: scale(1); box-shadow: 0 0 6px #EF4444; }
+    50% { transform: scale(1.35); box-shadow: 0 0 18px #EF4444, 0 0 30px rgba(239, 68, 68, 0.6); }
+    100% { transform: scale(1); box-shadow: 0 0 6px #EF4444; }
+}
+
+.vrc-status-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #EF4444;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+body.light-theme .vrc-status-title {
+    color: #DC2626 !important;
+}
+
+.vrc-timer-display {
+    font-family: 'Inter', monospace;
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #FF4D4D;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+    z-index: 2;
+}
+
+body.light-theme .vrc-timer-display {
+    color: #B91C1C !important;
+    text-shadow: 0 2px 8px rgba(185, 28, 28, 0.25) !important;
+}
+
+.vrc-waveform-box {
+    width: 220px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.vrc-waveform-canvas {
+    width: 220px;
+    height: 24px;
+    display: block;
+}
+
+.vrc-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 4px;
+    z-index: 2;
+}
+
+.vrc-btn {
+    flex: 1;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    outline: none;
+}
+
+.vrc-btn-stop {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+    color: #FFFFFF;
+    box-shadow: 0 4px 18px rgba(239, 68, 68, 0.45);
+}
+
+.vrc-btn-stop:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.6);
+    background: linear-gradient(135deg, #F87171 0%, #EF4444 50%, #DC2626 100%);
+}
+
+.vrc-btn-stop:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.vrc-btn-cancel {
+    background: rgba(255, 255, 255, 0.08);
+    color: #E2E8F0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+}
+
+body.light-theme .vrc-btn-cancel {
+    background: #E2E8F0 !important;
+    color: #334155 !important;
+    border: 1px solid #CBD5E1 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
+.vrc-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.light-theme .vrc-btn-cancel:hover {
+    background: #CBD5E1 !important;
+    color: #0F172A !important;
+}
+
+.vrc-btn-cancel:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.vrc-btn svg, .vrc-btn i {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
 }

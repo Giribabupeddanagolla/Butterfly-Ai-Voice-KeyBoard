@@ -91,6 +91,29 @@
                         <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
                     </div>
 
+                    <!-- REDESIGNED VOICE RECORDING PANEL (PRO) -->
+                    <div class="voice-recording-card-pro" id="voiceRecordingCardPro" style="display: none;">
+                        <div class="vrc-glow-aura"></div>
+                        <div class="vrc-header">
+                            <span class="vrc-live-dot"></span>
+                            <span class="vrc-status-title">RECORDING VOICE</span>
+                        </div>
+                        <div class="vrc-timer-display" id="vrcTimerDisplay">00:00</div>
+                        <div class="vrc-waveform-box">
+                            <canvas id="vrcWaveformCanvas" class="vrc-waveform-canvas" width="220" height="24"></canvas>
+                        </div>
+                        <div class="vrc-action-row">
+                            <button type="button" class="vrc-btn vrc-btn-stop" id="vrcStopBtn" title="Stop Recording">
+                                <i data-lucide="square"></i>
+                                <span>STOP</span>
+                            </button>
+                            <button type="button" class="vrc-btn vrc-btn-cancel" id="vrcCancelBtn" title="Cancel Recording">
+                                <i data-lucide="x"></i>
+                                <span>CANCEL</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- BUTTERFLY AI SYSTEM KEYBOARD (IME) CARD -->
                     <div class="butterfly-ime-system-card" id="butterflyImeCard" style="display: none;">
                         <div class="ime-header-banner">

@@ -1119,8 +1119,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedLangCode = getSourceLang();
             const langDisplayName = selectedLangCode === 'auto' ? 'Auto Detect' : getLangDisplayName(selectedLangCode);
 
+            const vrcCard = document.getElementById('voiceRecordingCardPro');
+
             if (state === 'idle') {
                 isRecording = false;
+                if (vrcCard) vrcCard.style.display = 'none';
                 if (modalHeaderBadgeIcon) modalHeaderBadgeIcon.textContent = '🎤';
                 if (modalCardTitle) modalCardTitle.textContent = 'AI Voice Keyboard';
                 if (voiceLangIndicator) voiceLangIndicator.textContent = extraData.language || langDisplayName;
@@ -1183,6 +1186,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if (state === 'recording') {
                 isRecording = true;
+                if (vrcCard) vrcCard.style.display = 'flex';
                 const imeBtn = document.getElementById('imeTapToSpeakBtn');
                 const imeText = document.getElementById('imeSpeakBtnText');
                 const imeIcon = document.getElementById('imeSpeakBtnIcon') || (imeBtn ? imeBtn.querySelector('i, svg, [data-lucide]') : null);
@@ -1731,6 +1735,23 @@ document.addEventListener('DOMContentLoaded', () => {
             rerecordVoiceBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 resetToIdleState();
+            });
+        }
+
+        const vrcStopBtn = document.getElementById('vrcStopBtn');
+        const vrcCancelBtn = document.getElementById('vrcCancelBtn');
+        if (vrcStopBtn) {
+            vrcStopBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                stopRecordingFlow();
+            });
+        }
+        if (vrcCancelBtn) {
+            vrcCancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelRecordingSession(e);
             });
         }
 
@@ -2840,8 +2861,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawWaveform() {
         const canvas = document.getElementById('modalWaveformCanvas');
-        if (!canvas || !analyser) return;
-        const ctx = canvas.getContext('2d');
+        const vrcCanvas = document.getElementById('vrcWaveformCanvas');
+        if (!analyser) return;
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
@@ -2850,17 +2871,21 @@ document.addEventListener('DOMContentLoaded', () => {
             animFrameId = requestAnimationFrame(render);
             analyser.getByteFrequencyData(dataArray);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#00D2FF';
+            [canvas, vrcCanvas].forEach(c => {
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.fillStyle = c === vrcCanvas ? '#EF4444' : '#00D2FF';
 
-            const barWidth = (canvas.width / bufferLength) * 1.5;
-            let x = 0;
+                const barWidth = (c.width / bufferLength) * 1.5;
+                let x = 0;
 
-            for (let i = 0; i < bufferLength; i++) {
-                const barHeight = (dataArray[i] / 255) * canvas.height;
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 2;
-            }
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * c.height;
+                    ctx.fillRect(x, c.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 2;
+                }
+            });
         }
         render();
     }
@@ -2868,12 +2893,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTimerDisplay() {
         if (voiceState === 'paused' || isPaused) return;
         const modalRecordTimer = document.getElementById('modalRecordTimer');
+        const vrcTimerDisplay = document.getElementById('vrcTimerDisplay');
         const elapsed = Math.max(0, Math.floor((Date.now() - recordStartTime - totalPausedMs) / 1000));
         const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
         const secs = (elapsed % 60).toString().padStart(2, '0');
         const timerStr = `${mins}:${secs}`;
         if (mainRecordTimer) mainRecordTimer.textContent = timerStr;
         if (modalRecordTimer) modalRecordTimer.textContent = timerStr;
+        if (vrcTimerDisplay) vrcTimerDisplay.textContent = timerStr;
 
         const imeText = document.getElementById('imeSpeakBtnText');
         if (imeText && (voiceState === 'recording' || isRecording)) {
