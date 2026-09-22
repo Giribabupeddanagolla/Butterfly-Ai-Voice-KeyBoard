@@ -548,14 +548,6 @@ def ai_assistant_endpoint(request: AskRequest):
         answer = ai_res["answer"]
         model = ai_res.get("model", config.AI_MODEL)
     else:
-        err_msg = ai_res.get("error") or "Configure your OpenAI API key in Settings."
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": False,
-                "error": err_msg
-            }
-        )
         ddg_answer = ""
         try:
             url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(prompt)}&format=json&no_html=1"
