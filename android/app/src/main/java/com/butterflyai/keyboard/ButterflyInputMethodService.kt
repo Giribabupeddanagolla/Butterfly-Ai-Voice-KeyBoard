@@ -978,7 +978,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             recordingTimerJob = serviceScope.launch {
                 var tick = 0
                 val density = resources.displayMetrics.density
-                val baseHeights = intArrayOf(4, 6, 10, 14, 18, 24, 30, 24, 32, 22, 32, 22, 32, 24, 30, 24, 18, 14, 10, 6, 4)
+                val baseHeights = intArrayOf(3, 4, 7, 10, 13, 16, 20, 16, 22, 15, 22, 15, 22, 16, 20, 16, 13, 10, 7, 4, 3)
                 while (currentState == KeyboardState.RECORDING) {
                     val elapsedMs = SystemClock.elapsedRealtime() - recordingStartTime
                     val totalSecs = (elapsedMs / 1000).toInt()
@@ -993,8 +993,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         for (i in 0 until container.childCount.coerceAtMost(baseHeights.size)) {
                             val bar = container.getChildAt(i)
                             val baseH = baseHeights[i]
-                            val wave = (Math.sin((tick * 0.35) + (i * 0.6)) * 4.0).toFloat()
-                            val hDp = ((baseH * factor) + wave).coerceIn(4f, 34f)
+                            val wave = (Math.sin((tick * 0.35) + (i * 0.6)) * 3.0).toFloat()
+                            val hDp = ((baseH * factor) + wave).coerceIn(3f, 24f)
                             val lp = bar.layoutParams
                             lp.height = (hDp * density).toInt()
                             bar.layoutParams = lp
@@ -1566,7 +1566,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             // A. Themed Card Background & Stroke
             val cardDrawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = 24f * density
+                cornerRadius = 18f * density
                 if (palette.isDark) {
                     setColor(palette.cardBg)
                     val strokeColor = when (themeKey) {
@@ -1597,7 +1597,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 intArrayOf(stopGradStart, stopGradEnd)
             ).apply {
-                cornerRadius = 26f * density
+                cornerRadius = 20f * density
             }
             btnStopRecording?.background = stopBtnDrawable
 
