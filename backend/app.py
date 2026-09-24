@@ -823,6 +823,17 @@ def search_endpoint(q: str = Query("", alias="q")):
 
     return {"success": True, "query": query_clean, "results": results}
 
+@app.get("/downloads/butterfly-ai-keyboard.apk")
+def download_apk_endpoint():
+    apk_file = Path(__file__).resolve().parent.parent / "frontend" / "downloads" / "butterfly-ai-keyboard.apk"
+    if apk_file.exists():
+        return FileResponse(
+            path=str(apk_file),
+            filename="butterfly-ai-keyboard-v1.0.apk",
+            media_type="application/vnd.android.package-archive"
+        )
+    raise HTTPException(status_code=404, detail="APK not found")
+
 # Mount Frontend directory at root `/`
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 if FRONTEND_DIR.exists():

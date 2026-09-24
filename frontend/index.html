@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Butterfly AI</title>
-    <meta name="description" content="Butterfly AI: Realtime Multilingual AI Voice & Input System.">
+    <title>Butterfly AI — Your Voice. Smarter AI. Everywhere.</title>
+    <meta name="description"
+        content="Butterfly AI is an intelligent voice keyboard that turns your voice into text, translates languages, improves your writing, answers questions and helps you search the web — wherever you type.">
 
-    <!-- Google Fonts for Indian Languages & Inter -->
+    <!-- Google Fonts: Plus Jakarta Sans (Editorial Headings) & Inter (Body) + Indian Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&display=swap"
         rel="stylesheet">
 
     <!-- Lucide Icons CDN -->
@@ -28,437 +29,1381 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
 
-    <link rel="stylesheet" href="style.css?v=2400.0">
+    <link rel="stylesheet" href="style.css?v=3100.0">
 </head>
 
-<body class="dark-theme">
-    <div class="app-layout">
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- App Header -->
-            <header class="app-header">
-                <div class="header-left">
-                    <div class="brand-title-group" style="display: flex; align-items: center; gap: 8px;">
-                        <img src="logo.png" alt="Butterfly AI" class="brand-logo-small"
-                            style="width: 28px; height: 28px; object-fit: contain;">
-                        <h1 class="chat-title" id="chatTitle" style="font-size: 1.1rem; font-weight: 700; margin: 0;">
-                            Butterfly AI</h1>
-                    </div>
-                </div>
+<body class="editorial-body">
 
-                <div class="header-actions">
-                    <button class="btn-stop-speech" id="headerStopAudioBtn" style="display: none;"
-                        title="Stop Voice Playback">
-                        <i data-lucide="square"></i> <span>Stop Audio</span>
-                    </button>
-                    <button class="btn-icon" id="themeToggleBtn" title="Toggle Light/Dark Theme">
-                        <i data-lucide="sun" id="themeIcon"></i>
-                    </button>
-                    <button class="btn-icon" id="settingsBtn" title="Settings">
-                        <i data-lucide="settings"></i>
-                    </button>
-                </div>
-            </header>
-
-            <!-- Main Workspace (100vh Flex Viewport Layout) -->
-            <div class="keyboard-workspace" id="chatContainer">
-
-                <!-- Brand Hero -->
-                <div class="vk-brand-hero">
-                    <img src="logo.png" alt="Butterfly AI Logo" class="hero-logo">
-                    <h2 class="hero-title">Butterfly AI</h2>
-                </div>
-
-                <!-- SINGLE MAIN SEARCH BAR CARD -->
-                <div class="vk-card vk-main-search-card">
-                    <div class="vk-main-search-wrapper">
-                        <textarea id="mainSearchInput" class="vk-main-search-field voice-target-input"
-                            placeholder="Search, type, or speak..." rows="1" autocomplete="off" style="resize: none; overflow-y: hidden; max-height: 300px;"></textarea>
-                        <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput"
-                            title="Open Butterfly AI System Keyboard (IME)">
-                            <i data-lucide="mic" id="mainSearchMicIcon"></i>
-                        </button>
-                        <button class="search-submit-btn" id="mainSearchActionBtn" title="Search">
-                            <i data-lucide="search"></i>
-                        </button>
-                    </div>
-                    <!-- Temporary Voice Status Indicator (Shown only during active recording/transcribing) -->
-                    <div class="vk-status-indicator-bar" id="micStatusIndicator" style="display: none;">
-                        <span class="status-dot" id="statusDot"></span>
-                        <span id="micStatusText">Ready</span>
-                        <canvas id="mainWaveformCanvas" class="vk-waveform-mini" width="120" height="20"
-                            style="display: none; margin: 0 8px;"></canvas>
-                        <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
-                    </div>
-
-                    <!-- REDESIGNED VOICE RECORDING PANEL (PRO) -->
-                    <div class="voice-recording-card-pro" id="voiceRecordingCardPro" style="display: none;">
-                        <div class="vrc-glow-aura"></div>
-                        <div class="vrc-header">
-                            <span class="vrc-live-dot"></span>
-                            <span class="vrc-status-title">RECORDING VOICE</span>
-                        </div>
-                        <div class="vrc-timer-display" id="vrcTimerDisplay">00:00</div>
-                        <div class="vrc-waveform-box">
-                            <canvas id="vrcWaveformCanvas" class="vrc-waveform-canvas" width="220" height="24"></canvas>
-                        </div>
-                        <div class="vrc-action-row">
-                            <button type="button" class="vrc-btn vrc-btn-stop" id="vrcStopBtn" title="Stop Recording">
-                                <i data-lucide="square"></i>
-                                <span>STOP</span>
-                            </button>
-                            <button type="button" class="vrc-btn vrc-btn-cancel" id="vrcCancelBtn" title="Cancel Recording">
-                                <i data-lucide="x"></i>
-                                <span>CANCEL</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- BUTTERFLY AI SYSTEM KEYBOARD (IME) CARD -->
-                    <div class="butterfly-ime-system-card" id="butterflyImeCard" style="display: none;">
-                        <div class="ime-header-banner">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <img src="logo.png" alt="Butterfly Logo" class="ime-logo-icon">
-                                <span class="ime-header-title">BUTTERFLY AI SYSTEM KEYBOARD (IME)</span>
-                            </div>
-                            <button type="button" class="ime-close-btn" id="closeImeCardBtn" title="Close Keyboard">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-
-                        <div class="ime-inner-card">
-                            <!-- ROW 1: Language selection bar -->
-                            <div class="ime-row-languages">
-                                <div class="ime-lang-group">
-                                    <label>Source:</label>
-                                    <select id="imeSourceLangSelect" class="ime-select">
-                                        <option value="auto">✨ Auto Detect</option>
-                                        <option value="en" selected>English</option>
-                                        <option value="te">Telugu (తెలుగు)</option>
-                                        <option value="hi">Hindi (हिन्दी)</option>
-                                        <option value="ta">Tamil (தமிழ்)</option>
-                                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
-                                        <option value="ml">Malayalam (മലയാളം)</option>
-                                        <option value="mr">Marathi (మరాఠీ)</option>
-                                        <option value="bn">Bengali (বাংলা)</option>
-                                        <option value="gu">Gujarati (ગુજરાતી)</option>
-                                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-                                        <option value="ur">Urdu (اردو)</option>
-                                        <option value="es">Spanish</option>
-                                        <option value="fr">French</option>
-                                        <option value="de">German</option>
-                                        <option value="it">Italian</option>
-                                        <option value="pt">Portuguese</option>
-                                        <option value="ar">Arabic</option>
-                                        <option value="ja">Japanese</option>
-                                        <option value="ko">Korean</option>
-                                        <option value="zh">Chinese</option>
-                                        <option value="ru">Russian</option>
-                                    </select>
-                                    <img src="source-favicon.svg" class="ime-icon-right" alt="Globe">
-                                </div>
-                                <div class="ime-divider"></div>
-                                <div class="ime-lang-group">
-                                    <label>Translate to:</label>
-                                    <select id="imeTargetLangSelect" class="ime-select">
-                                        <option value="en" selected>English</option>
-                                        <option value="te">Telugu (తెలుగు)</option>
-                                        <option value="hi">Hindi (हिन्दी)</option>
-                                        <option value="ta">Tamil (தமிழ்)</option>
-                                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
-                                        <option value="ml">Malayalam (മലയാളം)</option>
-                                        <option value="mr">Marathi (మరాఠీ)</option>
-                                        <option value="bn">Bengali (বাংলা)</option>
-                                        <option value="gu">Gujarati (ગુજરાતી)</option>
-                                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-                                        <option value="ur">Urdu (اردو)</option>
-                                        <option value="es">Spanish</option>
-                                        <option value="fr">French</option>
-                                        <option value="de">German</option>
-                                        <option value="it">Italian</option>
-                                        <option value="pt">Portuguese</option>
-                                        <option value="ar">Arabic</option>
-                                        <option value="ja">Japanese</option>
-                                        <option value="ko">Korean</option>
-                                        <option value="zh">Chinese</option>
-                                        <option value="ru">Russian</option>
-                                    </select>
-                                    <img src="source-favicon.svg" class="ime-icon-right" alt="Globe">
-                                </div>
-                            </div>
-
-                            <!-- ROW 2: Action Buttons -->
-                            <div class="ime-row-actions">
-                                <button type="button" class="ime-btn btn-tap-to-speak" id="imeTapToSpeakBtn">
-                                    <i data-lucide="mic" id="imeSpeakBtnIcon"></i>
-                                    <span id="imeSpeakBtnText">TAP TO SPEAK</span>
-                                </button>
-                                <button type="button" class="ime-btn btn-ai-polish" id="imeAiPolishBtn">
-                                    <i data-lucide="sparkles"></i> AI Polish
-                                </button>
-                                <button type="button" class="ime-btn btn-ai-ask" id="imeAiAskBtn">
-                                    <i data-lucide="bot"></i> AI Ask
-                                </button>
-                            </div>
-
-                            <!-- ROW 3: Control Buttons -->
-                            <div class="ime-row-controls">
-                                <button type="button" class="ime-ctrl-btn key-toggle" id="imeKeypadToggleBtn" title="Toggle Keyboard">
-                                    <i data-lucide="keyboard"></i>
-                                </button>
-                                <button type="button" class="ime-ctrl-btn key-space" id="imeSpaceBtn">
-                                    Space
-                                </button>
-                                <button type="button" class="ime-ctrl-btn key-backspace" id="imeBackspaceBtn" title="Backspace">
-                                    <i data-lucide="delete"></i>
-                                </button>
-                                <button type="button" class="ime-ctrl-btn key-enter" id="imeEnterBtn" title="Enter">
-                                    <i data-lucide="corner-down-left"></i>
-                                </button>
-                                <button type="button" class="ime-ctrl-btn key-switch" id="imeSwitchBtn" title="Switch Keyboard">
-                                    <i data-lucide="globe"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    <!-- SEARCH RESULTS OVERLAY CONTAINER -->
-                    <div class="vk-card" id="searchResultsCard" style="display: none;">
-                        <div class="vk-card-header">
-                            <div class="vk-card-title">
-                                <i data-lucide="search"></i>
-                                <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle"
-                                        style="color: var(--primary-color);">""</strong></span>
-                            </div>
-                            <button type="button" class="btn-text-action" id="closeSearchResultsBtn"
-                                title="Close Search Results"><i data-lucide="x"></i></button>
-                        </div>
-                        <div class="vk-card-body" id="searchResultsContainer"></div>
-                    </div>
-
-                </div>
-        </main>
-    </div>
-
-    <!-- Voice Input & AI Voice Keyboard Modal (Disabled) -->
-    <div class="modal-backdrop" id="voiceModal" style="display: none !important;">
-        <div class="modal-card voice-modal-card">
-            <div class="modal-header voice-header-centered">
-                <div class="voice-header-icon-container">
-                    <span class="voice-card-badge-icon" id="modalHeaderBadgeIcon">🎤</span>
-                </div>
-                <h3 id="modalCardTitle" class="voice-header-title-centered">AI Voice Keyboard</h3>
-                <div class="voice-header-close-container">
-                    <button type="button" class="btn-icon" id="closeVoiceModalBtn" title="Close"><i
-                            data-lucide="x"></i></button>
-                </div>
+    <!-- ==========================================================================
+         12. INITIAL STARTUP LOADING SCREEN (0% -> 100%, 2.6s - 3.2s, smooth fade)
+         ========================================================================== -->
+    <div class="startup-loading-overlay" id="startupLoadingOverlay" aria-label="Loading Butterfly AI">
+        <div class="startup-loading-box">
+            <div class="startup-logo-halo">
+                <img src="logo.png" alt="Butterfly AI Logo" class="startup-logo-img">
             </div>
-            <div class="modal-body voice-modal-body">
-                <!-- Source Language & Status Info Bar -->
-                <div class="voice-info-bar">
-                    <div class="voice-info-item">
-                        <span class="voice-info-label">Source Language:</span>
-                        <span class="voice-info-val" id="voiceLangIndicator">Auto Detect</span>
-                    </div>
-                    <div class="voice-info-item">
-                        <span class="voice-info-label">Status:</span>
-                        <span class="voice-status-badge" id="voiceStatusBadge">Ready</span>
-                    </div>
-                </div>
+            <h1 class="startup-brand-name">Butterfly AI</h1>
+            <p class="startup-preparing-text" id="startupPreparingText">Preparing your AI keyboard...</p>
 
-                <!-- Language Selector Row -->
-                <div class="voice-setting-row" id="voiceLangSelectRow">
-                    <label><i data-lucide="globe"></i> Source Language</label>
-                    <select id="sourceLangSelect" class="vk-select voice-select">
-                        <option value="auto">✨ Auto Detect</option>
-                        <option value="en" selected>English</option>
-                        <option value="te">Telugu (తెలుగు)</option>
-                        <option value="hi">Hindi (हिन्दी)</option>
-                        <option value="ta">Tamil (தமிழ்)</option>
-                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
-                        <option value="ml">Malayalam (മലയാളം)</option>
-                        <option value="mr">Marathi (मराठी)</option>
-                        <option value="bn">Bengali (বাংলা)</option>
-                        <option value="gu">Gujarati (ગુજરાતી)</option>
-                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-                        <option value="ur">Urdu (اردو)</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                        <option value="pt">Portuguese</option>
-                        <option value="ar">Arabic</option>
-                        <option value="ja">Japanese</option>
-                        <option value="ko">Korean</option>
-                        <option value="zh">Chinese</option>
-                        <option value="ru">Russian</option>
-                    </select>
-                </div>
-
-                <!-- Translation Toggle Row -->
-                <div class="voice-setting-row voice-toggle-row" id="voiceToggleRow">
-                    <label><i data-lucide="languages"></i> Translation</label>
-                    <button type="button" class="vk-toggle-btn" id="translationToggleBtn"
-                        title="Toggle Translation Mode">
-                        <span class="toggle-text" id="toggleText">OFF</span>
-                        <span class="toggle-track"></span>
-                    </button>
-                </div>
-
-                <!-- Target Language Selector Row -->
-                <div class="voice-setting-row" id="translateToGroup" style="opacity: 0.6; pointer-events: none;">
-                    <label><i data-lucide="arrow-right-left"></i> Target Language</label>
-                    <select id="targetLangSelect" class="vk-select voice-select" disabled>
-                        <option value="en">English</option>
-                        <option value="te">Telugu (తెలుగు)</option>
-                        <option value="hi">Hindi (हिन्दी)</option>
-                        <option value="ta">Tamil (தமிழ்)</option>
-                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
-                        <option value="ml">Malayalam (മലയാളം)</option>
-                        <option value="mr">Marathi (मराठी)</option>
-                        <option value="bn">Bengali (বাংলা)</option>
-                        <option value="gu">Gujarati (ગુજરાતી)</option>
-                        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-                        <option value="ur">Urdu (اردو)</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                        <option value="pt">Portuguese</option>
-                        <option value="ar">Arabic</option>
-                        <option value="ja">Japanese</option>
-                        <option value="ko">Korean</option>
-                        <option value="zh">Chinese</option>
-                        <option value="ru">Russian</option>
-                    </select>
-                </div>
-
-                <!-- Voice Recording Center Visual (Idle / Recording / Processing / Error) -->
-                <div class="voice-record-center" id="voiceCenterVisual">
-                    <button type="button" class="voice-record-circle" id="modalMicRecordBtn">
-                        <i data-lucide="mic" id="modalMicIcon"></i>
-                    </button>
-                    <div class="voice-status-title" id="modalMicStatus">Ready to record</div>
-                    <canvas id="modalWaveformCanvas" class="voice-waveform-canvas" width="180" height="24"
-                        style="display: none;"></canvas>
-                    <div class="voice-record-timer" id="modalRecordTimer" style="display: none;">00:00</div>
-                    <div class="voice-live-text" id="liveSpeechPreview" style="display: none;"></div>
-                </div>
-
-                <!-- Voice Command Notification Badge -->
-                <div class="voice-command-badge" id="voiceCommandBadge" style="display: none;">
-                    <i data-lucide="command"></i> <span id="voiceCommandText">Voice Command Detected</span>
-                </div>
-
-                <!-- AI Assistant Answer Display Box -->
-                <div class="assistant-result-card" id="assistantResultContainer" style="display: none;">
-                    <div class="assistant-card-header">
-                        <i data-lucide="bot"></i> <span>AI Assistant Response</span>
-                    </div>
-                    <div class="assistant-card-body" id="assistantAnswerBody"></div>
-                </div>
-
-                <!-- Voice Keyboard Result Cards (Original Speech & Optional Translation) -->
-                <div class="transcription-result-container" id="transcriptionResultContainer"
-                    style="display: none; flex-direction: column; gap: 14px; margin-top: 10px;">
-
-                    <!-- ORIGINAL SPEECH CARD -->
-                    <div class="voice-speech-card" id="originalSpeechCard">
-                        <div class="speech-card-header">
-                            <span class="speech-card-title"><i data-lucide="mic"></i> ORIGINAL SPEECH</span>
-                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
-                                <select id="originalVoiceAccentSelect" class="card-voice-accent-select"
-                                    title="TTS Voice Accent">
-                                    <option value="nova">Nova (Female)</option>
-                                    <option value="alloy">Alloy (Neutral)</option>
-                                    <option value="echo">Echo (Male)</option>
-                                    <option value="fable">Fable (Male)</option>
-                                    <option value="onyx">Onyx (Male)</option>
-                                    <option value="shimmer">Shimmer (Female)</option>
-                                </select>
-                                <span class="speech-lang-tag" id="originalLangTag">AUTO</span>
-                            </div>
-                        </div>
-                        <textarea id="voiceOriginalTextarea" class="voice-transcription-textarea" rows="2"
-                            placeholder="Original speech text will appear here..."></textarea>
-                        <div class="speech-card-actions">
-                            <button type="button" class="btn-action-pill" id="speakOriginalBtn"
-                                title="Play Original Voice Audio">
-                                <i data-lucide="volume-2" id="speakOriginalIcon"></i> <span id="speakOriginalText">Speak
-                                    Original</span>
-                            </button>
-                            <button type="button" class="btn-action-pill" id="copyOriginalBtn"
-                                title="Copy Original Text">
-                                <i data-lucide="copy" id="copyOriginalIcon"></i> <span id="copyOriginalText">Copy
-                                    Original</span>
-                            </button>
-                            <button type="button" class="btn-action-pill btn-primary-pill" id="insertOriginalBtn"
-                                title="Insert Original Text into Input">
-                                <i data-lucide="corner-down-left"></i> Insert Original
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- TRANSLATION CARD (Shown when Translation Toggle = ON) -->
-                    <div class="voice-speech-card" id="translationSpeechCard" style="display: none;">
-                        <div class="speech-card-header">
-                            <span class="speech-card-title"><i data-lucide="languages"></i> TRANSLATION</span>
-                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
-                                <select id="translationVoiceAccentSelect" class="card-voice-accent-select"
-                                    title="TTS Voice Accent">
-                                    <option value="nova">Nova (Female)</option>
-                                    <option value="alloy">Alloy (Neutral)</option>
-                                    <option value="echo">Echo (Male)</option>
-                                    <option value="fable">Fable (Male)</option>
-                                    <option value="onyx">Onyx (Male)</option>
-                                    <option value="shimmer">Shimmer (Female)</option>
-                                </select>
-                                <span class="speech-lang-tag" id="translationLangTag">ENGLISH</span>
-                            </div>
-                        </div>
-                        <textarea id="voiceTranslatedTextarea" class="voice-transcription-textarea" rows="2"
-                            placeholder="Translated text will appear here..."></textarea>
-                        <div class="speech-card-actions">
-                            <button type="button" class="btn-action-pill" id="speakTranslationBtn"
-                                title="Play Translated Voice Audio">
-                                <i data-lucide="volume-2" id="speakTranslationIcon"></i> <span
-                                    id="speakTranslationText">Speak Translation</span>
-                            </button>
-                            <button type="button" class="btn-action-pill" id="copyTranslationBtn"
-                                title="Copy Translated Text">
-                                <i data-lucide="copy" id="copyTranslationIcon"></i> <span id="copyTranslationText">Copy
-                                    Translation</span>
-                            </button>
-                            <button type="button" class="btn-action-pill btn-primary-pill" id="insertTranslationBtn"
-                                title="Insert Translated Text into Input">
-                                <i data-lucide="corner-down-left"></i> Insert Translation
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div class="startup-progress-track">
+                <div class="startup-progress-bar" id="startupProgressBar" style="width: 0%;"></div>
             </div>
 
-            <!-- Modal Footer Controls -->
-            <div class="modal-footer voice-modal-footer">
-                <button type="button" class="btn-secondary" id="cancelVoiceBtn">Close</button>
-                <button type="button" class="btn-secondary" id="rerecordVoiceBtn" style="display: none;">
-                    <i data-lucide="rotate-ccw"></i> Record Again
-                </button>
-                <button type="button" class="btn-primary btn-record-start" id="startVoiceRecordBtn">
-                    <i data-lucide="mic" id="startBtnIcon"></i> <span id="startBtnText">Start Recording</span>
-                </button>
+            <div class="startup-stats-row">
+                <span class="startup-phase-status" id="startupPhaseStatus">Initializing voice engine...</span>
+                <span class="startup-percent-val" id="startupPercentVal">0%</span>
+            </div>
+
+            <div class="startup-backend-indicator" id="startupBackendIndicator">
+                <span class="pulse-indicator-dot"></span>
+                <span id="startupBackendText">Connecting to voice service...</span>
             </div>
         </div>
     </div>
 
+    <!-- ==========================================================================
+         3. STICKY EDITORIAL NAVIGATION (PORTFOLITE FLOATING PILL)
+         ========================================================================== -->
+    <header class="editorial-navbar-wrapper">
+        <nav class="editorial-navbar" id="mainNavbar">
+            <!-- Left: Logo & Brand -->
+            <a href="#hero" class="nav-brand-group" id="navBrandLogo">
+                <img src="logo.png" alt="Butterfly AI" class="nav-brand-icon">
+                <span class="nav-brand-text">Butterfly AI</span>
+            </a>
+
+            <!-- Center: Navigation Links -->
+            <div class="nav-center-links" id="desktopNavLinks">
+                <a href="#howItWorks" class="nav-item-link">How It Works</a>
+                <a href="#features" class="nav-item-link">Features</a>
+                <a href="#androidFlow" class="nav-item-link">Keyboard</a>
+                <a href="#showcase" class="nav-item-link">Showcase</a>
+                <a href="#faq" class="nav-item-link">FAQ</a>
+                <a href="#liveKeyboard" class="nav-item-link highlight-link">Live Workspace</a>
+            </div>
+
+            <!-- Right: Actions & CTA -->
+            <div class="nav-actions-right">
+                <button type="button" class="btn-nav-icon" id="settingsBtn" title="Keyboard Settings" aria-label="Settings">
+                    <i data-lucide="sliders"></i>
+                </button>
+                <button type="button" class="btn-nav-icon" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <i data-lucide="sun" id="themeIcon"></i>
+                </button>
+                <a href="#download" class="btn-portfolite-primary" id="navDownloadBtn">
+                    <span>Download Butterfly AI</span>
+                    <span class="btn-arrow-circle"><i data-lucide="arrow-up-right"></i></span>
+                </a>
+                <!-- Mobile Hamburger Toggle -->
+                <button type="button" class="mobile-hamburger-btn" id="mobileMenuBtn" aria-label="Open Mobile Menu">
+                    <i data-lucide="menu" id="hamburgerIcon"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Navigation Menu Drawer -->
+        <div class="mobile-nav-drawer" id="mobileNavDrawer">
+            <div class="mobile-drawer-inner">
+                <a href="#howItWorks" class="mobile-nav-link">How It Works</a>
+                <a href="#features" class="mobile-nav-link">Features</a>
+                <a href="#androidFlow" class="mobile-nav-link">Keyboard</a>
+                <a href="#showcase" class="mobile-nav-link">Showcase</a>
+                <a href="#useCases" class="mobile-nav-link">Use Cases</a>
+                <a href="#faq" class="mobile-nav-link">FAQ</a>
+                <a href="#liveKeyboard" class="mobile-nav-link">Live Workspace</a>
+                <div class="mobile-drawer-cta-wrap">
+                    <a href="#download" class="btn-portfolite-primary full-width" id="mobileCtaBtn">
+                        <span>Download Butterfly AI</span>
+                        <span class="btn-arrow-circle"><i data-lucide="download"></i></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+         MAIN EDITORIAL PAGE CONTENT
+         ========================================================================== -->
+    <main class="page-wrapper">
+
+        <!-- ======================================================================
+             4. HERO SECTION
+             ====================================================================== -->
+        <section class="editorial-hero-section" id="hero">
+            <div class="hero-content-col">
+                <!-- Eyebrow Pill -->
+                <div class="hero-eyebrow-pill">
+                    <span class="pill-dot"></span>
+                    <span class="pill-label">AI VOICE KEYBOARD • NEXT-GEN INPUT</span>
+                </div>
+
+                <!-- Main Giant Editorial Heading -->
+                <h1 class="hero-main-heading">
+                    Your Voice.<br>
+                    Smarter AI.<br>
+                    <span class="accent-highlight">Everywhere.</span>
+                </h1>
+
+                <!-- Product Description -->
+                <p class="hero-description">
+                    Speak naturally. Translate instantly. Ask AI. Search the web. Type anywhere.
+                </p>
+
+                <!-- CTA Action Row -->
+                <div class="hero-cta-group">
+                    <a href="#download" class="btn-portfolite-primary btn-portfolite-blue" id="heroMainDownloadBtn">
+                        <span>Download Butterfly AI</span>
+                        <span class="btn-arrow-circle"><i data-lucide="arrow-down-right"></i></span>
+                    </a>
+                    <a href="#features" class="btn-portfolite-secondary" id="heroExploreBtn">
+                        <span>Explore Features</span>
+                        <i data-lucide="arrow-down-right"></i>
+                    </a>
+                </div>
+
+                <!-- Platforms Tagline -->
+                <div class="hero-platform-subtext">
+                    <span class="platform-dot"></span>
+                    <span>Android • Windows • macOS</span>
+                </div>
+
+                <!-- 5. HERO PRODUCT FLOW (Speak → Understand → Translate / AI → Type Anywhere) -->
+                <div class="hero-product-flow-wrap">
+                    <div class="flow-step-tag">
+                        <div class="flow-step-icon"><i data-lucide="mic"></i></div>
+                        <span class="flow-step-text">Speak</span>
+                    </div>
+                    <span class="flow-connector">→</span>
+                    <div class="flow-step-tag">
+                        <div class="flow-step-icon"><i data-lucide="cpu"></i></div>
+                        <span class="flow-step-text">Understand</span>
+                    </div>
+                    <span class="flow-connector">→</span>
+                    <div class="flow-step-tag">
+                        <div class="flow-step-icon"><i data-lucide="sparkles"></i></div>
+                        <span class="flow-step-text">Translate / AI</span>
+                    </div>
+                    <span class="flow-connector">→</span>
+                    <div class="flow-step-tag highlight-tag">
+                        <div class="flow-step-icon"><i data-lucide="corner-down-left"></i></div>
+                        <span class="flow-step-text">Type Anywhere</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Visual: Editorial Product Showcase -->
+            <div class="hero-visual-col">
+                <div class="hero-device-card">
+                    <!-- Card Top Header -->
+                    <div class="device-card-header">
+                        <div class="device-brand-row">
+                            <img src="logo.png" alt="Butterfly AI" class="device-logo-mark">
+                            <div class="device-meta">
+                                <span class="device-title">Butterfly AI System IME</span>
+                                <span class="device-status-badge">● Active Everywhere</span>
+                            </div>
+                        </div>
+                        <div class="device-actions-mini">
+                            <span class="lang-capsule">EN ⇄ తెలుగు</span>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp / Messaging Mock Preview inside Phone View -->
+                    <div class="device-chat-preview">
+                        <div class="chat-app-bar">
+                            <div class="chat-avatar-circle">🦋</div>
+                            <div class="chat-info-meta">
+                                <span class="chat-recipient">WhatsApp / Work Chat</span>
+                                <span class="chat-substate">Active cursor focus</span>
+                            </div>
+                        </div>
+
+                        <div class="chat-bubble-received">
+                            "Hey, can you share the project summary and translation for our multilingual team?"
+                        </div>
+
+                        <div class="chat-bubble-sent" id="heroLiveChatBubble">
+                            "నమస్కారం! Here is the updated milestone brief: all voice modules and AI search endpoints are fully deployed."
+                        </div>
+
+                        <!-- Active Input Field with IME Cursor -->
+                        <div class="device-input-box" id="heroTargetInputBox">
+                            <span class="device-typing-text" id="phoneMockTypingText">Speak or type naturally...</span>
+                            <span class="editorial-blinking-cursor"></span>
+                        </div>
+                    </div>
+
+                    <!-- Keyboard IME Preview Control Bar -->
+                    <div class="device-keyboard-preview">
+                        <div class="kb-action-pills">
+                            <button type="button" class="kb-pill-btn" id="phonePillTranslate">
+                                <i data-lucide="languages"></i> <span>Translate</span>
+                            </button>
+                            <button type="button" class="kb-pill-btn" id="phonePillAi">
+                                <i data-lucide="sparkles"></i> <span>AI Answer</span>
+                            </button>
+                            <button type="button" class="kb-pill-btn" id="phonePillSearch">
+                                <i data-lucide="search"></i> <span>Web Search</span>
+                            </button>
+                        </div>
+
+                        <!-- Voice Mic Center Trigger & Live Dynamic Waveform -->
+                        <div class="kb-voice-center-row">
+                            <button type="button" class="kb-mic-btn" id="phonePreviewMicBtn" title="Test Voice Input Preview">
+                                <i data-lucide="mic"></i>
+                            </button>
+                            <div class="kb-waveform-strip" id="phoneWaveformPreview">
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                                <span class="wave-bar"></span>
+                            </div>
+                            <span class="kb-status-label" id="phoneVoiceStateLabel">🎙 Voice Typing Ready</span>
+                        </div>
+
+                        <!-- Clean Keypad Layout Preview -->
+                        <div class="kb-compact-keys-grid">
+                            <div class="kb-key-row">
+                                <span class="c-key">Q</span><span class="c-key">W</span><span class="c-key">E</span><span class="c-key">R</span><span class="c-key">T</span><span class="c-key">Y</span><span class="c-key">U</span><span class="c-key">I</span><span class="c-key">O</span><span class="c-key">P</span>
+                            </div>
+                            <div class="kb-key-row">
+                                <span class="c-key">A</span><span class="c-key">S</span><span class="c-key">D</span><span class="c-key">F</span><span class="c-key">G</span><span class="c-key">H</span><span class="c-key">J</span><span class="c-key">K</span><span class="c-key">L</span>
+                            </div>
+                            <div class="kb-key-row">
+                                <span class="c-key special">⇧</span><span class="c-key">Z</span><span class="c-key">X</span><span class="c-key">C</span><span class="c-key">V</span><span class="c-key">B</span><span class="c-key">N</span><span class="c-key">M</span><span class="c-key special">⌫</span>
+                            </div>
+                            <div class="kb-key-row">
+                                <span class="c-key special">?123</span>
+                                <span class="c-key special">EN/తె</span>
+                                <span class="c-key space-bar">🦋 Butterfly AI</span>
+                                <span class="c-key accent-key">↵</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PORTFOLITE MARQUEE TICKER RIBBON -->
+        <div class="portfolite-marquee-strip" aria-hidden="true">
+            <div class="marquee-track">
+                <span class="m-pill"><i data-lucide="mic"></i> Voice Typing</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="languages"></i> Telugu ⇄ English</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="sparkles"></i> AI Grammar Polish</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="bot"></i> Smart AI Answers</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="search"></i> Live Web Search</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="smartphone"></i> Android System IME</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="zap"></i> Sub-350ms Latency</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="volume-2"></i> Neural Text-to-Speech</span>
+                <span class="m-dot">•</span>
+                <!-- Loop items -->
+                <span class="m-pill"><i data-lucide="mic"></i> Voice Typing</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="languages"></i> Telugu ⇄ English</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="sparkles"></i> AI Grammar Polish</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="bot"></i> Smart AI Answers</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="search"></i> Live Web Search</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="smartphone"></i> Android System IME</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="zap"></i> Sub-350ms Latency</span>
+                <span class="m-dot">•</span>
+                <span class="m-pill"><i data-lucide="volume-2"></i> Neural Text-to-Speech</span>
+            </div>
+        </div>
+
+        <!-- ======================================================================
+             6. INTRODUCTION SECTION
+             ====================================================================== -->
+        <section class="editorial-intro-section" id="intro">
+            <div class="section-container">
+                <span class="editorial-subheading-tag">BUTTERFLY AI</span>
+                <h2 class="editorial-giant-statement">
+                    One keyboard.<br>
+                    A smarter way to communicate.
+                </h2>
+                <p class="editorial-statement-desc">
+                    Butterfly AI combines voice typing, translation, AI assistance and web search into one keyboard experience.
+                </p>
+
+                <!-- PORTFOLITE-STYLE 4 METRIC STATS CARDS -->
+                <div class="portfolite-metrics-grid">
+                    <div class="portfolite-metric-card">
+                        <span class="p-metric-num">&lt; 350ms</span>
+                        <span class="p-metric-label">Voice Dictation Latency</span>
+                        <p class="p-metric-desc">Sub-second neural recognition speed for instant, stutter-free typing.</p>
+                    </div>
+                    <div class="portfolite-metric-card">
+                        <span class="p-metric-num">99.4%</span>
+                        <span class="p-metric-label">Recognition Accuracy</span>
+                        <p class="p-metric-desc">Specialized in Indian regional vernacular, mixed speech, and natural cadence.</p>
+                    </div>
+                    <div class="portfolite-metric-card">
+                        <span class="p-metric-num">12+</span>
+                        <span class="p-metric-label">Supported Languages</span>
+                        <p class="p-metric-desc">Fluently translate between English, Telugu, Hindi, Tamil & Kannada.</p>
+                    </div>
+                    <div class="portfolite-metric-card">
+                        <span class="p-metric-num">100%</span>
+                        <span class="p-metric-label">Android IME Compatible</span>
+                        <p class="p-metric-desc">Works universally inside WhatsApp, Gmail, Chrome, Instagram and Notes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             7. HOW IT WORKS SECTION (01 SPEAK, 02 UNDERSTAND, 03 ENHANCE, 04 TYPE)
+             ====================================================================== -->
+        <section class="editorial-section" id="howItWorks">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">PROCESS</span>
+                    <h2 class="section-display-heading">How Butterfly AI Works</h2>
+                    <p class="section-subtext">From your voice to the final message in a few simple steps.</p>
+                </div>
+
+                <div class="process-steps-grid-4">
+                    <!-- Step 01 -->
+                    <div class="step-card-editorial">
+                        <div class="step-card-top">
+                            <span class="step-huge-num">01</span>
+                            <div class="step-icon-bubble"><i data-lucide="mic"></i></div>
+                        </div>
+                        <h3 class="step-title">SPEAK</h3>
+                        <p class="step-desc">Speak naturally in your own language.</p>
+                    </div>
+
+                    <!-- Step 02 -->
+                    <div class="step-card-editorial">
+                        <div class="step-card-top">
+                            <span class="step-huge-num">02</span>
+                            <div class="step-icon-bubble"><i data-lucide="cpu"></i></div>
+                        </div>
+                        <h3 class="step-title">UNDERSTAND</h3>
+                        <p class="step-desc">Butterfly AI converts your speech into text.</p>
+                    </div>
+
+                    <!-- Step 03 -->
+                    <div class="step-card-editorial">
+                        <div class="step-card-top">
+                            <span class="step-huge-num">03</span>
+                            <div class="step-icon-bubble"><i data-lucide="sparkles"></i></div>
+                        </div>
+                        <h3 class="step-title">ENHANCE</h3>
+                        <p class="step-desc">Translate, polish or ask AI depending on what you need.</p>
+                    </div>
+
+                    <!-- Step 04 -->
+                    <div class="step-card-editorial">
+                        <div class="step-card-top">
+                            <span class="step-huge-num">04</span>
+                            <div class="step-icon-bubble"><i data-lucide="corner-down-left"></i></div>
+                        </div>
+                        <h3 class="step-title">TYPE</h3>
+                        <p class="step-desc">Insert the result directly into the active app.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             8. REAL ANDROID KEYBOARD FLOW
+             ====================================================================== -->
+        <section class="editorial-section section-alternate" id="androidFlow">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">SYSTEM IME INTEGRATION</span>
+                    <h2 class="section-display-heading">Works wherever you type.</h2>
+                    <p class="section-subtext">A native Android Input Method Engine that lives right inside your existing favorite applications.</p>
+                </div>
+
+                <div class="ime-flow-split-layout">
+                    <!-- Left: Android Phone Graphic / IME Visual -->
+                    <div class="ime-mockup-card">
+                        <div class="mockup-bezel">
+                            <div class="mockup-screen">
+                                <!-- App Header -->
+                                <div class="mockup-app-bar">
+                                    <div class="mockup-app-avatar">💬</div>
+                                    <div>
+                                        <div class="mockup-app-name">WhatsApp Chat</div>
+                                        <div class="mockup-app-status">Online</div>
+                                    </div>
+                                </div>
+
+                                <!-- WhatsApp Message Flow -->
+                                <div class="mockup-chat-body">
+                                    <div class="chat-msg chat-in">
+                                        Can you quickly send the meeting notes in English?
+                                    </div>
+                                    <div class="chat-msg chat-out">
+                                        "సమావేశ గమనికలు సిద్ధంగా ఉన్నాయి"
+                                    </div>
+                                    <div class="chat-msg chat-out-translated">
+                                        ✨ Translated: "Meeting notes are ready."
+                                    </div>
+                                </div>
+
+                                <!-- Active Text Field -->
+                                <div class="mockup-active-field">
+                                    <span class="typing-placeholder">Meeting notes are ready.</span>
+                                    <span class="mock-cursor"></span>
+                                </div>
+
+                                <!-- Butterfly AI Keyboard Toolbar & Keys -->
+                                <div class="mockup-ime-bar">
+                                    <div class="ime-toolbar-icons">
+                                        <span class="ime-tool-pill active"><i data-lucide="mic"></i> Voice</span>
+                                        <span class="ime-tool-pill"><i data-lucide="languages"></i> Translate</span>
+                                        <span class="ime-tool-pill"><i data-lucide="check-check"></i> AI Polish</span>
+                                        <span class="ime-tool-pill"><i data-lucide="bot"></i> AI Answer</span>
+                                        <span class="ime-tool-pill"><i data-lucide="search"></i> Search</span>
+                                    </div>
+                                    <div class="ime-keys-rows">
+                                        <div class="mock-row"><span class="k">Q</span><span class="k">W</span><span class="k">E</span><span class="k">R</span><span class="k">T</span><span class="k">Y</span><span class="k">U</span><span class="k">I</span><span class="k">O</span><span class="k">P</span></div>
+                                        <div class="mock-row"><span class="k">A</span><span class="k">S</span><span class="k">D</span><span class="k">F</span><span class="k">G</span><span class="k">H</span><span class="k">J</span><span class="k">K</span><span class="k">L</span></div>
+                                        <div class="mock-row"><span class="k s">⇧</span><span class="k">Z</span><span class="k">X</span><span class="k">C</span><span class="k">V</span><span class="k">B</span><span class="k">N</span><span class="k">M</span><span class="k s">⌫</span></div>
+                                        <div class="mock-row"><span class="k s">123</span><span class="k space">🦋 Butterfly AI Keyboard</span><span class="k blue">↵</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Step-by-Step Flow Explanation -->
+                    <div class="ime-pipeline-card">
+                        <h3 class="pipeline-heading">The Android IME Pipeline</h3>
+                        <p class="pipeline-desc">How Butterfly AI transforms your voice into formatted text inside any app:</p>
+
+                        <div class="pipeline-steps-list">
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">1</span>
+                                <div class="pipe-step-content">
+                                    <strong>User taps text field</strong>
+                                    <span>Focus active input field in any Android application.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">2</span>
+                                <div class="pipe-step-content">
+                                    <strong>Butterfly AI keyboard opens</strong>
+                                    <span>System launches Butterfly AI as your default input method engine.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">3</span>
+                                <div class="pipe-step-content">
+                                    <strong>User speaks</strong>
+                                    <span>Natural speech stream captured in your preferred vernacular or English.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">4</span>
+                                <div class="pipe-step-content">
+                                    <strong>Speech becomes text</strong>
+                                    <span>Whisper & fast speech-to-text neural models transcribe words instantly.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">5</span>
+                                <div class="pipe-step-content">
+                                    <strong>Translation / AI processing</strong>
+                                    <span>Optional live translation, grammar polishing, or AI answering.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item highlight">
+                                <span class="pipe-step-bullet">6</span>
+                                <div class="pipe-step-content">
+                                    <strong>Result inserted into active text field</strong>
+                                    <span>Final polished text commits directly to your app's cursor location.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Supported Apps Badges -->
+                        <div class="supported-apps-strip">
+                            <span class="strip-label">Supported Examples:</span>
+                            <div class="strip-badges">
+                                <span class="app-chip">WhatsApp</span>
+                                <span class="app-chip">Gmail</span>
+                                <span class="app-chip">Chrome</span>
+                                <span class="app-chip">Instagram</span>
+                                <span class="app-chip">Telegram</span>
+                                <span class="app-chip">Notes</span>
+                            </div>
+                        </div>
+
+                        <p class="ime-technical-note">
+                            * Butterfly AI operates through the standard Android InputMethodService architecture, ensuring secure and seamless cursor insertion across all apps that accept standard text input.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             9. FEATURES SECTION (8 LARGE EDITORIAL FEATURE BLOCKS)
+             ====================================================================== -->
+        <section class="editorial-section" id="features">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">CAPABILITIES</span>
+                    <h2 class="section-display-heading">
+                        Everything you need.<br>
+                        Inside one keyboard.
+                    </h2>
+                    <p class="section-subtext">Powerful AI capabilities designed to live right under your fingers.</p>
+                </div>
+
+                <div class="features-editorial-grid">
+                    <!-- Feature 01 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">01</span>
+                            <div class="feat-icon"><i data-lucide="mic"></i></div>
+                        </div>
+                        <h3 class="feat-title">VOICE TYPING</h3>
+                        <p class="feat-desc">Speak naturally and convert your voice into text.</p>
+                        <div class="feat-visual-pill">
+                            <span>Sub-second transcription</span>
+                            <span class="pill-badge">Fast & Accurate</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 02 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">02</span>
+                            <div class="feat-icon"><i data-lucide="languages"></i></div>
+                        </div>
+                        <h3 class="feat-title">TRANSLATION</h3>
+                        <p class="feat-desc">Translate between languages including English, Telugu, Hindi, Tamil and Kannada.</p>
+                        <div class="feat-visual-pill">
+                            <span>Telugu • Hindi • Tamil • Kannada</span>
+                            <span class="pill-badge">Multilingual</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 03 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">03</span>
+                            <div class="feat-icon"><i data-lucide="check-check"></i></div>
+                        </div>
+                        <h3 class="feat-title">AI POLISH</h3>
+                        <p class="feat-desc">Improve grammar, punctuation and writing.</p>
+                        <div class="feat-visual-pill">
+                            <span>Clean phrasing & punctuation</span>
+                            <span class="pill-badge">One-Tap</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 04 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">04</span>
+                            <div class="feat-icon"><i data-lucide="bot"></i></div>
+                        </div>
+                        <h3 class="feat-title">AI ANSWER</h3>
+                        <p class="feat-desc">Ask questions and receive AI-generated responses.</p>
+                        <div class="feat-visual-pill">
+                            <span>Answers straight into active text</span>
+                            <span class="pill-badge">Smart AI</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 05 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">05</span>
+                            <div class="feat-icon"><i data-lucide="search"></i></div>
+                        </div>
+                        <h3 class="feat-title">WEB SEARCH</h3>
+                        <p class="feat-desc">Search the web without leaving your workflow.</p>
+                        <div class="feat-visual-pill">
+                            <span>Instant lookup without switching apps</span>
+                            <span class="pill-badge">Live Web</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 06 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">06</span>
+                            <div class="feat-icon"><i data-lucide="volume-2"></i></div>
+                        </div>
+                        <h3 class="feat-title">TEXT TO SPEECH</h3>
+                        <p class="feat-desc">Listen to translated text and AI responses.</p>
+                        <div class="feat-visual-pill">
+                            <span>Clear neural voice synthesis</span>
+                            <span class="pill-badge">6 Accents</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 07 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">07</span>
+                            <div class="feat-icon"><i data-lucide="smartphone"></i></div>
+                        </div>
+                        <h3 class="feat-title">AI KEYBOARD</h3>
+                        <p class="feat-desc">Use Butterfly AI directly inside Android applications.</p>
+                        <div class="feat-visual-pill">
+                            <span>Native IME integration</span>
+                            <span class="pill-badge">System Level</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 08 -->
+                    <div class="feature-editorial-card">
+                        <div class="feat-top-bar">
+                            <span class="feat-num">08</span>
+                            <div class="feat-icon"><i data-lucide="globe"></i></div>
+                        </div>
+                        <h3 class="feat-title">WORKS EVERYWHERE</h3>
+                        <p class="feat-desc">Use your voice and AI wherever you type.</p>
+                        <div class="feat-visual-pill">
+                            <span>Messaging, Email, Notes & Browser</span>
+                            <span class="pill-badge">Universal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             10. FEATURE SHOWCASE (3 LARGE ALTERNATING SECTIONS)
+             ====================================================================== -->
+        <section class="editorial-section section-alternate" id="showcase">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">DEEP DIVE</span>
+                    <h2 class="section-display-heading">Crafted for natural expression.</h2>
+                    <p class="section-subtext">Explore three core pillars of Butterfly AI in action.</p>
+                </div>
+
+                <div class="showcase-stack">
+                    <!-- SECTION A: Speak naturally -->
+                    <div class="showcase-card-editorial">
+                        <div class="showcase-copy">
+                            <span class="showcase-tag">SECTION A • VOICE FIRST</span>
+                            <h3 class="showcase-heading">Speak naturally.</h3>
+                            <p class="showcase-desc">
+                                Tap the microphone, speak naturally and let Butterfly AI convert your voice into text.
+                            </p>
+                            <div class="showcase-metrics">
+                                <div class="metric-pill">
+                                    <strong>&lt; 350ms</strong>
+                                    <span>Latency</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <strong>99.4%</strong>
+                                    <span>Accuracy</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <strong>Vernacular</strong>
+                                    <span>Dialect aware</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="showcase-visual-box">
+                            <div class="voice-ui-display">
+                                <div class="voice-center-circle">
+                                    <i data-lucide="mic"></i>
+                                </div>
+                                <div class="voice-waveform-animation">
+                                    <span class="bar b1"></span>
+                                    <span class="bar b2"></span>
+                                    <span class="bar b3"></span>
+                                    <span class="bar b4"></span>
+                                    <span class="bar b5"></span>
+                                    <span class="bar b6"></span>
+                                    <span class="bar b7"></span>
+                                    <span class="bar b8"></span>
+                                </div>
+                                <div class="voice-speech-snippet">
+                                    "Schedule a meeting tomorrow at 10 AM with the engineering lead."
+                                </div>
+                                <span class="voice-status-pill">● Listening & Transcribing</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION B: Break language barriers -->
+                    <div class="showcase-card-editorial reverse-layout">
+                        <div class="showcase-copy">
+                            <span class="showcase-tag">SECTION B • MULTILINGUAL</span>
+                            <h3 class="showcase-heading">Break language barriers.</h3>
+                            <p class="showcase-desc">
+                                Speak in your mother tongue and communicate effortlessly with anyone across languages.
+                            </p>
+                            <ul class="showcase-bullet-list">
+                                <li>Direct speech-to-translated text with zero extra taps.</li>
+                                <li>Fluent Indian language support: Telugu, Hindi, Tamil, Kannada & more.</li>
+                                <li>Audio playback to verify phonetic accuracy.</li>
+                            </ul>
+                        </div>
+                        <div class="showcase-visual-box">
+                            <div class="translation-ui-display">
+                                <div class="trans-box-top">
+                                    <span class="lang-label">TELUGU SPEECH</span>
+                                    <p class="trans-original-text">"నమస్కారం, మీరు ఎలా ఉన్నారు? ఈ ప్రాజెక్ట్ చాలా బాగుంది."</p>
+                                </div>
+                                <div class="trans-divider-arrow">
+                                    <span>↓ Instant Multilingual Translation</span>
+                                </div>
+                                <div class="trans-box-bottom">
+                                    <span class="lang-label">ENGLISH RESULT</span>
+                                    <p class="trans-translated-text">"Hello, how are you? This project is looking great."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION C: Ask. Search. Create. -->
+                    <div class="showcase-card-editorial">
+                        <div class="showcase-copy">
+                            <span class="showcase-tag">SECTION C • INTELLIGENCE</span>
+                            <h3 class="showcase-heading">Ask. Search. Create.</h3>
+                            <p class="showcase-desc">
+                                Butterfly AI brings intelligent search, instant knowledge lookup, and proactive text polishing directly to wherever you are typing.
+                            </p>
+                            <div class="features-pill-row">
+                                <span class="smart-pill"><i data-lucide="bot"></i> AI Answer</span>
+                                <span class="smart-pill"><i data-lucide="search"></i> Web Search</span>
+                                <span class="smart-pill"><i data-lucide="sparkles"></i> AI Polish</span>
+                            </div>
+                        </div>
+                        <div class="showcase-visual-box">
+                            <div class="intelligence-ui-display">
+                                <div class="intel-card-item">
+                                    <div class="intel-item-header">
+                                        <i data-lucide="bot"></i> <span>AI Answer</span>
+                                    </div>
+                                    <p class="intel-item-body">"The speed of light in vacuum is approximately 299,792 kilometers per second."</p>
+                                </div>
+                                <div class="intel-card-item">
+                                    <div class="intel-item-header">
+                                        <i data-lucide="search"></i> <span>Web Search</span>
+                                    </div>
+                                    <p class="intel-item-body">"Found 3 instant sources: Live financial metrics and tech indices."</p>
+                                </div>
+                                <div class="intel-card-item">
+                                    <div class="intel-item-header">
+                                        <i data-lucide="check-check"></i> <span>AI Polish</span>
+                                    </div>
+                                    <p class="intel-item-body">"Grammar polished: 'I will attend the sync' → 'I look forward to our sync.'"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             13. PROCESS SECTION (01 VOICE, 02 LANGUAGE, 03 INTELLIGENCE, 04 ACTION)
+             ====================================================================== -->
+        <section class="editorial-section" id="process">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">CORE ARCHITECTURE</span>
+                    <h2 class="section-display-heading">Built around the way you communicate.</h2>
+                    <p class="section-subtext">Four fundamental pillars engineered for seamless input across modern devices.</p>
+                </div>
+
+                <div class="process-grid-editorial">
+                    <div class="pillar-card">
+                        <span class="pillar-num">01</span>
+                        <h3 class="pillar-title">VOICE</h3>
+                        <p class="pillar-desc">Natural speech recognition tuned for clarity, vernacular nuances, and diverse accents.</p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <span class="pillar-num">02</span>
+                        <h3 class="pillar-title">LANGUAGE</h3>
+                        <p class="pillar-desc">Deep multilingual intelligence bridging Indian languages with global communication.</p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <span class="pillar-num">03</span>
+                        <h3 class="pillar-title">INTELLIGENCE</h3>
+                        <p class="pillar-desc">On-demand AI assistance, live web queries, and instant grammar perfection.</p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <span class="pillar-num">04</span>
+                        <h3 class="pillar-title">ACTION</h3>
+                        <p class="pillar-desc">Direct text insertion into any cursor field without copy-pasting or switching apps.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             14. USE CASES SECTION
+             ====================================================================== -->
+        <section class="editorial-section section-alternate" id="useCases">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">APPLICATIONS</span>
+                    <h2 class="section-display-heading">Made for everyday communication.</h2>
+                    <p class="section-subtext">Wherever a blinking cursor exists, Butterfly AI accelerates your thoughts into polished words.</p>
+                </div>
+
+                <!-- 8 Use Cases Grid -->
+                <div class="usecases-grid-8">
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="message-circle"></i> <span>Messaging</span></div>
+                        <p class="usecase-detail">Speak fast replies and voice notes without typing on small mobile keys.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="briefcase"></i> <span>Work</span></div>
+                        <p class="usecase-detail">Draft Slack updates, status reports, and project milestones in seconds.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="search"></i> <span>Search</span></div>
+                        <p class="usecase-detail">Look up facts and definitions directly from within your typing session.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="pen-tool"></i> <span>Writing</span></div>
+                        <p class="usecase-detail">Dictate long-form thoughts, essays, and articles with natural pauses.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="languages"></i> <span>Translation</span></div>
+                        <p class="usecase-detail">Cross language divides between Telugu, Hindi, Tamil, and English fluently.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="file-text"></i> <span>Notes</span></div>
+                        <p class="usecase-detail">Capture sudden brainstorms and meeting action items on the fly.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="mail"></i> <span>Email</span></div>
+                        <p class="usecase-detail">Compose professional emails with one-tap grammar and tone polish.</p>
+                    </div>
+                    <div class="usecase-card">
+                        <div class="usecase-header"><i data-lucide="share-2"></i> <span>Social Media</span></div>
+                        <p class="usecase-detail">Create captivating captions, threads, and comments effortlessly.</p>
+                    </div>
+                </div>
+
+                <!-- App Logos Row -->
+                <div class="apps-presence-box">
+                    <span class="presence-title">Works seamlessly with</span>
+                    <div class="presence-badges-row">
+                        <div class="app-presence-badge"><i data-lucide="message-circle"></i> <span>WhatsApp</span></div>
+                        <div class="app-presence-badge"><i data-lucide="mail"></i> <span>Gmail</span></div>
+                        <div class="app-presence-badge"><i data-lucide="globe"></i> <span>Chrome</span></div>
+                        <div class="app-presence-badge"><i data-lucide="camera"></i> <span>Instagram</span></div>
+                        <div class="app-presence-badge"><i data-lucide="send"></i> <span>Telegram</span></div>
+                        <div class="app-presence-badge"><i data-lucide="file-text"></i> <span>Notes</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             INTERACTIVE LIVE KEYBOARD WORKSPACE (TEST RIGHT HERE)
+             ====================================================================== -->
+        <section class="editorial-section live-workspace-editorial" id="liveKeyboard">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">INTERACTIVE TESTBED</span>
+                    <h2 class="section-display-heading">Experience Butterfly AI Live</h2>
+                    <p class="section-subtext">Test the actual keyboard search bar, voice engine, translation, and AI assistant right in your browser.</p>
+                </div>
+
+                <!-- Live Keyboard Card Container -->
+                <div class="live-testbed-card">
+                    <!-- Brand Top Bar -->
+                    <div class="testbed-top-bar">
+                        <div class="testbed-brand">
+                            <img src="logo.png" alt="Butterfly AI" class="testbed-logo">
+                            <div>
+                                <h3 class="testbed-title">Butterfly AI System Workspace</h3>
+                                <p class="testbed-sub">Speak or type in English, Telugu, Hindi, or any language.</p>
+                            </div>
+                        </div>
+                        <div class="testbed-actions">
+                            <button type="button" class="btn-stop-speech" id="headerStopAudioBtn" style="display: none;" title="Stop Voice Playback">
+                                <i data-lucide="square"></i> <span>Stop Audio</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Single Main Search Bar Card (Preserves DOM IDs) -->
+                    <div class="vk-main-search-card" id="chatContainer">
+                        <div class="vk-main-search-wrapper">
+                            <textarea id="mainSearchInput" class="vk-main-search-field voice-target-input"
+                                placeholder="Search, type, or speak with Butterfly AI..." rows="1" autocomplete="off"
+                                style="resize: none; overflow-y: hidden; max-height: 250px;"></textarea>
+                            <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput"
+                                title="Open Butterfly AI System Keyboard (IME)">
+                                <i data-lucide="mic" id="mainSearchMicIcon"></i>
+                            </button>
+                            <button class="search-submit-btn" id="mainSearchActionBtn" title="Search the Web">
+                                <i data-lucide="search"></i>
+                            </button>
+                        </div>
+
+                        <!-- Voice Status Indicator -->
+                        <div class="vk-status-indicator-bar" id="micStatusIndicator" style="display: none;">
+                            <span class="status-dot" id="statusDot"></span>
+                            <span id="micStatusText">Ready</span>
+                            <canvas id="mainWaveformCanvas" class="vk-waveform-mini" width="120" height="20" style="display: none; margin: 0 8px;"></canvas>
+                            <span id="mainRecordTimer" style="margin-left: auto; font-family: monospace;">00:00</span>
+                        </div>
+
+                        <!-- Redesigned Voice Recording Panel (Pro) -->
+                        <div class="voice-recording-card-pro" id="voiceRecordingCardPro" style="display: none;">
+                            <div class="vrc-glow-aura"></div>
+                            <div class="vrc-header">
+                                <span class="vrc-live-dot"></span>
+                                <span class="vrc-status-title">RECORDING VOICE</span>
+                            </div>
+                            <div class="vrc-timer-display" id="vrcTimerDisplay">00:00</div>
+                            <div class="vrc-waveform-box">
+                                <canvas id="vrcWaveformCanvas" class="vrc-waveform-canvas" width="220" height="24"></canvas>
+                            </div>
+                            <div class="vrc-action-row">
+                                <button type="button" class="vrc-btn vrc-btn-stop" id="vrcStopBtn" title="Stop Recording">
+                                    <i data-lucide="square"></i>
+                                    <span>STOP</span>
+                                </button>
+                                <button type="button" class="vrc-btn vrc-btn-cancel" id="vrcCancelBtn" title="Cancel Recording">
+                                    <i data-lucide="x"></i>
+                                    <span>CANCEL</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- BUTTERFLY AI SYSTEM KEYBOARD (IME) CARD -->
+                        <div class="butterfly-ime-system-card" id="butterflyImeCard" style="display: none;">
+                            <div class="ime-header-banner">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="logo.png" alt="Butterfly Logo" class="ime-logo-icon">
+                                    <span class="ime-header-title">BUTTERFLY AI SYSTEM KEYBOARD (IME)</span>
+                                </div>
+                                <button type="button" class="ime-close-btn" id="closeImeCardBtn" title="Close Keyboard">
+                                    <i data-lucide="x"></i>
+                                </button>
+                            </div>
+
+                            <div class="ime-inner-card">
+                                <!-- ROW 1: Language selection bar -->
+                                <div class="ime-row-languages">
+                                    <div class="ime-lang-group">
+                                        <label>Source:</label>
+                                        <select id="imeSourceLangSelect" class="ime-select">
+                                            <option value="auto">✨ Auto Detect</option>
+                                            <option value="en" selected>English</option>
+                                            <option value="te">Telugu (తెలుగు)</option>
+                                            <option value="hi">Hindi (हिन्दी)</option>
+                                            <option value="ta">Tamil (தமிழ்)</option>
+                                            <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                            <option value="ml">Malayalam (മലയാളം)</option>
+                                            <option value="mr">Marathi (मराठी)</option>
+                                            <option value="bn">Bengali (বাংলা)</option>
+                                            <option value="gu">Gujarati (ગુજરાતી)</option>
+                                            <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                                            <option value="ur">Urdu (اردو)</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                            <option value="de">German</option>
+                                            <option value="it">Italian</option>
+                                            <option value="pt">Portuguese</option>
+                                            <option value="ar">Arabic</option>
+                                            <option value="ja">Japanese</option>
+                                            <option value="ko">Korean</option>
+                                            <option value="zh">Chinese</option>
+                                            <option value="ru">Russian</option>
+                                        </select>
+                                    </div>
+                                    <div class="ime-divider">⇄</div>
+                                    <div class="ime-lang-group">
+                                        <label>Translate to:</label>
+                                        <select id="imeTargetLangSelect" class="ime-select">
+                                            <option value="en" selected>English</option>
+                                            <option value="te">Telugu (తెలుగు)</option>
+                                            <option value="hi">Hindi (हिन्दी)</option>
+                                            <option value="ta">Tamil (தமிழ்)</option>
+                                            <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                            <option value="ml">Malayalam (മലയാളം)</option>
+                                            <option value="mr">Marathi (मराठी)</option>
+                                            <option value="bn">Bengali (বাংলা)</option>
+                                            <option value="gu">Gujarati (ગુજરાતી)</option>
+                                            <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                                            <option value="ur">Urdu (اردو)</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                            <option value="de">German</option>
+                                            <option value="it">Italian</option>
+                                            <option value="pt">Portuguese</option>
+                                            <option value="ar">Arabic</option>
+                                            <option value="ja">Japanese</option>
+                                            <option value="ko">Korean</option>
+                                            <option value="zh">Chinese</option>
+                                            <option value="ru">Russian</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- ROW 2: Action Buttons -->
+                                <div class="ime-row-actions">
+                                    <button type="button" class="ime-btn btn-tap-to-speak" id="imeTapToSpeakBtn">
+                                        <i data-lucide="mic" id="imeSpeakBtnIcon"></i>
+                                        <span id="imeSpeakBtnText">TAP TO SPEAK</span>
+                                    </button>
+                                    <button type="button" class="ime-btn btn-ai-polish" id="imeAiPolishBtn">
+                                        <i data-lucide="sparkles"></i> AI Polish
+                                    </button>
+                                    <button type="button" class="ime-btn btn-ai-ask" id="imeAiAskBtn">
+                                        <i data-lucide="bot"></i> AI Ask
+                                    </button>
+                                </div>
+
+                                <!-- ROW 3: Control Buttons -->
+                                <div class="ime-row-controls">
+                                    <button type="button" class="ime-ctrl-btn key-toggle" id="imeKeypadToggleBtn" title="Toggle Keyboard">
+                                        <i data-lucide="keyboard"></i>
+                                    </button>
+                                    <button type="button" class="ime-ctrl-btn key-space" id="imeSpaceBtn">
+                                        Space
+                                    </button>
+                                    <button type="button" class="ime-ctrl-btn key-backspace" id="imeBackspaceBtn" title="Backspace">
+                                        <i data-lucide="delete"></i>
+                                    </button>
+                                    <button type="button" class="ime-ctrl-btn key-enter" id="imeEnterBtn" title="Enter">
+                                        <i data-lucide="corner-down-left"></i>
+                                    </button>
+                                    <button type="button" class="ime-ctrl-btn key-switch" id="imeSwitchBtn" title="Switch Keyboard">
+                                        <i data-lucide="globe"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SEARCH RESULTS OVERLAY CONTAINER -->
+                        <div class="vk-card search-results-overlay-card" id="searchResultsCard" style="display: none;">
+                            <div class="vk-card-header">
+                                <div class="vk-card-title">
+                                    <i data-lucide="search"></i>
+                                    <span>SEARCH RESULTS FOR: <strong id="searchQueryTitle" style="color: var(--primary-accent);">""</strong></span>
+                                </div>
+                                <button type="button" class="btn-text-action" id="closeSearchResultsBtn" title="Close Search Results">
+                                    <i data-lucide="x"></i>
+                                </button>
+                            </div>
+                            <div class="vk-card-body" id="searchResultsContainer"></div>
+                        </div>
+
+                    </div> <!-- /#chatContainer -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             15. FAQ ACCORDION SECTION (10 QUESTIONS)
+             ====================================================================== -->
+        <section class="editorial-section" id="faq">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">FAQ</span>
+                    <h2 class="section-display-heading">Frequently Asked Questions</h2>
+                    <p class="section-subtext">Clear answers about Butterfly AI capabilities, privacy, and device support.</p>
+                </div>
+
+                <div class="faq-accordion-list" id="faqAccordion">
+                    <!-- Q1 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">What is Butterfly AI?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Butterfly AI is an intelligent voice keyboard that turns your voice into text, translates languages, improves your writing, answers questions and helps you search the web — wherever you type.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">How does the Butterfly AI keyboard work?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Butterfly AI operates as a native system Input Method Engine (IME) on Android and desktop. When you tap a text field, Butterfly AI opens, captures your voice with sub-second accuracy, processes translation or AI requests, and inserts the resulting text directly into the cursor location.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Does Butterfly AI support voice typing?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Yes. Voice typing is the foundational core of Butterfly AI. Tap the microphone icon, speak naturally in your normal speaking cadence, and it turns speech into text instantly with high accuracy.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Which languages are supported?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Butterfly AI supports deep multilingual recognition and translation for English, Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Urdu, Spanish, French, German, Japanese, and more.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q5 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Can I use Butterfly AI inside WhatsApp?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Yes! Because Butterfly AI is integrated as a system-level keyboard on Android, it works inside WhatsApp, Gmail, Chrome, Instagram, Telegram, Notes, and every other application with a text field.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q6 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Does Web Search require an OpenAI API key?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>No. Web Search works out-of-the-box using the built-in search aggregation backend. You can search the live web instantly without supplying any API key.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q7 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Does AI Answer require an API key?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Butterfly AI includes built-in offline intelligence and smart fallback. For advanced generative answers powered by OpenAI models (like GPT-4o and Whisper STT), you can optionally add your OpenAI API key in Keyboard Settings.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q8 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Can Butterfly AI translate my speech?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Absolutely. You can speak in Telugu or Hindi, and Butterfly AI will transcribe and translate it directly into English (or vice versa) in real-time before inserting the message.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q9 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">Which platforms are supported?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Android is officially supported with our native APK package (v1.0). Desktop versions for Windows and macOS are currently in release preview, alongside our universal web keyboard.</p>
+                        </div>
+                    </div>
+
+                    <!-- Q10 -->
+                    <div class="faq-item">
+                        <button type="button" class="faq-question-btn" aria-expanded="false">
+                            <span class="faq-question-text">How do I download Butterfly AI?</span>
+                            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+                        </button>
+                        <div class="faq-answer-panel">
+                            <p>Click the "Download for Android" button in the download section to get the verified APK directly. Once installed on your Android device, enable Butterfly AI in Settings → System → Language & Input.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             11. DOWNLOAD SECTION
+             ====================================================================== -->
+        <section class="editorial-section section-alternate" id="download">
+            <div class="section-container">
+                <div class="section-header-wrap">
+                    <span class="editorial-subheading-tag">INSTALLATION</span>
+                    <h2 class="section-display-heading">Meet your new AI keyboard.</h2>
+                    <p class="section-subtext">Download Butterfly AI and bring voice, translation, AI and search to wherever you type.</p>
+                </div>
+
+                <div class="download-cards-grid">
+                    <!-- Android Card (Ready & Functional) -->
+                    <div class="dl-platform-card active-platform">
+                        <div class="dl-card-badge">READY • VERSION 1.0</div>
+                        <div class="dl-icon-circle"><i data-lucide="smartphone"></i></div>
+                        <h3 class="dl-platform-name">Android APK</h3>
+                        <p class="dl-platform-desc">
+                            Direct APK installation. Use Butterfly AI as your system keyboard in WhatsApp, Chrome, Gmail, and all apps.
+                        </p>
+                        <button type="button" class="btn-editorial-primary full-width" id="btnDownloadAndroid" title="Download Butterfly AI APK">
+                            <i data-lucide="download"></i>
+                            <span>Download for Android</span>
+                        </button>
+                        <div class="dl-meta-badge">
+                            <span>Version 1.0</span> • <span>Free to download</span> • <span>Verified Safe</span>
+                        </div>
+                    </div>
+
+                    <!-- Windows Card (Coming Soon) -->
+                    <div class="dl-platform-card">
+                        <div class="dl-card-badge muted">COMING SOON</div>
+                        <div class="dl-icon-circle"><i data-lucide="monitor"></i></div>
+                        <h3 class="dl-platform-name">Windows</h3>
+                        <p class="dl-platform-desc">
+                            Desktop companion with global hotkey insertion (Ctrl + Shift + Space), voice dictation, and web search.
+                        </p>
+                        <button type="button" class="btn-editorial-outline full-width" id="btnDownloadWindows">
+                            <i data-lucide="clock"></i>
+                            <span>Download for Windows</span>
+                        </button>
+                        <div class="dl-meta-badge">
+                            <span>v1.0 Preview</span> • <span>Coming Soon</span>
+                        </div>
+                    </div>
+
+                    <!-- macOS Card (Coming Soon) -->
+                    <div class="dl-platform-card">
+                        <div class="dl-card-badge muted">COMING SOON</div>
+                        <div class="dl-icon-circle"><i data-lucide="laptop"></i></div>
+                        <h3 class="dl-platform-name">macOS</h3>
+                        <p class="dl-platform-desc">
+                            Native Apple Silicon & Intel menu bar integration for speech translation across Mac productivity apps.
+                        </p>
+                        <button type="button" class="btn-editorial-outline full-width" id="btnDownloadMac">
+                            <i data-lucide="clock"></i>
+                            <span>Download for macOS</span>
+                        </button>
+                        <div class="dl-meta-badge">
+                            <span>v1.0 Preview</span> • <span>Coming Soon</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             16. FINAL CTA SECTION
+             ====================================================================== -->
+        <section class="editorial-final-cta-section" id="finalCta">
+            <div class="section-container">
+                <div class="final-cta-inner-card">
+                    <img src="logo.png" alt="Butterfly AI Emblem" class="final-cta-logo">
+                    <h2 class="final-cta-title">
+                        Speak less.<br>
+                        Create more.
+                    </h2>
+                    <p class="final-cta-desc">
+                        Bring your voice, AI and search into the way you already type.
+                    </p>
+                    <div class="final-cta-buttons">
+                        <a href="#download" class="btn-portfolite-primary btn-portfolite-blue btn-large" id="finalDownloadBtn">
+                            <span>Download Butterfly AI</span>
+                            <span class="btn-arrow-circle"><i data-lucide="arrow-down-right"></i></span>
+                        </a>
+                        <a href="#features" class="btn-portfolite-secondary btn-large">
+                            <span>Explore Features</span>
+                            <i data-lucide="arrow-down-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==========================================================================
+         17. FOOTER
+         ========================================================================== -->
+    <footer class="editorial-footer" id="footer">
+        <div class="footer-container">
+            <div class="footer-top-grid">
+                <!-- Brand Column -->
+                <div class="footer-brand-col">
+                    <div class="footer-logo-row">
+                        <img src="logo.png" alt="Butterfly AI" class="footer-logo-img">
+                        <span class="footer-brand-title">Butterfly AI</span>
+                    </div>
+                    <p class="footer-tagline">AI Voice Keyboard • AI Answer • Web Search</p>
+                    <p class="footer-brand-desc">
+                        Your Voice. Smarter AI. Everywhere.
+                    </p>
+                </div>
+
+                <!-- Navigation Column -->
+                <div class="footer-links-col">
+                    <span class="footer-col-header">Navigation</span>
+                    <a href="#howItWorks" class="footer-link">How It Works</a>
+                    <a href="#features" class="footer-link">Features</a>
+                    <a href="#androidFlow" class="footer-link">Keyboard</a>
+                    <a href="#download" class="footer-link">Download</a>
+                    <a href="#faq" class="footer-link">FAQ</a>
+                </div>
+
+                <!-- Platforms Column -->
+                <div class="footer-links-col">
+                    <span class="footer-col-header">Platforms</span>
+                    <a href="#download" class="footer-link">Android APK</a>
+                    <a href="#download" class="footer-link">Windows (Preview)</a>
+                    <a href="#download" class="footer-link">macOS (Preview)</a>
+                    <a href="#liveKeyboard" class="footer-link">Web Keyboard</a>
+                </div>
+
+                <!-- System Status Column -->
+                <div class="footer-status-col">
+                    <span class="footer-col-header">System</span>
+                    <div class="footer-status-pill">
+                        <span class="operational-dot"></span>
+                        <span>All Systems Operational</span>
+                    </div>
+                    <span class="footer-version-tag">Build v1.0.4 • Stable</span>
+                </div>
+            </div>
+
+            <!-- Footer Bottom Line -->
+            <div class="footer-bottom-bar">
+                <span>© 2026 Butterfly AI. All rights reserved.</span>
+                <div class="footer-bottom-tags">
+                    <span>Minimal</span> • <span>Multilingual</span> • <span>Privacy First</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================================================
+         PRESERVED MODALS (Settings, Voice, Audio Upload, Snippets)
+         ========================================================================== -->
     <!-- Settings Modal -->
-    <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-backdrop" id="settingsModal" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i data-lucide="settings"></i> Keyboard Settings</h3>
-                <button class="btn-icon" id="closeSettingsBtn"><i data-lucide="x"></i></button>
+                <h3><i data-lucide="sliders"></i> Keyboard Settings</h3>
+                <button type="button" class="btn-icon" id="closeSettingsBtn"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
                 <div class="setting-item setting-item-row">
@@ -480,8 +1425,7 @@
                 <div class="setting-item setting-item-col">
                     <div class="setting-col-header">
                         <label><i data-lucide="mic"></i> TTS Voice Accent</label>
-                        <button type="button" class="btn-test-voice-sm" id="testVoiceBtn"
-                            title="Test Voice Output with current settings">
+                        <button type="button" class="btn-test-voice-sm" id="testVoiceBtn" title="Test Voice Output">
                             <i data-lucide="volume-2"></i> <span>Test Voice</span>
                         </button>
                     </div>
@@ -520,7 +1464,7 @@
                     <div class="setting-col-header">
                         <label><i data-lucide="key"></i> OpenAI API Key</label>
                     </div>
-                    <p class="setting-subtext">Enter your OpenAI Key to enable Whisper STT & OpenAI TTS</p>
+                    <p class="setting-subtext">Optional: add your OpenAI Key for Whisper STT & GPT-4o answers</p>
                     <input type="password" id="apiKeyInput" class="vk-input" placeholder="sk-...">
                 </div>
 
@@ -533,99 +1477,74 @@
                         <span id="openaiStatusText">Checking connection...</span>
                     </div>
                 </div>
-
-                <div class="settings-helper-note"
-                    style="margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i data-lucide="info" style="width: 14px; height: 14px; color: var(--primary-color);"></i>
-                    <span>Settings are applied to all voice playback.</span>
-                </div>
             </div>
-            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
-                <button class="btn-primary" id="saveSettingsBtn"><i data-lucide="save"></i> Save Settings</button>
-                <button class="btn-primary" id="confirmSettingsBtn"
-                    style="display: none; background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);"><i
-                        data-lucide="check-circle"></i> Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Audio File Upload Modal -->
-    <div class="modal-backdrop" id="uploadAudioModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3><i data-lucide="file-audio"></i> Upload Audio File</h3>
-                <button class="btn-icon" id="closeAudioUploadBtn"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="upload-dropzone" id="audioDropzone">
-                    <i data-lucide="upload-cloud" class="dropzone-icon"></i>
-                    <p class="dropzone-text">Drag & drop your audio file here or <span
-                            class="dropzone-browse">browse</span></p>
-                    <span class="upload-hint">Supports .mp3, .wav, .m4a, .webm, .ogg (Max 25MB)</span>
-                    <input type="file" id="audioFileInput" accept=".mp3,.wav,.m4a,.webm,.ogg,audio/*"
-                        style="display: none;">
-                </div>
-
-                <div class="uploaded-file-info" id="uploadedFileInfo" style="display: none;">
-                    <div class="file-icon"><i data-lucide="file-audio"></i></div>
-                    <div class="file-meta">
-                        <div class="file-name" id="uploadFileName">audio.mp3</div>
-                        <div class="file-size" id="uploadFileSize">0 KB</div>
-                    </div>
-                    <button class="btn-icon-sm" id="removeUploadFileBtn" title="Remove File"><i
-                            data-lucide="trash-2"></i></button>
-                </div>
-
-                <div class="upload-progress-box" id="uploadProgressBox" style="display: none;">
-                    <div class="progress-status" id="uploadProgressText">Transcribing audio file...</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelAudioUploadBtn">Cancel</button>
-                <button class="btn-primary" id="startTranscribeUploadBtn" disabled>
-                    <i data-lucide="file-text"></i> Transcribe Audio
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-editorial-primary" id="saveSettingsBtn">
+                    <i data-lucide="save"></i> Save Settings
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Snippets & Voice Triggers Modal -->
-    <div class="modal-backdrop" id="snippetsModal">
+    <!-- Voice Modal (Preserved for compatibility) -->
+    <div class="modal-backdrop" id="voiceModal" style="display: none !important;">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i data-lucide="bookmark"></i> Custom Snippets & Voice Triggers</h3>
-                <button class="btn-icon" id="closeSnippetsBtn"><i data-lucide="x"></i></button>
+                <h3>Voice Input</h3>
+                <button type="button" class="btn-icon" id="closeVoiceModalBtn"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <div class="snippet-create-form">
-                    <label class="setting-label">Snippet Name</label>
-                    <input type="text" id="snippetNameInput" class="select-input" placeholder="e.g. Email Closing"
-                        style="width:100%; box-sizing:border-box;">
-
-                    <label class="setting-label" style="margin-top:8px;">Snippet Text</label>
-                    <textarea id="snippetTextInput" class="voice-transcription-textarea" rows="2"
-                        placeholder="e.g. Thank you for your time. Best regards, Giribabu"
-                        style="width:100%; box-sizing:border-box;"></textarea>
-
-                    <label class="setting-label" style="margin-top:8px;">Optional Voice Trigger</label>
-                    <input type="text" id="snippetTriggerInput" class="select-input"
-                        placeholder="e.g. insert email closing" style="width:100%; box-sizing:border-box;">
-
-                    <button class="btn-primary btn-sm" id="saveSnippetBtn" style="margin-top:10px; width:100%;">
-                        <i data-lucide="save"></i> Save Snippet
-                    </button>
-                </div>
-
-                <div class="snippets-list-header"
-                    style="margin-top:14px; font-weight:600; font-size:0.85rem; color:var(--text-secondary);">
-                    Saved Snippets
-                </div>
-                <div class="snippets-list" id="snippetsContainer"></div>
+                <button type="button" id="startVoiceRecordBtn">Record</button>
+                <button type="button" id="cancelVoiceBtn">Close</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=2400.0"></script>
+    <!-- Upload Audio Modal (Preserved) -->
+    <div class="modal-backdrop" id="uploadAudioModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="file-audio"></i> Upload Audio File</h3>
+                <button type="button" class="btn-icon" id="closeAudioUploadBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-dropzone" id="audioDropzone">
+                    <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+                    <p>Drag & drop audio file or browse</p>
+                    <input type="file" id="audioFileInput" accept=".mp3,.wav,.m4a,.webm,.ogg,audio/*" style="display: none;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-editorial-secondary" id="cancelAudioUploadBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snippets Modal (Preserved) -->
+    <div class="modal-backdrop" id="snippetsModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="bookmark"></i> Custom Snippets</h3>
+                <button type="button" class="btn-icon" id="closeSnippetsBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="snippetsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="download-toast" id="downloadToast" role="alert" aria-live="polite">
+        <div class="toast-icon-wrap">
+            <i data-lucide="check"></i>
+        </div>
+        <div class="toast-body">
+            <span class="toast-title" id="toastTitle">Download Started</span>
+            <span class="toast-message" id="toastMsg">butterfly-ai-keyboard-v1.0.apk</span>
+        </div>
+    </div>
+
+    <script src="script.js?v=3100.0"></script>
 </body>
 
 </html>

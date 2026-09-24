@@ -3750,4 +3750,306 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return map[lang] || 'en-US';
     }
+
+    // =========================================================================
+    // BUTTERFLY AI LOADING / WELCOME PAGE CLIENT CONTROLLER
+    // =========================================================================
+
+    const DOWNLOADS_CONFIG = {
+        android: {
+            url: '/downloads/butterfly-ai-keyboard.apk',
+            filename: 'butterfly-ai-keyboard-v1.0.apk',
+            version: '1.0.0',
+            available: true
+        },
+        windows: {
+            url: '/downloads/butterfly-ai-setup.exe',
+            filename: 'butterfly-ai-setup-v1.0.exe',
+            version: '1.0.0',
+            available: false
+        },
+        macos: {
+            url: '/downloads/butterfly-ai.dmg',
+            filename: 'butterfly-ai-v1.0.dmg',
+            version: '1.0.0',
+            available: false
+        }
+    };
+
+    function initButterflyLoadingPage() {
+        // Startup Overlay Elements
+        const startupLoadingOverlay = document.getElementById('startupLoadingOverlay');
+        const startupProgressBar = document.getElementById('startupProgressBar');
+        const startupPercentVal = document.getElementById('startupPercentVal');
+        const startupPhaseStatus = document.getElementById('startupPhaseStatus');
+        const startupPreparingText = document.getElementById('startupPreparingText');
+        const startupBackendText = document.getElementById('startupBackendText');
+
+        // Navigation elements
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+        const hamburgerIcon = document.getElementById('hamburgerIcon');
+
+        // Download elements
+        const btnDownloadAndroid = document.getElementById('btnDownloadAndroid');
+        const btnDownloadWindows = document.getElementById('btnDownloadWindows');
+        const btnDownloadMac = document.getElementById('btnDownloadMac');
+        const heroMainDownloadBtn = document.getElementById('heroMainDownloadBtn');
+        const finalDownloadBtn = document.getElementById('finalDownloadBtn');
+        const mobileCtaBtn = document.getElementById('mobileCtaBtn');
+
+        // Toast elements
+        const downloadToast = document.getElementById('downloadToast');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMsg = document.getElementById('toastMsg');
+
+        // Device Mockup elements
+        const phonePreviewMicBtn = document.getElementById('phonePreviewMicBtn');
+        const phoneMockTypingText = document.getElementById('phoneMockTypingText');
+        const phoneVoiceStateLabel = document.getElementById('phoneVoiceStateLabel');
+        const phonePillSearch = document.getElementById('phonePillSearch');
+        const phonePillTranslate = document.getElementById('phonePillTranslate');
+        const phonePillAi = document.getElementById('phonePillAi');
+
+        let toastTimeout = null;
+
+        function showToast(title, message) {
+            if (!downloadToast) return;
+            if (toastTimeout) clearTimeout(toastTimeout);
+            if (toastTitle) toastTitle.textContent = title;
+            if (toastMsg) toastMsg.textContent = message;
+            downloadToast.classList.add('show');
+            toastTimeout = setTimeout(() => {
+                downloadToast.classList.remove('show');
+            }, 4500);
+        }
+
+        // 1. BACKEND HEALTH CHECK (NON-BLOCKING)
+        async function verifyBackendHealth() {
+            try {
+                const res = await fetch('/health', { cache: 'no-cache' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (startupBackendText) {
+                        startupBackendText.textContent = data.openai_configured
+                            ? 'Voice & AI Intelligence Active'
+                            : 'Voice Engine & Web Search Online';
+                    }
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Backend health check info:', e);
+            }
+            if (startupBackendText) {
+                startupBackendText.textContent = 'Universal Web Engine Ready';
+            }
+            return false;
+        }
+
+        // 2. INITIAL STARTUP LOADING EXPERIENCE (Section 12: 0% -> 100% over 2.6s - 3.2s)
+        function runStartupSequence() {
+            if (!startupLoadingOverlay) return;
+
+            verifyBackendHealth();
+
+            const startTime = performance.now();
+            const duration = 2700; // ~2.7 seconds
+
+            function frame(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const currentPercent = Math.round(eased * 100);
+
+                if (startupProgressBar) startupProgressBar.style.width = currentPercent + '%';
+                if (startupPercentVal) startupPercentVal.textContent = currentPercent + '%';
+
+                if (currentPercent < 25) {
+                    if (startupPhaseStatus) startupPhaseStatus.textContent = 'Initializing voice engine...';
+                } else if (currentPercent < 50) {
+                    if (startupPhaseStatus) startupPhaseStatus.textContent = 'Preparing AI services...';
+                } else if (currentPercent < 75) {
+                    if (startupPhaseStatus) startupPhaseStatus.textContent = 'Loading keyboard...';
+                } else if (currentPercent < 100) {
+                    if (startupPhaseStatus) startupPhaseStatus.textContent = 'Almost ready...';
+                } else {
+                    // 100%
+                    if (startupPhaseStatus) startupPhaseStatus.textContent = 'Butterfly AI is ready.';
+                    if (startupPercentVal) startupPercentVal.textContent = '100%';
+                    if (startupPreparingText) startupPreparingText.textContent = 'System Online • Welcome';
+
+                    // Smoothly fade out overlay after completion
+                    setTimeout(() => {
+                        startupLoadingOverlay.classList.add('fade-out');
+                    }, 400);
+                    return;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(frame);
+                }
+            }
+
+            requestAnimationFrame(frame);
+        }
+
+        // Trigger startup loading
+        runStartupSequence();
+
+        // 3. FAQ ACCORDION HANDLER (Section 15: 10 working questions)
+        const faqItems = document.querySelectorAll('#faqAccordion .faq-item');
+        faqItems.forEach((item) => {
+            const btn = item.querySelector('.faq-question-btn');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const isOpen = item.classList.contains('active');
+                // Close other items
+                faqItems.forEach((other) => {
+                    other.classList.remove('active');
+                    const otherBtn = other.querySelector('.faq-question-btn');
+                    if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                });
+                // Toggle current item
+                if (!isOpen) {
+                    item.classList.add('active');
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        // 4. MOBILE NAVIGATION DRAWER
+        if (mobileMenuBtn && mobileNavDrawer) {
+            mobileMenuBtn.addEventListener('click', () => {
+                const isOpen = mobileNavDrawer.classList.toggle('open');
+                if (hamburgerIcon) {
+                    hamburgerIcon.setAttribute('data-lucide', isOpen ? 'x' : 'menu');
+                    if (window.lucide) lucide.createIcons();
+                }
+            });
+
+            // Close drawer on link click
+            const mobileLinks = mobileNavDrawer.querySelectorAll('.mobile-nav-link, #mobileCtaBtn');
+            mobileLinks.forEach((link) => {
+                link.addEventListener('click', () => {
+                    mobileNavDrawer.classList.remove('open');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.setAttribute('data-lucide', 'menu');
+                        if (window.lucide) lucide.createIcons();
+                    }
+                });
+            });
+        }
+
+        // 5. DOWNLOAD FLOWS (Section 11)
+        function triggerAndroidDownload() {
+            showToast('Download Started', 'Downloading butterfly-ai-keyboard-v1.0.apk...');
+            const link = document.createElement('a');
+            link.href = DOWNLOADS_CONFIG.android.url;
+            link.download = DOWNLOADS_CONFIG.android.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        if (btnDownloadAndroid) {
+            btnDownloadAndroid.addEventListener('click', (e) => {
+                e.preventDefault();
+                triggerAndroidDownload();
+            });
+        }
+
+        if (heroMainDownloadBtn) {
+            heroMainDownloadBtn.addEventListener('click', (e) => {
+                const target = document.getElementById('download');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
+
+        if (finalDownloadBtn) {
+            finalDownloadBtn.addEventListener('click', (e) => {
+                const target = document.getElementById('download');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
+
+        if (mobileCtaBtn) {
+            mobileCtaBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                triggerAndroidDownload();
+            });
+        }
+
+        if (btnDownloadWindows) {
+            btnDownloadWindows.addEventListener('click', (e) => {
+                e.preventDefault();
+                showToast('Windows Installer', 'Butterfly AI for Windows (v1.0) is coming soon. Experience the live web keyboard now!');
+            });
+        }
+
+        if (btnDownloadMac) {
+            btnDownloadMac.addEventListener('click', (e) => {
+                e.preventDefault();
+                showToast('macOS Package', 'Butterfly AI for macOS (v1.0) is coming soon. Experience the live web keyboard now!');
+            });
+        }
+
+        // 6. INTERACTIVE SMARTPHONE DEMO TYPING
+        let demoTypingInterval = null;
+        function playDeviceDemo(text, stateLabel = '🎙 Voice Typing Ready') {
+            if (!phoneMockTypingText) return;
+            if (demoTypingInterval) clearInterval(demoTypingInterval);
+            if (phoneVoiceStateLabel) phoneVoiceStateLabel.textContent = stateLabel;
+
+            phoneMockTypingText.textContent = '';
+            let charIndex = 0;
+            demoTypingInterval = setInterval(() => {
+                if (charIndex < text.length) {
+                    phoneMockTypingText.textContent += text[charIndex];
+                    charIndex++;
+                } else {
+                    clearInterval(demoTypingInterval);
+                    setTimeout(() => {
+                        if (phoneVoiceStateLabel) phoneVoiceStateLabel.textContent = '🎙 Voice Typing Ready';
+                    }, 3000);
+                }
+            }, 36);
+        }
+
+        if (phonePreviewMicBtn) {
+            phonePreviewMicBtn.addEventListener('click', () => {
+                playDeviceDemo('నమస్కారం! Butterfly AI converts speech into Indian languages seamlessly.', '🔴 Recording Voice...');
+            });
+        }
+
+        if (phonePillSearch) {
+            phonePillSearch.addEventListener('click', () => {
+                playDeviceDemo('🔍 Live Web Search: "Butterfly AI multilingual input features"', '🔎 Searching Web...');
+            });
+        }
+
+        if (phonePillTranslate) {
+            phonePillTranslate.addEventListener('click', () => {
+                playDeviceDemo('English → Telugu: "Your Voice. Smarter AI. Everywhere." → "మీ వాయిస్. తెలివైన AI. ప్రతిచోటా."', '🌐 Translating...');
+            });
+        }
+
+        if (phonePillAi) {
+            phonePillAi.addEventListener('click', () => {
+                playDeviceDemo('✨ AI Answer: "Butterfly AI is your intelligent voice keyboard for seamless mobile communication."', '✨ AI Answering...');
+            });
+        }
+
+        // Re-create icons on dynamic load
+        if (window.lucide) {
+            try { window.lucide.createIcons(); } catch (e) {}
+        }
+    }
+
+    // Initialize Butterfly Loading Page
+    initButterflyLoadingPage();
 });
