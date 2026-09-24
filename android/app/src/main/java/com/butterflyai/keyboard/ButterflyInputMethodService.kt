@@ -7,7 +7,11 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.media.MediaRecorder
 import android.os.Build
@@ -57,8 +61,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     // Recording State Controls
     private lateinit var layoutRecordingState: LinearLayout
     private lateinit var tvRecordingTimer: TextView
-    private lateinit var btnStopRecording: Button
-    private lateinit var btnCancelRecording: Button
+    private lateinit var btnStopRecording: View
+    private lateinit var btnCancelRecording: View
+    private var layoutRecordingDotContainer: View? = null
+    private var layoutWaveformBars: LinearLayout? = null
+    private var dotPulseAnimator: ObjectAnimator? = null
 
     // Processing State Controls
     private lateinit var layoutProcessingState: LinearLayout
@@ -267,6 +274,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvRecordingTimer = inputView.findViewById(R.id.tvRecordingTimer)
         btnStopRecording = inputView.findViewById(R.id.btnStopRecording)
         btnCancelRecording = inputView.findViewById(R.id.btnCancelRecording)
+        layoutRecordingDotContainer = inputView.findViewById(R.id.layoutRecordingDotContainer)
+        layoutWaveformBars = inputView.findViewById(R.id.layoutWaveformBars)
 
         layoutProcessingState = inputView.findViewById(R.id.layoutProcessingState)
         tvProcessingStatus = inputView.findViewById(R.id.tvProcessingStatus)
@@ -558,6 +567,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
+                if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.VISIBLE
                 tvTapToSpeak.text = "🎙  TAP TO SPEAK"
                 btnTapToSpeak.setBackgroundColor(getThemePalette(currentThemeKey).accentColor)
             }
@@ -566,12 +576,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.VISIBLE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
+                if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.GONE
             }
             KeyboardState.PROCESSING -> {
                 layoutActionButtons.visibility = View.GONE
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.VISIBLE
                 layoutVoiceResult.visibility = View.GONE
+                if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.GONE
                 tvProcessingStatus.text = "⏳ PROCESSING..."
             }
             KeyboardState.RESULT -> {
@@ -579,6 +591,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.VISIBLE
+                if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.VISIBLE
             }
         }
     }
@@ -949,15 +962,46 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             setKeyboardState(KeyboardState.RECORDING)
             tvRecordingTimer.text = "00:00"
 
+            // Pulsing glow animation on recording indicator
+            layoutRecordingDotContainer?.let { dot ->
+                dotPulseAnimator?.cancel()
+                dotPulseAnimator = ObjectAnimator.ofFloat(dot, "alpha", 1f, 0.4f).apply {
+                    duration = 750
+                    repeatMode = ValueAnimator.REVERSE
+                    repeatCount = ValueAnimator.INFINITE
+                    start()
+                }
+            }
+
             recordingTimerJob?.cancel()
             recordingTimerJob = serviceScope.launch {
+                var tick = 0
+                val density = resources.displayMetrics.density
+                val baseHeights = intArrayOf(4, 6, 10, 14, 18, 24, 30, 24, 32, 22, 32, 22, 32, 24, 30, 24, 18, 14, 10, 6, 4)
                 while (currentState == KeyboardState.RECORDING) {
                     val elapsedMs = SystemClock.elapsedRealtime() - recordingStartTime
                     val totalSecs = (elapsedMs / 1000).toInt()
                     val mins = totalSecs / 60
                     val secs = totalSecs % 60
                     tvRecordingTimer.text = String.format("%02d:%02d", mins, secs)
-                    delay(200)
+
+                    // Live Waveform audio animation
+                    layoutWaveformBars?.let { container ->
+                        val amp = try { mediaRecorder?.maxAmplitude ?: 0 } catch (_: Exception) { 0 }
+                        val factor = if (amp > 200) (amp / 14000f).coerceIn(0.5f, 1.4f) else 0.75f
+                        for (i in 0 until container.childCount.coerceAtMost(baseHeights.size)) {
+                            val bar = container.getChildAt(i)
+                            val baseH = baseHeights[i]
+                            val wave = (Math.sin((tick * 0.35) + (i * 0.6)) * 4.0).toFloat()
+                            val hDp = ((baseH * factor) + wave).coerceIn(4f, 34f)
+                            val lp = bar.layoutParams
+                            lp.height = (hDp * density).toInt()
+                            bar.layoutParams = lp
+                        }
+                    }
+
+                    tick++
+                    delay(120)
                 }
             }
 
@@ -974,6 +1018,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private fun cancelRecording() {
         if (currentState != KeyboardState.RECORDING) return
         recordingTimerJob?.cancel()
+        dotPulseAnimator?.cancel()
+        layoutRecordingDotContainer?.alpha = 1f
         cleanupRecorder()
         try { audioFile?.delete() } catch (e: Exception) {}
         setKeyboardState(KeyboardState.IDLE)
@@ -983,6 +1029,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private fun stopRecordingAndTranscribe() {
         if (currentState != KeyboardState.RECORDING) return
         recordingTimerJob?.cancel()
+        dotPulseAnimator?.cancel()
+        layoutRecordingDotContainer?.alpha = 1f
         Log.d("ButterflyIME", "Recording stopping...")
 
         try {
@@ -1503,15 +1551,129 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         // 6. Recording & Processing State Cards Styling
+        val density = resources.displayMetrics.density
         val layoutRecordingState = rootRootView.findViewById<View>(R.id.layoutRecordingState)
         val tvRecordingTimer = rootRootView.findViewById<TextView>(R.id.tvRecordingTimer)
+        val tvRecordingTitle = rootRootView.findViewById<TextView>(R.id.tvRecordingTitle)
+        val btnCancelRecording = rootRootView.findViewById<TextView>(R.id.btnCancelRecording)
+        val btnStopRecording = rootRootView.findViewById<View>(R.id.btnStopRecording)
+        val layoutRecordingDotContainer = rootRootView.findViewById<View>(R.id.layoutRecordingDotContainer)
+        val viewRecordingDot = rootRootView.findViewById<View>(R.id.viewRecordingDot)
+        val layoutWaveformBars = rootRootView.findViewById<LinearLayout>(R.id.layoutWaveformBars)
+
         if (layoutRecordingState != null) {
-            if (palette.isDark) {
-                layoutRecordingState.setBackgroundColor(android.graphics.Color.parseColor("#3F0F16"))
-                tvRecordingTimer?.setTextColor(android.graphics.Color.parseColor("#FCA5A5"))
+            // A. Themed Card Background & Stroke
+            val cardDrawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 24f * density
+                if (palette.isDark) {
+                    setColor(palette.cardBg)
+                    val strokeColor = when (themeKey) {
+                        "cyber" -> Color.parseColor("#4C237A")
+                        "sunset" -> Color.parseColor("#4338CA")
+                        "oled" -> Color.parseColor("#27272A")
+                        else -> Color.parseColor("#334155")
+                    }
+                    setStroke((1f * density).toInt(), strokeColor)
+                } else {
+                    setColor(Color.WHITE)
+                    val strokeColor = if (themeKey == "light") Color.parseColor("#CBD5E1") else Color.parseColor("#E2E8F0")
+                    setStroke((1f * density).toInt(), strokeColor)
+                }
+            }
+            layoutRecordingState.background = cardDrawable
+
+            // B. Themed Stop Recording Button Gradient
+            val (stopGradStart, stopGradEnd) = when (themeKey) {
+                "oled" -> Pair(Color.parseColor("#059669"), Color.parseColor("#10B981"))
+                "cyber" -> Pair(Color.parseColor("#FF007A"), Color.parseColor("#7928CA"))
+                "sunset" -> Pair(Color.parseColor("#EA580C"), Color.parseColor("#F59E0B"))
+                "light" -> Pair(Color.parseColor("#4F46E5"), Color.parseColor("#7C3AED"))
+                "dark" -> Pair(Color.parseColor("#2563EB"), Color.parseColor("#38BDF8"))
+                else -> Pair(Color.parseColor("#0077FF"), Color.parseColor("#00C2FE")) // sky
+            }
+            val stopBtnDrawable = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(stopGradStart, stopGradEnd)
+            ).apply {
+                cornerRadius = 26f * density
+            }
+            btnStopRecording?.background = stopBtnDrawable
+
+            // C. Themed Waveform Bars Color
+            val waveformColor = when (themeKey) {
+                "oled" -> Color.parseColor("#10B981")
+                "cyber" -> Color.parseColor("#00F0FF")
+                "sunset" -> Color.parseColor("#F59E0B")
+                "light" -> Color.parseColor("#4F46E5")
+                "dark" -> Color.parseColor("#60A5FA")
+                else -> Color.parseColor("#38BDF8") // sky
+            }
+            if (layoutWaveformBars != null) {
+                val wfTint = ColorStateList.valueOf(waveformColor)
+                for (i in 0 until layoutWaveformBars.childCount) {
+                    layoutWaveformBars.getChildAt(i)?.backgroundTintList = wfTint
+                }
+            }
+
+            // D. Themed Recording Indicator Halo & Dot
+            val haloColor = if (palette.isDark) {
+                when (themeKey) {
+                    "cyber" -> Color.parseColor("#4A0D2A")
+                    "sunset" -> Color.parseColor("#451420")
+                    "oled" -> Color.parseColor("#3B1215")
+                    else -> Color.parseColor("#37131B")
+                }
             } else {
-                layoutRecordingState.setBackgroundColor(android.graphics.Color.parseColor("#FEF2F2"))
-                tvRecordingTimer?.setTextColor(android.graphics.Color.parseColor("#991B1B"))
+                Color.parseColor("#FEE2E2")
+            }
+            layoutRecordingDotContainer?.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(haloColor)
+            }
+
+            val innerDotColor = when (themeKey) {
+                "cyber" -> Color.parseColor("#FF007A")
+                "sunset" -> Color.parseColor("#F43F5E")
+                else -> Color.parseColor("#EF4444")
+            }
+            viewRecordingDot?.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(innerDotColor)
+            }
+
+            // E. Themed Title, Timer & Cancel Button Text
+            when (themeKey) {
+                "cyber" -> {
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#FF007A"))
+                    tvRecordingTimer?.setTextColor(Color.parseColor("#00F0FF"))
+                    btnCancelRecording?.setTextColor(Color.parseColor("#E2E8F0"))
+                }
+                "sunset" -> {
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#FED7AA"))
+                    tvRecordingTimer?.setTextColor(Color.parseColor("#FDE047"))
+                    btnCancelRecording?.setTextColor(Color.parseColor("#FDE047"))
+                }
+                "oled" -> {
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#E4E4E7"))
+                    tvRecordingTimer?.setTextColor(Color.WHITE)
+                    btnCancelRecording?.setTextColor(Color.parseColor("#A1A1AA"))
+                }
+                "dark" -> {
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#F1F5F9"))
+                    tvRecordingTimer?.setTextColor(Color.WHITE)
+                    btnCancelRecording?.setTextColor(Color.parseColor("#94A3B8"))
+                }
+                "light" -> {
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#1E293B"))
+                    tvRecordingTimer?.setTextColor(Color.parseColor("#0F172A"))
+                    btnCancelRecording?.setTextColor(Color.parseColor("#64748B"))
+                }
+                else -> { // "sky"
+                    tvRecordingTitle?.setTextColor(Color.parseColor("#334155"))
+                    tvRecordingTimer?.setTextColor(Color.parseColor("#0F172A"))
+                    btnCancelRecording?.setTextColor(Color.parseColor("#64748B"))
+                }
             }
         }
 
