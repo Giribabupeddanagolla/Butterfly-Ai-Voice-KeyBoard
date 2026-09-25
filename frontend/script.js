@@ -752,12 +752,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Theme Toggle
         if (themeToggleBtn) {
+            const savedTheme = localStorage.getItem('butterfly_theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDarkInitial = savedTheme === 'dark' || (!savedTheme && prefersDark);
+            
+            function applyTheme(isDark) {
+                if (isDark) {
+                    document.documentElement.classList.add('dark-theme');
+                    document.documentElement.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                    document.body.classList.remove('light-theme');
+                } else {
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+                themeToggleBtn.innerHTML = isDark 
+                    ? '<i data-lucide="sun" id="themeIcon"></i>' 
+                    : '<i data-lucide="moon" id="themeIcon"></i>';
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
+
+            applyTheme(isDarkInitial);
+
             themeToggleBtn.addEventListener('click', () => {
-                document.body.classList.toggle('light-theme');
-                document.body.classList.toggle('dark-theme');
-                const isLight = document.body.classList.contains('light-theme');
-                if (themeIcon) themeIcon.setAttribute('data-lucide', isLight ? 'moon' : 'sun');
-                if (window.lucide) lucide.createIcons();
+                const currentIsDark = document.body.classList.contains('dark-theme');
+                const newIsDark = !currentIsDark;
+                applyTheme(newIsDark);
+                localStorage.setItem('butterfly_theme', newIsDark ? 'dark' : 'light');
             });
         }
 
@@ -805,6 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
                 if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
                 if (settingsModal) settingsModal.classList.add('active');
+                settingsBtn.classList.add('active');
                 checkOpenAIStatus();
             });
         }
@@ -812,6 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (closeSettingsBtn) {
             closeSettingsBtn.addEventListener('click', () => {
                 if (settingsModal) settingsModal.classList.remove('active');
+                if (settingsBtn) settingsBtn.classList.remove('active');
             });
         }
 
@@ -819,6 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsModal.addEventListener('click', (e) => {
                 if (e.target === settingsModal) {
                     settingsModal.classList.remove('active');
+                    if (settingsBtn) settingsBtn.classList.remove('active');
                 }
             });
         }
@@ -826,6 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && settingsModal && settingsModal.classList.contains('active')) {
                 settingsModal.classList.remove('active');
+                if (settingsBtn) settingsBtn.classList.remove('active');
             }
         });
 
@@ -3918,7 +3947,68 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 4. MOBILE NAVIGATION DRAWER
+        // 4. NAVIGATION BAR CONTROLLER (Active Color Highlight, Smooth Scroll & ScrollSpy)
+        const desktopNavLinks = document.querySelectorAll('#desktopNavLinks .nav-item-link');
+        const mobileNavLinks = document.querySelectorAll('#mobileNavDrawer .mobile-nav-link');
+        const allNavLinks = [...desktopNavLinks, ...mobileNavLinks];
+        const brandLogo = document.getElementById('navBrandLogo');
+
+        function setActiveNavButton(targetHash) {
+            allNavLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (targetHash && href === targetHash) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                    link.classList.remove('highlight-link');
+                }
+            });
+        }
+
+        let isNavScrolling = false;
+        function smoothScrollToSection(targetHash) {
+            const targetEl = document.querySelector(targetHash);
+            if (!targetEl) return;
+            isNavScrolling = true;
+            setActiveNavButton(targetHash);
+
+            const navbarHeight = 84;
+            const targetPos = targetEl.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+            window.scrollTo({
+                top: Math.max(0, targetPos),
+                behavior: 'smooth'
+            });
+
+            setTimeout(() => {
+                isNavScrolling = false;
+            }, 850);
+        }
+
+        // Desktop nav buttons click
+        desktopNavLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    smoothScrollToSection(href);
+                    try { history.pushState(null, null, href); } catch (err) {}
+                }
+            });
+        });
+
+        // Brand logo click
+        if (brandLogo) {
+            brandLogo.addEventListener('click', (e) => {
+                e.preventDefault();
+                isNavScrolling = true;
+                setActiveNavButton('');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                try { history.pushState(null, null, '#hero'); } catch (err) {}
+                setTimeout(() => { isNavScrolling = false; }, 850);
+            });
+        }
+
+        // Mobile Navigation Drawer & Links
         if (mobileMenuBtn && mobileNavDrawer) {
             mobileMenuBtn.addEventListener('click', () => {
                 const isOpen = mobileNavDrawer.classList.toggle('open');
@@ -3928,18 +4018,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Close drawer on link click
-            const mobileLinks = mobileNavDrawer.querySelectorAll('.mobile-nav-link, #mobileCtaBtn');
-            mobileLinks.forEach((link) => {
-                link.addEventListener('click', () => {
+            // Close drawer & navigate on link click
+            mobileNavLinks.forEach((link) => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    mobileNavDrawer.classList.remove('open');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.setAttribute('data-lucide', 'menu');
+                        if (window.lucide) lucide.createIcons();
+                    }
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        smoothScrollToSection(href);
+                        try { history.pushState(null, null, href); } catch (err) {}
+                    }
+                });
+            });
+
+            const mobileCta = document.getElementById('mobileCtaBtn');
+            if (mobileCta) {
+                mobileCta.addEventListener('click', () => {
                     mobileNavDrawer.classList.remove('open');
                     if (hamburgerIcon) {
                         hamburgerIcon.setAttribute('data-lucide', 'menu');
                         if (window.lucide) lucide.createIcons();
                     }
                 });
-            });
+            }
         }
+
+        // ScrollSpy: Automatically highlight active section as user scrolls
+        const spySectionIds = ['howItWorks', 'androidFlow', 'features', 'showcase', 'liveKeyboard', 'faq'];
+        const spySections = spySectionIds
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+
+        window.addEventListener('scroll', () => {
+            if (isNavScrolling) return;
+            const scrollPos = window.pageYOffset;
+            if (scrollPos < 220) {
+                setActiveNavButton('');
+                return;
+            }
+
+            const headerOffset = 160;
+            let currentId = '';
+            for (let i = spySections.length - 1; i >= 0; i--) {
+                const sec = spySections[i];
+                if (scrollPos >= sec.offsetTop - headerOffset) {
+                    currentId = sec.id;
+                    break;
+                }
+            }
+
+            if (currentId) {
+                setActiveNavButton(`#${currentId}`);
+            }
+        }, { passive: true });
 
         // 5. DOWNLOAD FLOWS (Section 11)
         function triggerAndroidDownload() {
@@ -4044,11 +4179,145 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // 7. INTERACTIVE SMARTPHONE KEYPAD TYPING
+        const phoneInteractiveKeypad = document.getElementById('phoneInteractiveKeypad');
+        const heroLiveChatBubble = document.getElementById('heroLiveChatBubble');
+        let isShiftActive = false;
+
+        if (phoneInteractiveKeypad && phoneMockTypingText) {
+            phoneInteractiveKeypad.addEventListener('click', (e) => {
+                const keyEl = e.target.closest('.c-key');
+                if (!keyEl) return;
+
+                // Visual tap feedback
+                keyEl.classList.add('key-pressed');
+                setTimeout(() => keyEl.classList.remove('key-pressed'), 120);
+
+                const keyAction = keyEl.getAttribute('data-key');
+                if (!keyAction) return;
+
+                if (demoTypingInterval) {
+                    clearInterval(demoTypingInterval);
+                    demoTypingInterval = null;
+                }
+
+                if (phoneMockTypingText.textContent === 'Speak or type naturally...') {
+                    phoneMockTypingText.textContent = '';
+                }
+
+                if (keyAction === 'backspace') {
+                    const cur = phoneMockTypingText.textContent;
+                    phoneMockTypingText.textContent = cur.slice(0, -1);
+                    if (!phoneMockTypingText.textContent) {
+                        phoneMockTypingText.textContent = 'Speak or type naturally...';
+                    }
+                } else if (keyAction === 'space') {
+                    if (phoneMockTypingText.textContent !== 'Speak or type naturally...') {
+                        phoneMockTypingText.textContent += ' ';
+                    }
+                } else if (keyAction === 'enter') {
+                    const textToSend = phoneMockTypingText.textContent.trim();
+                    if (textToSend && textToSend !== 'Speak or type naturally...' && heroLiveChatBubble) {
+                        heroLiveChatBubble.textContent = `"${textToSend}"`;
+                        heroLiveChatBubble.style.animation = 'none';
+                        heroLiveChatBubble.offsetHeight; // trigger reflow
+                        heroLiveChatBubble.style.animation = 'gentlePulse 0.5s ease-out';
+                        phoneMockTypingText.textContent = 'Speak or type naturally...';
+                        if (phoneVoiceStateLabel) phoneVoiceStateLabel.textContent = '✓ Sent to Chat!';
+                        setTimeout(() => {
+                            if (phoneVoiceStateLabel) phoneVoiceStateLabel.textContent = '🎙 Voice Typing Ready';
+                        }, 2200);
+                    }
+                } else if (keyAction === 'shift') {
+                    isShiftActive = !isShiftActive;
+                    keyEl.classList.toggle('active', isShiftActive);
+                    phoneInteractiveKeypad.querySelectorAll('.c-key:not(.special):not(.space-bar):not(.accent-key)').forEach(k => {
+                        const letter = k.getAttribute('data-key');
+                        if (letter && letter.length === 1) {
+                            k.textContent = isShiftActive ? letter.toUpperCase() : letter.toLowerCase();
+                        }
+                    });
+                } else if (keyAction === 'lang') {
+                    playDeviceDemo('తెలుగు ఇన్పుట్: "నమస్కారం! బటర్‌ఫ్లై AI తో వేగంగా మాట్లాడండి లేదా రాయండి."', '🌐 Telugu Active');
+                } else if (keyAction === '?123') {
+                    phoneMockTypingText.textContent += '123';
+                } else {
+                    const char = isShiftActive ? keyAction.toUpperCase() : keyAction.toLowerCase();
+                    phoneMockTypingText.textContent += char;
+                }
+            });
+        }
+
+        // 8. INTERACTIVE SYSTEM IME MOCKUP KEYPAD
+        const imeMockupKeyboard = document.querySelector('.ime-mockup-card .ime-keys-rows');
+        const imeTypingPlaceholder = document.querySelector('.ime-mockup-card .typing-placeholder');
+        const imeChatTranslated = document.querySelector('.ime-mockup-card .chat-out-translated');
+        const imeToolPills = document.querySelectorAll('.ime-mockup-card .ime-tool-pill');
+
+        if (imeToolPills && imeToolPills.length > 0) {
+            imeToolPills.forEach(pill => {
+                pill.addEventListener('click', () => {
+                    imeToolPills.forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                });
+            });
+        }
+
+        if (imeMockupKeyboard && imeTypingPlaceholder) {
+            imeMockupKeyboard.addEventListener('click', (e) => {
+                const keyEl = e.target.closest('.k');
+                if (!keyEl) return;
+
+                keyEl.classList.add('active-press');
+                setTimeout(() => keyEl.classList.remove('active-press'), 120);
+
+                if (keyEl.classList.contains('key-backspace')) {
+                    const text = imeTypingPlaceholder.textContent;
+                    imeTypingPlaceholder.textContent = text.slice(0, -1) || ' ';
+                } else if (keyEl.classList.contains('space')) {
+                    imeTypingPlaceholder.textContent += ' ';
+                } else if (keyEl.classList.contains('key-enter')) {
+                    if (imeChatTranslated) {
+                        imeChatTranslated.style.transform = 'scale(1.03)';
+                        imeChatTranslated.style.transition = 'transform 0.2s ease';
+                        setTimeout(() => {
+                            imeChatTranslated.style.transform = 'scale(1)';
+                        }, 220);
+                    }
+                } else if (keyEl.classList.contains('key-shift') || keyEl.classList.contains('key-num')) {
+                    // modifier feedback
+                } else {
+                    const char = keyEl.textContent.trim();
+                    if (char && char.length === 1) {
+                        imeTypingPlaceholder.textContent += char.toLowerCase();
+                    }
+                }
+            });
+        }
+
         // Re-create icons on dynamic load
         if (window.lucide) {
             try { window.lucide.createIcons(); } catch (e) {}
         }
     }
+
+    // Interactive Pipeline Steps Hover & Activation
+    function initPipelineStepsInteractive() {
+        const pipeItems = document.querySelectorAll('.pipe-step-item');
+        if (!pipeItems || pipeItems.length === 0) return;
+
+        pipeItems.forEach((item) => {
+            item.addEventListener('mouseenter', () => {
+                pipeItems.forEach(el => el.classList.remove('highlight'));
+                item.classList.add('highlight');
+            });
+            item.addEventListener('click', () => {
+                pipeItems.forEach(el => el.classList.remove('highlight'));
+                item.classList.add('highlight');
+            });
+        });
+    }
+    initPipelineStepsInteractive();
 
     // Initialize Butterfly Loading Page
     initButterflyLoadingPage();

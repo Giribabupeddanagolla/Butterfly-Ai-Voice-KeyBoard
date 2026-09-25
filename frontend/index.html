@@ -22,14 +22,14 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <!-- Favicon Links -->
-    <link rel="icon" type="image/svg+xml" href="butterfly-favicon.svg">
-    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="butterfly-favicon.svg?v=3200">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=3200" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=3200">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=3200">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3200">
+    <link rel="manifest" href="manifest.json?v=3200">
 
-    <link rel="stylesheet" href="style.css?v=3100.0">
+    <link rel="stylesheet" href="style.css?v=4200.0">
 </head>
 
 <body class="editorial-body">
@@ -40,7 +40,7 @@
     <div class="startup-loading-overlay" id="startupLoadingOverlay" aria-label="Loading Butterfly AI">
         <div class="startup-loading-box">
             <div class="startup-logo-halo">
-                <img src="logo.png" alt="Butterfly AI Logo" class="startup-logo-img">
+                <img src="logo.png?v=3200" alt="Butterfly AI Logo" class="startup-logo-img">
             </div>
             <h1 class="startup-brand-name">Butterfly AI</h1>
             <p class="startup-preparing-text" id="startupPreparingText">Preparing your AI keyboard...</p>
@@ -68,7 +68,7 @@
         <nav class="editorial-navbar" id="mainNavbar">
             <!-- Left: Logo & Brand -->
             <a href="#hero" class="nav-brand-group" id="navBrandLogo">
-                <img src="logo.png" alt="Butterfly AI" class="nav-brand-icon">
+                <img src="logo.png?v=3200" alt="Butterfly AI" class="nav-brand-icon">
                 <span class="nav-brand-text">Butterfly AI</span>
             </a>
 
@@ -84,14 +84,12 @@
 
             <!-- Right: Actions & CTA -->
             <div class="nav-actions-right">
-                <button type="button" class="btn-nav-icon" id="settingsBtn" title="Keyboard Settings" aria-label="Settings">
-                    <i data-lucide="sliders"></i>
-                </button>
                 <button type="button" class="btn-nav-icon" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Theme">
-                    <i data-lucide="sun" id="themeIcon"></i>
+                    <i data-lucide="moon" id="themeIcon"></i>
                 </button>
                 <a href="#download" class="btn-portfolite-primary" id="navDownloadBtn">
-                    <span>Download Butterfly AI</span>
+                    <span class="btn-download-text-full">Download Butterfly AI</span>
+                    <span class="btn-download-text-short">Download</span>
                     <span class="btn-arrow-circle"><i data-lucide="arrow-up-right"></i></span>
                 </a>
                 <!-- Mobile Hamburger Toggle -->
@@ -197,7 +195,7 @@
                     <!-- Card Top Header -->
                     <div class="device-card-header">
                         <div class="device-brand-row">
-                            <img src="logo.png" alt="Butterfly AI" class="device-logo-mark">
+                            <img src="logo.png?v=3200" alt="Butterfly AI" class="device-logo-mark">
                             <div class="device-meta">
                                 <span class="device-title">Butterfly AI System IME</span>
                                 <span class="device-status-badge">● Active Everywhere</span>
@@ -211,7 +209,9 @@
                     <!-- WhatsApp / Messaging Mock Preview inside Phone View -->
                     <div class="device-chat-preview">
                         <div class="chat-app-bar">
-                            <div class="chat-avatar-circle">🦋</div>
+                            <div class="chat-avatar-circle">
+                                <img src="logo.png?v=3200" alt="Butterfly AI" class="chat-avatar-logo">
+                            </div>
                             <div class="chat-info-meta">
                                 <span class="chat-recipient">WhatsApp / Work Chat</span>
                                 <span class="chat-substate">Active cursor focus</span>
@@ -265,21 +265,24 @@
                         </div>
 
                         <!-- Clean Keypad Layout Preview -->
-                        <div class="kb-compact-keys-grid">
-                            <div class="kb-key-row">
-                                <span class="c-key">Q</span><span class="c-key">W</span><span class="c-key">E</span><span class="c-key">R</span><span class="c-key">T</span><span class="c-key">Y</span><span class="c-key">U</span><span class="c-key">I</span><span class="c-key">O</span><span class="c-key">P</span>
+                        <div class="kb-compact-keys-grid" id="phoneInteractiveKeypad">
+                            <div class="kb-key-row kb-row-1">
+                                <span class="c-key" data-key="Q">Q</span><span class="c-key" data-key="W">W</span><span class="c-key" data-key="E">E</span><span class="c-key" data-key="R">R</span><span class="c-key" data-key="T">T</span><span class="c-key" data-key="Y">Y</span><span class="c-key" data-key="U">U</span><span class="c-key" data-key="I">I</span><span class="c-key" data-key="O">O</span><span class="c-key" data-key="P">P</span>
                             </div>
-                            <div class="kb-key-row">
-                                <span class="c-key">A</span><span class="c-key">S</span><span class="c-key">D</span><span class="c-key">F</span><span class="c-key">G</span><span class="c-key">H</span><span class="c-key">J</span><span class="c-key">K</span><span class="c-key">L</span>
+                            <div class="kb-key-row kb-row-2">
+                                <span class="c-key" data-key="A">A</span><span class="c-key" data-key="S">S</span><span class="c-key" data-key="D">D</span><span class="c-key" data-key="F">F</span><span class="c-key" data-key="G">G</span><span class="c-key" data-key="H">H</span><span class="c-key" data-key="J">J</span><span class="c-key" data-key="K">K</span><span class="c-key" data-key="L">L</span>
                             </div>
-                            <div class="kb-key-row">
-                                <span class="c-key special">⇧</span><span class="c-key">Z</span><span class="c-key">X</span><span class="c-key">C</span><span class="c-key">V</span><span class="c-key">B</span><span class="c-key">N</span><span class="c-key">M</span><span class="c-key special">⌫</span>
+                            <div class="kb-key-row kb-row-3">
+                                <span class="c-key special key-shift" data-key="shift" title="Shift">⇧</span><span class="c-key" data-key="Z">Z</span><span class="c-key" data-key="X">X</span><span class="c-key" data-key="C">C</span><span class="c-key" data-key="V">V</span><span class="c-key" data-key="B">B</span><span class="c-key" data-key="N">N</span><span class="c-key" data-key="M">M</span><span class="c-key special key-backspace" data-key="backspace" title="Backspace">⌫</span>
                             </div>
-                            <div class="kb-key-row">
-                                <span class="c-key special">?123</span>
-                                <span class="c-key special">EN/తె</span>
-                                <span class="c-key space-bar">🦋 Butterfly AI</span>
-                                <span class="c-key accent-key">↵</span>
+                            <div class="kb-key-row kb-row-4">
+                                <span class="c-key special key-num" data-key="?123">?123</span>
+                                <span class="c-key special key-lang" data-key="lang">EN/తె</span>
+                                <span class="c-key space-bar" data-key="space" title="Space Bar">
+                                    <img src="logo.png?v=3200" alt="Butterfly AI" class="kb-space-logo">
+                                    <span>Butterfly AI</span>
+                                </span>
+                                <span class="c-key accent-key key-enter" data-key="enter" title="Enter / Send">↵</span>
                             </div>
                         </div>
                     </div>
@@ -336,29 +339,29 @@
                     A smarter way to communicate.
                 </h2>
                 <p class="editorial-statement-desc">
-                    Butterfly AI combines voice typing, translation, AI assistance and web search into one keyboard experience.
+                    Butterfly AI combines voice typing, translation, AI assistance and web search into one intelligent keyboard experience.
                 </p>
 
                 <!-- PORTFOLITE-STYLE 4 METRIC STATS CARDS -->
                 <div class="portfolite-metrics-grid">
                     <div class="portfolite-metric-card">
                         <span class="p-metric-num">&lt; 350ms</span>
-                        <span class="p-metric-label">Voice Dictation Latency</span>
+                        <span class="p-metric-label">Fast voice interaction</span>
                         <p class="p-metric-desc">Sub-second neural recognition speed for instant, stutter-free typing.</p>
                     </div>
                     <div class="portfolite-metric-card">
                         <span class="p-metric-num">99.4%</span>
-                        <span class="p-metric-label">Recognition Accuracy</span>
+                        <span class="p-metric-label">Accurate transcription</span>
                         <p class="p-metric-desc">Specialized in Indian regional vernacular, mixed speech, and natural cadence.</p>
                     </div>
                     <div class="portfolite-metric-card">
-                        <span class="p-metric-num">12+</span>
-                        <span class="p-metric-label">Supported Languages</span>
+                        <span class="p-metric-num">20+</span>
+                        <span class="p-metric-label">Language support</span>
                         <p class="p-metric-desc">Fluently translate between English, Telugu, Hindi, Tamil & Kannada.</p>
                     </div>
                     <div class="portfolite-metric-card">
                         <span class="p-metric-num">100%</span>
-                        <span class="p-metric-label">Android IME Compatible</span>
+                        <span class="p-metric-label">Keyboard focused</span>
                         <p class="p-metric-desc">Works universally inside WhatsApp, Gmail, Chrome, Instagram and Notes.</p>
                     </div>
                 </div>
@@ -414,7 +417,7 @@
                             <div class="step-icon-bubble"><i data-lucide="corner-down-left"></i></div>
                         </div>
                         <h3 class="step-title">TYPE</h3>
-                        <p class="step-desc">Insert the result directly into the active app.</p>
+                        <p class="step-desc">Insert the result directly into the active text field.</p>
                     </div>
                 </div>
             </div>
@@ -438,10 +441,12 @@
                             <div class="mockup-screen">
                                 <!-- App Header -->
                                 <div class="mockup-app-bar">
-                                    <div class="mockup-app-avatar">💬</div>
+                                    <div class="mockup-app-avatar">
+                                        <img src="logo.png?v=3200" alt="Butterfly AI" class="mockup-avatar-logo">
+                                    </div>
                                     <div>
                                         <div class="mockup-app-name">WhatsApp Chat</div>
-                                        <div class="mockup-app-status">Online</div>
+                                        <div class="mockup-app-status">Online • Butterfly IME Active</div>
                                     </div>
                                 </div>
 
@@ -474,10 +479,17 @@
                                         <span class="ime-tool-pill"><i data-lucide="search"></i> Search</span>
                                     </div>
                                     <div class="ime-keys-rows">
-                                        <div class="mock-row"><span class="k">Q</span><span class="k">W</span><span class="k">E</span><span class="k">R</span><span class="k">T</span><span class="k">Y</span><span class="k">U</span><span class="k">I</span><span class="k">O</span><span class="k">P</span></div>
-                                        <div class="mock-row"><span class="k">A</span><span class="k">S</span><span class="k">D</span><span class="k">F</span><span class="k">G</span><span class="k">H</span><span class="k">J</span><span class="k">K</span><span class="k">L</span></div>
-                                        <div class="mock-row"><span class="k s">⇧</span><span class="k">Z</span><span class="k">X</span><span class="k">C</span><span class="k">V</span><span class="k">B</span><span class="k">N</span><span class="k">M</span><span class="k s">⌫</span></div>
-                                        <div class="mock-row"><span class="k s">123</span><span class="k space">🦋 Butterfly AI Keyboard</span><span class="k blue">↵</span></div>
+                                        <div class="mock-row mock-row-1"><span class="k">Q</span><span class="k">W</span><span class="k">E</span><span class="k">R</span><span class="k">T</span><span class="k">Y</span><span class="k">U</span><span class="k">I</span><span class="k">O</span><span class="k">P</span></div>
+                                        <div class="mock-row mock-row-2"><span class="k">A</span><span class="k">S</span><span class="k">D</span><span class="k">F</span><span class="k">G</span><span class="k">H</span><span class="k">J</span><span class="k">K</span><span class="k">L</span></div>
+                                        <div class="mock-row mock-row-3"><span class="k s key-shift">⇧</span><span class="k">Z</span><span class="k">X</span><span class="k">C</span><span class="k">V</span><span class="k">B</span><span class="k">N</span><span class="k">M</span><span class="k s key-backspace">⌫</span></div>
+                                        <div class="mock-row mock-row-4">
+                                            <span class="k s key-num">123</span>
+                                            <span class="k space">
+                                                <img src="logo.png?v=3200" alt="Butterfly AI" class="mockup-space-logo">
+                                                <span>Butterfly AI Keyboard</span>
+                                            </span>
+                                            <span class="k blue key-enter">↵</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -491,42 +503,49 @@
 
                         <div class="pipeline-steps-list">
                             <div class="pipe-step-item">
-                                <span class="pipe-step-bullet">1</span>
+                                <span class="pipe-step-bullet">01</span>
                                 <div class="pipe-step-content">
-                                    <strong>User taps text field</strong>
+                                    <strong>Tap a text field</strong>
                                     <span>Focus active input field in any Android application.</span>
                                 </div>
                             </div>
                             <div class="pipe-step-item">
-                                <span class="pipe-step-bullet">2</span>
+                                <span class="pipe-step-bullet">02</span>
                                 <div class="pipe-step-content">
                                     <strong>Butterfly AI keyboard opens</strong>
                                     <span>System launches Butterfly AI as your default input method engine.</span>
                                 </div>
                             </div>
                             <div class="pipe-step-item">
-                                <span class="pipe-step-bullet">3</span>
+                                <span class="pipe-step-bullet">03</span>
                                 <div class="pipe-step-content">
-                                    <strong>User speaks</strong>
-                                    <span>Natural speech stream captured in your preferred vernacular or English.</span>
+                                    <strong>Tap Voice</strong>
+                                    <span>Tap the dedicated microphone button on the keyboard toolbar.</span>
                                 </div>
                             </div>
                             <div class="pipe-step-item">
-                                <span class="pipe-step-bullet">4</span>
+                                <span class="pipe-step-bullet">04</span>
+                                <div class="pipe-step-content">
+                                    <strong>Speak</strong>
+                                    <span>Speak naturally in your vernacular or English.</span>
+                                </div>
+                            </div>
+                            <div class="pipe-step-item">
+                                <span class="pipe-step-bullet">05</span>
                                 <div class="pipe-step-content">
                                     <strong>Speech becomes text</strong>
-                                    <span>Whisper & fast speech-to-text neural models transcribe words instantly.</span>
+                                    <span>Fast speech-to-text neural models transcribe words instantly.</span>
                                 </div>
                             </div>
                             <div class="pipe-step-item">
-                                <span class="pipe-step-bullet">5</span>
+                                <span class="pipe-step-bullet">06</span>
                                 <div class="pipe-step-content">
-                                    <strong>Translation / AI processing</strong>
+                                    <strong>Translate / AI processing</strong>
                                     <span>Optional live translation, grammar polishing, or AI answering.</span>
                                 </div>
                             </div>
                             <div class="pipe-step-item highlight">
-                                <span class="pipe-step-bullet">6</span>
+                                <span class="pipe-step-bullet">07</span>
                                 <div class="pipe-step-content">
                                     <strong>Result inserted into active text field</strong>
                                     <span>Final polished text commits directly to your app's cursor location.</span>
@@ -579,8 +598,8 @@
                         <h3 class="feat-title">VOICE TYPING</h3>
                         <p class="feat-desc">Speak naturally and convert your voice into text.</p>
                         <div class="feat-visual-pill">
-                            <span>Sub-second transcription</span>
-                            <span class="pill-badge">Fast & Accurate</span>
+                            <span>Fast Voice Input</span>
+                            <span class="pill-badge">Sub-350ms</span>
                         </div>
                     </div>
 
@@ -591,9 +610,9 @@
                             <div class="feat-icon"><i data-lucide="languages"></i></div>
                         </div>
                         <h3 class="feat-title">TRANSLATION</h3>
-                        <p class="feat-desc">Translate between languages including English, Telugu, Hindi, Tamil and Kannada.</p>
+                        <p class="feat-desc">Translate seamlessly across Indian languages.</p>
                         <div class="feat-visual-pill">
-                            <span>Telugu • Hindi • Tamil • Kannada</span>
+                            <span>Regional Indian</span>
                             <span class="pill-badge">Multilingual</span>
                         </div>
                     </div>
@@ -605,9 +624,9 @@
                             <div class="feat-icon"><i data-lucide="check-check"></i></div>
                         </div>
                         <h3 class="feat-title">AI POLISH</h3>
-                        <p class="feat-desc">Improve grammar, punctuation and writing.</p>
+                        <p class="feat-desc">Fix grammar, punctuation, and tone instantly.</p>
                         <div class="feat-visual-pill">
-                            <span>Clean phrasing & punctuation</span>
+                            <span>Grammar &amp; Clarity</span>
                             <span class="pill-badge">One-Tap</span>
                         </div>
                     </div>
@@ -619,9 +638,9 @@
                             <div class="feat-icon"><i data-lucide="bot"></i></div>
                         </div>
                         <h3 class="feat-title">AI ANSWER</h3>
-                        <p class="feat-desc">Ask questions and receive AI-generated responses.</p>
+                        <p class="feat-desc">Ask questions and insert AI answers at your cursor.</p>
                         <div class="feat-visual-pill">
-                            <span>Answers straight into active text</span>
+                            <span>Cursor AI Answers</span>
                             <span class="pill-badge">Smart AI</span>
                         </div>
                     </div>
@@ -633,9 +652,9 @@
                             <div class="feat-icon"><i data-lucide="search"></i></div>
                         </div>
                         <h3 class="feat-title">WEB SEARCH</h3>
-                        <p class="feat-desc">Search the web without leaving your workflow.</p>
+                        <p class="feat-desc">Search the web directly from your active field.</p>
                         <div class="feat-visual-pill">
-                            <span>Instant lookup without switching apps</span>
+                            <span>Real-Time Search</span>
                             <span class="pill-badge">Live Web</span>
                         </div>
                     </div>
@@ -646,10 +665,10 @@
                             <span class="feat-num">06</span>
                             <div class="feat-icon"><i data-lucide="volume-2"></i></div>
                         </div>
-                        <h3 class="feat-title">TEXT TO SPEECH</h3>
-                        <p class="feat-desc">Listen to translated text and AI responses.</p>
+                        <h3 class="feat-title">TEXT-TO-SPEECH</h3>
+                        <p class="feat-desc">Listen to AI responses with lifelike neural voices.</p>
                         <div class="feat-visual-pill">
-                            <span>Clear neural voice synthesis</span>
+                            <span>Neural Speech TTS</span>
                             <span class="pill-badge">6 Accents</span>
                         </div>
                     </div>
@@ -661,10 +680,10 @@
                             <div class="feat-icon"><i data-lucide="smartphone"></i></div>
                         </div>
                         <h3 class="feat-title">AI KEYBOARD</h3>
-                        <p class="feat-desc">Use Butterfly AI directly inside Android applications.</p>
+                        <p class="feat-desc">Runs natively as your default Android IME.</p>
                         <div class="feat-visual-pill">
-                            <span>Native IME integration</span>
-                            <span class="pill-badge">System Level</span>
+                            <span>System Integration</span>
+                            <span class="pill-badge">Native IME</span>
                         </div>
                     </div>
 
@@ -675,10 +694,10 @@
                             <div class="feat-icon"><i data-lucide="globe"></i></div>
                         </div>
                         <h3 class="feat-title">WORKS EVERYWHERE</h3>
-                        <p class="feat-desc">Use your voice and AI wherever you type.</p>
+                        <p class="feat-desc">Works smoothly across all your favorite apps.</p>
                         <div class="feat-visual-pill">
-                            <span>Messaging, Email, Notes & Browser</span>
-                            <span class="pill-badge">Universal</span>
+                            <span>Universal Typing</span>
+                            <span class="pill-badge">All Apps</span>
                         </div>
                     </div>
                 </div>
@@ -932,7 +951,7 @@
                     <!-- Brand Top Bar -->
                     <div class="testbed-top-bar">
                         <div class="testbed-brand">
-                            <img src="logo.png" alt="Butterfly AI" class="testbed-logo">
+                            <img src="logo.png?v=3200" alt="Butterfly AI" class="testbed-logo">
                             <div>
                                 <h3 class="testbed-title">Butterfly AI System Workspace</h3>
                                 <p class="testbed-sub">Speak or type in English, Telugu, Hindi, or any language.</p>
@@ -995,7 +1014,7 @@
                         <div class="butterfly-ime-system-card" id="butterflyImeCard" style="display: none;">
                             <div class="ime-header-banner">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <img src="logo.png" alt="Butterfly Logo" class="ime-logo-icon">
+                                    <img src="logo.png?v=3200" alt="Butterfly Logo" class="ime-logo-icon">
                                     <span class="ime-header-title">BUTTERFLY AI SYSTEM KEYBOARD (IME)</span>
                                 </div>
                                 <button type="button" class="ime-close-btn" id="closeImeCardBtn" title="Close Keyboard">
@@ -1142,7 +1161,7 @@
                     <!-- Q2 -->
                     <div class="faq-item">
                         <button type="button" class="faq-question-btn" aria-expanded="false">
-                            <span class="faq-question-text">How does the Butterfly AI keyboard work?</span>
+                            <span class="faq-question-text">How does Butterfly AI work?</span>
                             <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
                         </button>
                         <div class="faq-answer-panel">
@@ -1153,11 +1172,11 @@
                     <!-- Q3 -->
                     <div class="faq-item">
                         <button type="button" class="faq-question-btn" aria-expanded="false">
-                            <span class="faq-question-text">Does Butterfly AI support voice typing?</span>
+                            <span class="faq-question-text">How does the voice keyboard work?</span>
                             <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
                         </button>
                         <div class="faq-answer-panel">
-                            <p>Yes. Voice typing is the foundational core of Butterfly AI. Tap the microphone icon, speak naturally in your normal speaking cadence, and it turns speech into text instantly with high accuracy.</p>
+                            <p>Voice typing is the foundational core of Butterfly AI. Tap the microphone icon, speak naturally in your normal speaking cadence, and it turns speech into text instantly with high accuracy.</p>
                         </div>
                     </div>
 
@@ -1175,7 +1194,7 @@
                     <!-- Q5 -->
                     <div class="faq-item">
                         <button type="button" class="faq-question-btn" aria-expanded="false">
-                            <span class="faq-question-text">Can I use Butterfly AI inside WhatsApp?</span>
+                            <span class="faq-question-text">Can I use Butterfly AI in WhatsApp?</span>
                             <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
                         </button>
                         <div class="faq-answer-panel">
@@ -1208,7 +1227,7 @@
                     <!-- Q8 -->
                     <div class="faq-item">
                         <button type="button" class="faq-question-btn" aria-expanded="false">
-                            <span class="faq-question-text">Can Butterfly AI translate my speech?</span>
+                            <span class="faq-question-text">Can Butterfly AI translate speech?</span>
                             <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
                         </button>
                         <div class="faq-answer-panel">
@@ -1249,7 +1268,7 @@
                 <div class="section-header-wrap">
                     <span class="editorial-subheading-tag">INSTALLATION</span>
                     <h2 class="section-display-heading">Meet your new AI keyboard.</h2>
-                    <p class="section-subtext">Download Butterfly AI and bring voice, translation, AI and search to wherever you type.</p>
+                    <p class="section-subtext">Bring voice, translation, AI and search into the way you already type.</p>
                 </div>
 
                 <div class="download-cards-grid">
@@ -1313,7 +1332,7 @@
         <section class="editorial-final-cta-section" id="finalCta">
             <div class="section-container">
                 <div class="final-cta-inner-card">
-                    <img src="logo.png" alt="Butterfly AI Emblem" class="final-cta-logo">
+                    <img src="logo.png?v=3200" alt="Butterfly AI Emblem" class="final-cta-logo">
                     <h2 class="final-cta-title">
                         Speak less.<br>
                         Create more.
@@ -1346,7 +1365,7 @@
                 <!-- Brand Column -->
                 <div class="footer-brand-col">
                     <div class="footer-logo-row">
-                        <img src="logo.png" alt="Butterfly AI" class="footer-logo-img">
+                        <img src="logo.png?v=3200" alt="Butterfly AI" class="footer-logo-img">
                         <span class="footer-brand-title">Butterfly AI</span>
                     </div>
                     <p class="footer-tagline">AI Voice Keyboard • AI Answer • Web Search</p>
@@ -1361,17 +1380,17 @@
                     <a href="#howItWorks" class="footer-link">How It Works</a>
                     <a href="#features" class="footer-link">Features</a>
                     <a href="#androidFlow" class="footer-link">Keyboard</a>
-                    <a href="#download" class="footer-link">Download</a>
+                    <a href="#showcase" class="footer-link">Showcase</a>
                     <a href="#faq" class="footer-link">FAQ</a>
+                    <a href="#download" class="footer-link">Download</a>
                 </div>
 
                 <!-- Platforms Column -->
                 <div class="footer-links-col">
                     <span class="footer-col-header">Platforms</span>
-                    <a href="#download" class="footer-link">Android APK</a>
-                    <a href="#download" class="footer-link">Windows (Preview)</a>
-                    <a href="#download" class="footer-link">macOS (Preview)</a>
-                    <a href="#liveKeyboard" class="footer-link">Web Keyboard</a>
+                    <a href="#download" class="footer-link">Android</a>
+                    <a href="#download" class="footer-link">Windows</a>
+                    <a href="#download" class="footer-link">macOS</a>
                 </div>
 
                 <!-- System Status Column -->
@@ -1544,7 +1563,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=3100.0"></script>
+    <script src="script.js?v=4200.0"></script>
 </body>
 
 </html>

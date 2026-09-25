@@ -24,7 +24,7 @@
                 android:id="@+id/imgSettingsLogo"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/ic_butterfly_logo"
+                android:src="@drawable/ic_butterfly_logo_bitmap"
                 android:contentDescription="Logo"
                 android:layout_marginEnd="12dp" />
 
