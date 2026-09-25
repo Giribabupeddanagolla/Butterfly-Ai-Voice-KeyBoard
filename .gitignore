@@ -25,3 +25,11 @@ data/conversations.db
 
 # Audio files
 *.mp3
+
+# Android build outputs & local SDK tools
+.gradle/
+android/.gradle/
+android/app/build/
+android/local.properties
+tools/
+
