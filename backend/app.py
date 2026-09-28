@@ -841,8 +841,17 @@ if FRONTEND_DIR.exists():
 
 if __name__ == "__main__":
     import uvicorn
+    import webbrowser
+    import threading
     from config import get_free_port
     
     target_port = get_free_port(config.HOST, config.PORT)
-    print(f"\n[+] Starting Multilingual AI Agent server on http://{config.HOST}:{target_port}\n")
+    display_host = "localhost" if config.HOST in ("0.0.0.0", "::") else config.HOST
+    print(f"\n[+] Starting Multilingual AI Agent server on http://{display_host}:{target_port}")
+    print(f"[+] Local URL: http://localhost:{target_port}")
+    print(f"[+] Network bind: {config.HOST}:{target_port}\n")
+
+    # Automatically open the web browser
+    threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{target_port}")).start()
+
     uvicorn.run("app:app", host=config.HOST, port=target_port, reload=True, reload_excludes=["*.webm", "*.wav", "*.mp3", "*.ogg", "*.db", "audio/*", "temp_uploads/*", "audio/input/*", "audio/output/*"])

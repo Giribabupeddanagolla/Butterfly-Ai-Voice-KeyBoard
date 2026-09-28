@@ -2180,14 +2180,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.autoResizeSearchInput = autoResizeSearchInput;
 
+        function updateSearchClearButton() {
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const mainSearchClearBtn = document.getElementById('mainSearchClearBtn');
+            if (!mainSearchClearBtn) return;
+            if (mainSearchInput && mainSearchInput.value && mainSearchInput.value.length > 0) {
+                mainSearchClearBtn.style.display = 'inline-flex';
+            } else {
+                mainSearchClearBtn.style.display = 'none';
+            }
+        }
+        window.updateSearchClearButton = updateSearchClearButton;
+
+        // Clears ONLY the search input text box
+        function clearSearchInputText() {
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const mainSearchClearBtn = document.getElementById('mainSearchClearBtn');
+
+            if (mainSearchInput) {
+                mainSearchInput.value = '';
+                autoResizeSearchInput();
+                mainSearchInput.focus();
+            }
+            if (originalTextEditor && originalTextEditor !== mainSearchInput) {
+                originalTextEditor.value = '';
+            }
+            if (mainSearchClearBtn) {
+                mainSearchClearBtn.style.display = 'none';
+            }
+        }
+        window.clearSearchInputText = clearSearchInputText;
+
+        // Clears and hides ONLY the search results card (and stops audio speech)
+        function clearSearchResults() {
+            const searchCard = document.getElementById('searchResultsCard');
+            const searchContainer = document.getElementById('searchResultsContainer');
+            const queryTitle = document.getElementById('searchQueryTitle');
+
+            if (searchCard) searchCard.style.display = 'none';
+            if (searchContainer) searchContainer.innerHTML = '';
+            if (queryTitle) queryTitle.textContent = '""';
+            stopSpeaking();
+        }
+        window.clearSearchResults = clearSearchResults;
+
+        // Full clear fallback
+        function clearSearchState(clearInput = true) {
+            clearSearchResults();
+            if (clearInput) {
+                clearSearchInputText();
+            }
+        }
+        window.clearSearchState = clearSearchState;
+
         if (mainSearchInput) {
             mainSearchInput.addEventListener('focus', () => {
                 TextInsertionService.setActiveInput(mainSearchInput);
                 autoResizeSearchInput();
+                updateSearchClearButton();
             });
             mainSearchInput.addEventListener('click', () => {
                 TextInsertionService.setActiveInput(mainSearchInput);
                 autoResizeSearchInput();
+                updateSearchClearButton();
             });
             mainSearchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
@@ -2195,6 +2250,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     performSearch();
                 } else if (e.key === 'Enter') {
                     setTimeout(autoResizeSearchInput, 10);
+                } else if (e.key === 'Escape') {
+                    clearSearchInputText();
                 }
             });
             mainSearchInput.addEventListener('input', () => {
@@ -2202,7 +2259,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     originalTextEditor.value = mainSearchInput.value;
                 }
                 autoResizeSearchInput();
+                updateSearchClearButton();
                 if (isTranslationOn) triggerTranslationDebounced();
+            });
+        }
+
+        const mainSearchClearBtn = document.getElementById('mainSearchClearBtn');
+        if (mainSearchClearBtn) {
+            mainSearchClearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                clearSearchInputText();
             });
         }
 
@@ -2222,10 +2289,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const closeSearchResultsBtn = document.getElementById('closeSearchResultsBtn');
         if (closeSearchResultsBtn) {
-            closeSearchResultsBtn.addEventListener('click', () => {
-                const searchCard = document.getElementById('searchResultsCard');
-                if (searchCard) searchCard.style.display = 'none';
-                stopSpeaking();
+            closeSearchResultsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                clearSearchResults();
             });
         }
 
@@ -2254,6 +2321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchCard) {
                 searchCard.style.display = 'block';
             }
+            updateSearchClearButton();
 
             if (searchContainer) {
                 searchContainer.innerHTML = `
@@ -2423,20 +2491,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="ai-answer-text" id="aiAnswerContentText">${escapeHtml(aiAnswer)}</div>
                     <div class="ai-answer-actions">
                         <button type="button" class="btn-action-pill" id="speakAiAnswerBtn" title="Play AI Answer Audio">
-                            <i data-lucide="volume-2" id="speakAiAnswerIcon"></i> <span id="speakAiAnswerTextLabel">Speak Answer</span>
+                            <i data-lucide="volume-2" id="speakAiAnswerIcon"></i>
+                            <span id="speakAiAnswerTextLabel">Speak Answer</span>
                         </button>
                         
-                        <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+                        <div class="ai-translate-wrapper">
                             <button type="button" class="btn-action-pill" id="translateAiAnswerBtn" title="Translate Answer">
-                                <i data-lucide="languages" id="translateAiAnswerIcon"></i> <span id="translateAiAnswerTextLabel">Translate</span>
+                                <i data-lucide="languages" id="translateAiAnswerIcon"></i>
+                                <span id="translateAiAnswerTextLabel">Translate</span>
                             </button>
-                            <select id="aiAnswerTargetLangSelect" class="card-voice-accent-select" style="max-width: 140px;" title="Target Language">
+                            <select id="aiAnswerTargetLangSelect" class="card-voice-accent-select" title="Target Language">
                                 ${langOptionsHtml}
                             </select>
                         </div>
 
                         <button type="button" class="btn-action-pill" id="copyAiAnswerBtn" title="Copy AI Answer">
-                            <i data-lucide="copy" id="copyAiAnswerIcon"></i> <span id="copyAiAnswerTextLabel">Copy Answer</span>
+                            <i data-lucide="copy" id="copyAiAnswerIcon"></i>
+                            <span id="copyAiAnswerTextLabel">Copy Answer</span>
                         </button>
                     </div>
                 </div>
@@ -3277,11 +3348,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewOriginalText = document.getElementById('previewOriginalText');
         const previewTranslatedText = document.getElementById('previewTranslatedText');
 
-        if (mainSearchInput) mainSearchInput.value = '';
+        if (mainSearchInput) {
+            mainSearchInput.value = '';
+            autoResizeSearchInput();
+        }
         if (originalTextEditor) originalTextEditor.value = '';
         if (translatedTextEditor) translatedTextEditor.value = '';
         if (previewOriginalText) previewOriginalText.textContent = 'Your text appears here...';
         if (previewTranslatedText) previewTranslatedText.textContent = 'Translation will appear here...';
+
+        clearSearchState(true);
 
         finalText = '';
         partialText = '';
@@ -3875,14 +3951,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
-        // 2. INITIAL STARTUP LOADING EXPERIENCE (Section 12: 0% -> 100% over 2.6s - 3.2s)
+        // 2. INITIAL STARTUP LOADING EXPERIENCE (Section 12: Skip on reload/refresh)
         function runStartupSequence() {
             if (!startupLoadingOverlay) return;
+
+            // Check if user is refreshing the page or has already seen the intro
+            let isReload = false;
+            try {
+                if (window.performance && performance.getEntriesByType) {
+                    const navEntries = performance.getEntriesByType('navigation');
+                    if (navEntries && navEntries[0] && navEntries[0].type === 'reload') {
+                        isReload = true;
+                    }
+                }
+                if (!isReload && window.performance && window.performance.navigation && window.performance.navigation.type === 1) {
+                    isReload = true;
+                }
+            } catch (e) {}
+
+            const alreadySeen = sessionStorage.getItem('butterfly_intro_seen') || localStorage.getItem('butterfly_intro_seen');
+
+            // Skip startup overlay completely on refresh or if already seen
+            if (isReload || alreadySeen || document.documentElement.classList.contains('skip-startup-loading')) {
+                startupLoadingOverlay.style.display = 'none';
+                startupLoadingOverlay.classList.add('hidden-immediate');
+                verifyBackendHealth();
+                return;
+            }
+
+            // Remember that intro was displayed so it won't show on refresh
+            try {
+                sessionStorage.setItem('butterfly_intro_seen', 'true');
+                localStorage.setItem('butterfly_intro_seen', 'true');
+            } catch (e) {}
+
+            // Allow clicking anywhere to dismiss immediately
+            startupLoadingOverlay.style.cursor = 'pointer';
+            startupLoadingOverlay.title = 'Click to skip';
+            startupLoadingOverlay.addEventListener('click', () => {
+                startupLoadingOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    startupLoadingOverlay.style.display = 'none';
+                    startupLoadingOverlay.classList.add('hidden-immediate');
+                }, 200);
+            });
 
             verifyBackendHealth();
 
             const startTime = performance.now();
-            const duration = 2700; // ~2.7 seconds
+            const duration = 2400;
 
             function frame(now) {
                 const elapsed = now - startTime;
@@ -3911,7 +4028,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Smoothly fade out overlay after completion
                     setTimeout(() => {
                         startupLoadingOverlay.classList.add('fade-out');
-                    }, 400);
+                        setTimeout(() => {
+                            startupLoadingOverlay.style.display = 'none';
+                            startupLoadingOverlay.classList.add('hidden-immediate');
+                        }, 400);
+                    }, 350);
                     return;
                 }
 
@@ -4318,6 +4439,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     initPipelineStepsInteractive();
+
+    // Interactive Footer Navigation & Platforms Buttons
+    function initFooterNavigationAndPlatformButtons() {
+        const footerLinks = document.querySelectorAll('.footer-link');
+        if (!footerLinks || footerLinks.length === 0) return;
+
+        footerLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    const targetId = href.substring(1);
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        e.preventDefault();
+
+                        // Visual click feedback on the button
+                        link.classList.add('clicked');
+                        setTimeout(() => link.classList.remove('clicked'), 350);
+
+                        // Smooth scroll to target
+                        const headerOffset = 90;
+                        const elementPosition = targetEl.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+
+                        // If platform button, trigger card pulse
+                        const platform = link.getAttribute('data-platform');
+                        if (platform || targetEl.classList.contains('dl-platform-card')) {
+                            const allCards = document.querySelectorAll('.dl-platform-card');
+                            allCards.forEach(c => c.classList.remove('highlight-target'));
+
+                            const card = targetEl.classList.contains('dl-platform-card') ? targetEl : targetEl.querySelector('.dl-platform-card') || targetEl;
+                            if (card) {
+                                setTimeout(() => {
+                                    card.classList.add('highlight-target');
+                                    setTimeout(() => card.classList.remove('highlight-target'), 2000);
+                                }, 350);
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    }
+    initFooterNavigationAndPlatformButtons();
 
     // Initialize Butterfly Loading Page
     initButterflyLoadingPage();

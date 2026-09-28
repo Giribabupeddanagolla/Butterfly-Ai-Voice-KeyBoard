@@ -29,7 +29,16 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3200">
     <link rel="manifest" href="manifest.json?v=3200">
 
-    <link rel="stylesheet" href="style.css?v=4200.0">
+    <link rel="stylesheet" href="style.css?v=4207.0">
+    <script>
+        // Immediately skip startup loading screen on refresh or if already seen
+        try {
+            const isReload = (window.performance && performance.getEntriesByType && performance.getEntriesByType('navigation')[0] && performance.getEntriesByType('navigation')[0].type === 'reload') || (window.performance && window.performance.navigation && window.performance.navigation.type === 1);
+            if (isReload || sessionStorage.getItem('butterfly_intro_seen') || localStorage.getItem('butterfly_intro_seen')) {
+                document.documentElement.classList.add('skip-startup-loading');
+            }
+        } catch (e) {}
+    </script>
 </head>
 
 <body class="editorial-body">
@@ -970,6 +979,9 @@
                             <textarea id="mainSearchInput" class="vk-main-search-field voice-target-input"
                                 placeholder="Search, type, or speak with Butterfly AI..." rows="1" autocomplete="off"
                                 style="resize: none; overflow-y: hidden; max-height: 250px;"></textarea>
+                            <button type="button" class="search-clear-btn" id="mainSearchClearBtn" title="Clear Search" style="display: none;">
+                                <i data-lucide="x"></i>
+                            </button>
                             <button class="inline-mic-btn" id="mainSearchMicBtn" data-target="mainSearchInput"
                                 title="Open Butterfly AI System Keyboard (IME)">
                                 <i data-lucide="mic" id="mainSearchMicIcon"></i>
@@ -1273,7 +1285,7 @@
 
                 <div class="download-cards-grid">
                     <!-- Android Card (Ready & Functional) -->
-                    <div class="dl-platform-card active-platform">
+                    <div class="dl-platform-card active-platform" id="cardDownloadAndroid">
                         <div class="dl-card-badge">READY • VERSION 1.0</div>
                         <div class="dl-icon-circle"><i data-lucide="smartphone"></i></div>
                         <h3 class="dl-platform-name">Android APK</h3>
@@ -1290,7 +1302,7 @@
                     </div>
 
                     <!-- Windows Card (Coming Soon) -->
-                    <div class="dl-platform-card">
+                    <div class="dl-platform-card" id="cardDownloadWindows">
                         <div class="dl-card-badge muted">COMING SOON</div>
                         <div class="dl-icon-circle"><i data-lucide="monitor"></i></div>
                         <h3 class="dl-platform-name">Windows</h3>
@@ -1307,7 +1319,7 @@
                     </div>
 
                     <!-- macOS Card (Coming Soon) -->
-                    <div class="dl-platform-card">
+                    <div class="dl-platform-card" id="cardDownloadMac">
                         <div class="dl-card-badge muted">COMING SOON</div>
                         <div class="dl-icon-circle"><i data-lucide="laptop"></i></div>
                         <h3 class="dl-platform-name">macOS</h3>
@@ -1377,20 +1389,20 @@
                 <!-- Navigation Column -->
                 <div class="footer-links-col">
                     <span class="footer-col-header">Navigation</span>
-                    <a href="#howItWorks" class="footer-link">How It Works</a>
-                    <a href="#features" class="footer-link">Features</a>
-                    <a href="#androidFlow" class="footer-link">Keyboard</a>
-                    <a href="#showcase" class="footer-link">Showcase</a>
-                    <a href="#faq" class="footer-link">FAQ</a>
-                    <a href="#download" class="footer-link">Download</a>
+                    <a href="#howItWorks" class="footer-link" data-nav="howItWorks">How It Works</a>
+                    <a href="#features" class="footer-link" data-nav="features">Features</a>
+                    <a href="#androidFlow" class="footer-link" data-nav="androidFlow">Keyboard</a>
+                    <a href="#showcase" class="footer-link" data-nav="showcase">Showcase</a>
+                    <a href="#faq" class="footer-link" data-nav="faq">FAQ</a>
+                    <a href="#download" class="footer-link" data-nav="download">Download</a>
                 </div>
 
                 <!-- Platforms Column -->
                 <div class="footer-links-col">
                     <span class="footer-col-header">Platforms</span>
-                    <a href="#download" class="footer-link">Android</a>
-                    <a href="#download" class="footer-link">Windows</a>
-                    <a href="#download" class="footer-link">macOS</a>
+                    <a href="#cardDownloadAndroid" class="footer-link platform-btn" data-platform="android">Android</a>
+                    <a href="#cardDownloadWindows" class="footer-link platform-btn" data-platform="windows">Windows</a>
+                    <a href="#cardDownloadMac" class="footer-link platform-btn" data-platform="macos">macOS</a>
                 </div>
 
                 <!-- System Status Column -->
@@ -1563,7 +1575,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=4200.0"></script>
+    <script src="script.js?v=4207.0"></script>
 </body>
 
 </html>

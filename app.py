@@ -16,11 +16,19 @@ if str(BACKEND_DIR) not in sys.path:
 
 if __name__ == "__main__":
     import uvicorn
+    import webbrowser
+    import threading
     from config import config, get_free_port
 
     target_port = get_free_port(config.HOST, config.PORT)
+    display_host = "localhost" if config.HOST in ("0.0.0.0", "::") else config.HOST
     print(f"\n[+] Starting Butterfly AI Voice Keyboard from {BACKEND_DIR}...")
-    print(f"[+] Serving on http://{config.HOST}:{target_port}/\n")
+    print(f"[+] Local URL: http://localhost:{target_port}/")
+    print(f"[+] Serving on http://{display_host}:{target_port}/ (bound to {config.HOST}:{target_port})\n")
+
+    # Automatically open the web browser
+    threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{target_port}/")).start()
+
     uvicorn.run(
         "app:app",
         host=config.HOST,
