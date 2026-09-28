@@ -721,15 +721,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? TextInsertionService.getActiveInput() 
                     : (window.TextInsertionService ? window.TextInsertionService.getActiveInput() : mainInput);
                 const inputEl = targetInput || mainInput;
-                if (typeof TextInsertionService !== 'undefined' && TextInsertionService.insertText) {
-                    TextInsertionService.insertText('\n', inputEl);
-                } else if (window.TextInsertionService && window.TextInsertionService.insertText) {
-                    window.TextInsertionService.insertText('\n', inputEl);
-                } else if (inputEl) {
-                    inputEl.value = (inputEl.value || '') + '\n';
-                    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                if (inputEl) {
+                    inputEl.value = (inputEl.value || '').replace(/[\r\n]+$/, '');
+                    if (typeof autoResizeSearchInput === 'function') autoResizeSearchInput();
                 }
-                if (typeof autoResizeSearchInput === 'function') autoResizeSearchInput();
+                const text = inputEl ? (inputEl.value || inputEl.innerText || '').trim() : '';
+                if (typeof performSearch === 'function') {
+                    performSearch(text);
+                } else if (window.performSearch) {
+                    window.performSearch(text);
+                } else {
+                    const submitBtn = document.getElementById('mainSearchActionBtn');
+                    if (submitBtn) submitBtn.click();
+                }
             });
         }
 
@@ -762,11 +766,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.remove('light-theme');
                     document.body.classList.add('dark-theme');
                     document.body.classList.remove('light-theme');
+                    document.documentElement.style.colorScheme = 'dark';
+                    document.documentElement.style.backgroundColor = '#0C0E12';
                 } else {
                     document.documentElement.classList.remove('dark-theme');
                     document.documentElement.classList.add('light-theme');
                     document.body.classList.remove('dark-theme');
                     document.body.classList.add('light-theme');
+                    document.documentElement.style.colorScheme = 'light';
+                    document.documentElement.style.backgroundColor = '#F5F5F2';
                 }
                 themeToggleBtn.innerHTML = isDark 
                     ? '<i data-lucide="sun" id="themeIcon"></i>' 
@@ -2245,11 +2253,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSearchClearButton();
             });
             mainSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
-                    e.preventDefault();
-                    performSearch();
-                } else if (e.key === 'Enter') {
-                    setTimeout(autoResizeSearchInput, 10);
+                if (e.isComposing || e.keyCode === 229) return;
+                if (e.key === 'Enter') {
+                    if (e.shiftKey) {
+                        setTimeout(autoResizeSearchInput, 10);
+                    } else {
+                        e.preventDefault();
+                        mainSearchInput.value = mainSearchInput.value.replace(/[\r\n]+$/, '');
+                        autoResizeSearchInput();
+                        performSearch();
+                    }
                 } else if (e.key === 'Escape') {
                     clearSearchInputText();
                 }

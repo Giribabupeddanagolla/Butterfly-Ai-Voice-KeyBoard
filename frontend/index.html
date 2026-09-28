@@ -5,6 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Butterfly AI — Your Voice. Smarter AI. Everywhere.</title>
+    <!-- CRITICAL: Immediate Zero-FOUC Theme Restoration (Prevents White Flash on Reload) -->
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('butterfly_theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var isDark = saved === 'dark' || (!saved && prefersDark);
+                var doc = document.documentElement;
+                if (isDark) {
+                    doc.classList.add('dark-theme');
+                    doc.classList.remove('light-theme');
+                    doc.style.colorScheme = 'dark';
+                    doc.style.backgroundColor = '#0C0E12';
+                } else {
+                    doc.classList.remove('dark-theme');
+                    doc.classList.add('light-theme');
+                    doc.style.colorScheme = 'light';
+                    doc.style.backgroundColor = '#F5F5F2';
+                }
+            } catch (e) {}
+        })();
+    </script>
     <meta name="description"
         content="Butterfly AI is an intelligent voice keyboard that turns your voice into text, translates languages, improves your writing, answers questions and helps you search the web — wherever you type.">
 
@@ -42,6 +64,19 @@
 </head>
 
 <body class="editorial-body">
+    <script>
+        (function () {
+            try {
+                if (document.documentElement.classList.contains('dark-theme')) {
+                    document.body.classList.add('dark-theme');
+                    document.body.classList.remove('light-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <!-- ==========================================================================
          12. INITIAL STARTUP LOADING SCREEN (0% -> 100%, 2.6s - 3.2s, smooth fade)

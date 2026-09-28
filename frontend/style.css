@@ -5,6 +5,7 @@
    ========================================================================== */
 
 :root {
+    color-scheme: light;
     /* Palette Tokens */
     --canvas-bg: #F5F5F2;
     --canvas-card: #FFFFFF;
@@ -4129,6 +4130,7 @@ body.light-theme .search-result-snippet {
    ========================================================================== */
 html.dark-theme,
 body.dark-theme {
+    color-scheme: dark;
     --canvas-bg: #0C0E12;
     --canvas-card: #15181E;
     --canvas-card-warm: #181C23;
@@ -4574,10 +4576,12 @@ body.dark-theme .ime-key.active-toggle {
     color: #FFFFFF;
 }
 
+html.dark-theme .startup-loading-overlay,
 body.dark-theme .startup-loading-overlay {
     background: #0C0E12;
 }
 
+html.dark-theme .startup-loading-box,
 body.dark-theme .startup-loading-box {
     background: #15181E;
     border-color: #262B35;
