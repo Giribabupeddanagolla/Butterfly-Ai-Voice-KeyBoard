@@ -210,7 +210,7 @@ def translate_text(text: str, target_language: str = "en", source_language: str 
 SR_LANG_MAP = {
     "te": "te-IN", "hi": "hi-IN", "ta": "ta-IN", "kn": "kn-IN",
     "ml": "ml-IN", "mr": "mr-IN", "bn": "bn-IN", "gu": "gu-IN",
-    "pa": "pa-IN", "ur": "ur-PK", "en": "en-US", "es": "es-ES",
+    "pa": "pa-IN", "ur": "ur-PK", "en": "en-IN", "es": "es-ES",
     "fr": "fr-FR", "de": "de-DE", "it": "it-IT", "pt": "pt-PT",
     "ar": "ar-SA", "ja": "ja-JP", "ko": "ko-KR", "zh": "zh-CN", "ru": "ru-RU"
 }
@@ -270,7 +270,8 @@ class SpeechToTextService:
         self.openai_stt_failed = False
 
     def get_client(self):
-        if self.openai_stt_failed:
+        from config import is_openai_active
+        if not is_openai_active() or self.openai_stt_failed:
             return None
         current_key = config.OPENAI_API_KEY
         if current_key and (not self.client or self.api_key != current_key):
@@ -285,10 +286,11 @@ class SpeechToTextService:
 
     def transcribe_audio(self, audio_file_path: str, prompt: str = None, language: str = None, fallback_text: str = None) -> Dict[str, Any]:
         """Transcribe audio file to text using OpenAI Whisper API, SpeechRecognition fallback, or client fallback text."""
+        from config import is_openai_active, mark_openai_failed
         clean_fallback = fallback_text.strip() if (fallback_text and fallback_text.strip()) else None
 
-        # 1. Try OpenAI Whisper if API key is set and has not failed
-        if os.path.exists(audio_file_path):
+        # 1. Try OpenAI Whisper if API key is active and has not failed
+        if os.path.exists(audio_file_path) and is_openai_active() and not self.openai_stt_failed:
             client = self.get_client()
             if client:
                 try:
@@ -320,6 +322,7 @@ class SpeechToTextService:
                             }
                 except Exception as e:
                     logger.warning(f"OpenAI Whisper STT error ({e}), skipping OpenAI and falling back to SpeechRecognition")
+                    mark_openai_failed(str(e))
                     self.openai_stt_failed = True
 
         # 2. Fallback to SpeechRecognition (free Google Speech Recognition)
@@ -335,19 +338,20 @@ class SpeechToTextService:
                     base_lang = (language or "auto").lower().split('-')[0].split('_')[0]
                     candidate_langs = []
                     if base_lang and base_lang != "auto":
-                        primary_sr = SR_LANG_MAP.get(base_lang, "en-US")
+                        primary_sr = SR_LANG_MAP.get(base_lang, "en-IN")
                         candidate_langs.append(primary_sr)
                     elif clean_fallback:
                         fallback_lang = detect_language_from_text(clean_fallback)
                         if fallback_lang in SR_LANG_MAP:
                             candidate_langs.append(SR_LANG_MAP[fallback_lang])
                     
-                    candidate_langs.append("en-US")
+                    if "en-IN" not in candidate_langs:
+                        candidate_langs.append("en-IN")
                     if "te-IN" not in candidate_langs:
                         candidate_langs.append("te-IN")
                     
                     seen = set()
-                    target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))]
+                    target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))][:2]
                     
                     for sr_lang in target_langs:
                         try:

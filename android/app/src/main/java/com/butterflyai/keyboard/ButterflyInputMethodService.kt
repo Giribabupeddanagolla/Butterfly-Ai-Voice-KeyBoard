@@ -1076,11 +1076,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         lastTranslatedText = result.translatedText
 
                         if (isTranslateOn) {
+                            val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
                             if (lastTranslatedText.isNotBlank() && lastTranslatedText != lastOriginalText) {
                                 lastFinalText = lastTranslatedText
-                            } else {
+                            } else if (result.language != reqTarget) {
                                 // Fallback: If backend returned raw text, perform direct translation call to target language
-                                val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
                                 val fallbackTranslated = networkService.translateTextDirect(lastOriginalText, result.language, reqTarget)
                                 if (!fallbackTranslated.isNullOrBlank() && fallbackTranslated != lastOriginalText) {
                                     lastTranslatedText = fallbackTranslated
@@ -1088,6 +1088,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                                 } else {
                                     lastFinalText = lastOriginalText
                                 }
+                            } else {
+                                lastFinalText = lastOriginalText
                             }
                         } else {
                             lastFinalText = lastOriginalText
@@ -1340,13 +1342,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         val ic = currentInputConnection
+        val activeSelected = ic?.getSelectedText(0)?.toString()?.trim() ?: ""
+        val activeBeforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
+
         val textToTranslate = when {
+            activeSelected.isNotBlank() -> activeSelected
+            activeBeforeCursor.isNotBlank() -> activeBeforeCursor
             lastOriginalText.isNotBlank() -> lastOriginalText
-            ic != null -> {
-                val selected = ic.getSelectedText(0)?.toString()?.trim()
-                if (!selected.isNullOrBlank()) selected
-                else ic.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
-            }
             else -> ""
         }
 
@@ -1375,9 +1377,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
                     val currentIc = currentInputConnection
                     if (currentIc != null) {
-                        val toDelete = if (lastCommittedText.isNotBlank()) lastCommittedText.length else textToTranslate.length
-                        currentIc.deleteSurroundingText(toDelete, 0)
-                        currentIc.commitText(translated, 1)
+                        if (activeSelected.isNotBlank()) {
+                            currentIc.commitText(translated, 1)
+                        } else if (activeBeforeCursor.isNotBlank()) {
+                            val rawBefore = currentIc.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                            currentIc.deleteSurroundingText(rawBefore.length, 0)
+                            currentIc.commitText(translated, 1)
+                        } else if (lastCommittedText.isNotBlank()) {
+                            currentIc.deleteSurroundingText(lastCommittedText.length, 0)
+                            currentIc.commitText(translated, 1)
+                        } else {
+                            currentIc.commitText(translated, 1)
+                        }
                         lastCommittedText = translated
                         tvInsertedNotice.text = "✓ Automatically translated to $targetLangName"
                         tvInsertedNotice.visibility = View.VISIBLE

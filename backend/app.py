@@ -55,6 +55,28 @@ app = FastAPI(
     version="1.0.0"
 )
 
+@app.on_event("startup")
+async def startup_preflight():
+    import threading
+    def check_openai():
+        from config import config, mark_openai_failed
+        if config.OPENAI_API_KEY and config.OPENAI_API_KEY.startswith("sk-"):
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=config.OPENAI_API_KEY, timeout=2.5, max_retries=0)
+                client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": "hi"}],
+                    max_tokens=1
+                )
+                logger.info("OpenAI API key validated successfully.")
+            except Exception as e:
+                err_str = str(e)
+                logger.warning(f"OpenAI API key validation failed on startup: {err_str}. Pre-emptively switching to fast free fallback STT/translation.")
+                mark_openai_failed(err_str)
+    threading.Thread(target=check_openai, daemon=True).start()
+
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -163,6 +185,7 @@ def update_api_key(request: APIKeyRequest):
     # 1. Update config & services in memory
     os.environ["OPENAI_API_KEY"] = new_key
     config.OPENAI_API_KEY = new_key
+    config.OPENAI_FAILED = False
     openai_service.api_key = new_key
     openai_service.client = None
     openai_service.openai_failed = False
@@ -235,7 +258,18 @@ def translate_endpoint(request: TranslateRequest):
     if tgt_lang == "auto" or not tgt_lang.strip():
         tgt_lang = "te" if src_lang != "te" else "en"
     
-    if openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
+    if src_lang != "auto" and src_lang == tgt_lang:
+        return {
+            "success": True,
+            "translation": request.text,
+            "translated_text": request.text,
+            "original_text": request.text,
+            "source_language": src_lang,
+            "target_language": tgt_lang
+        }
+    
+    from config import is_openai_active
+    if is_openai_active() and openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
         trans_res = openai_service.translate_text(
             text=request.text,
             source_language=src_lang,
@@ -345,16 +379,15 @@ async def transcribe_endpoint(
         detected_lang = detect_language_from_text(spoken_text)
 
     should_translate = is_translate_on and is_translate_on.lower() in ["true", "1", "on", "yes"]
-    tgt_lang = target_language or translation_language or "te"
-    
-    # If translation is requested and target equals detected source (e.g. en -> en), fallback target to Telugu ('te')
-    if should_translate and (tgt_lang == detected_lang or tgt_lang == "auto"):
+    tgt_lang = target_language or translation_language or ""
+    if not tgt_lang or tgt_lang == "auto":
         tgt_lang = "te" if detected_lang != "te" else "en"
 
     translated_text = spoken_text
-    if should_translate and spoken_text.strip():
+    if should_translate and tgt_lang != detected_lang and spoken_text.strip():
         try:
-            if openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
+            from config import is_openai_active
+            if is_openai_active() and openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
                 trans_res = openai_service.translate_text(
                     text=spoken_text,
                     source_language=detected_lang,

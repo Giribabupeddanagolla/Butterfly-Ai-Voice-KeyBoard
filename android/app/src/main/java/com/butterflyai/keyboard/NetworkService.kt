@@ -39,9 +39,9 @@ data class ConnectionTestResult(
 class NetworkService(private val context: Context) {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(45, TimeUnit.SECONDS)
-        .readTimeout(45, TimeUnit.SECONDS)
-        .writeTimeout(45, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
         .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
         .build()
 
@@ -156,7 +156,7 @@ class NetworkService(private val context: Context) {
                     ?: jsonObj.get("translated_text")?.asString
                     ?: originalText
 
-                if (isTranslateOn && originalText.isNotBlank() && (finalTranslatedText == originalText || finalTranslatedText.isBlank())) {
+                if (isTranslateOn && originalText.isNotBlank() && detectedLang != targetLanguage && (finalTranslatedText == originalText || finalTranslatedText.isBlank())) {
                     val translated = translateTextDirect(originalText, detectedLang, targetLanguage)
                     if (!translated.isNullOrBlank()) {
                         finalTranslatedText = translated
@@ -181,6 +181,12 @@ class NetworkService(private val context: Context) {
         sourceLang: String,
         targetLang: String
     ): String? = withContext(Dispatchers.IO) {
+        if (text.isBlank()) return@withContext text
+        val src = sourceLang.trim().lowercase()
+        val tgt = targetLang.trim().lowercase()
+        if (src != "auto" && src == tgt) {
+            return@withContext text
+        }
         val baseUrl = getBaseUrl()
         try {
             val jsonBody = JsonObject().apply {

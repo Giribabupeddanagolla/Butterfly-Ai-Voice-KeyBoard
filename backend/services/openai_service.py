@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Dict, Any, Optional
-from config import config
+from config import config, is_openai_active, mark_openai_failed
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ class OpenAIService:
         return (getattr(config, "OPENAI_API_KEY", "") or getattr(config, "OPENAI_API_KEY_NEW_KEY", "") or "").strip()
 
     def get_client(self):
+        if not is_openai_active() or self.openai_failed:
+            return None
         current_key = self.get_api_key()
         if current_key:
             if not self.client or self.api_key != current_key:
@@ -34,6 +36,8 @@ class OpenAIService:
         return self.client
 
     def is_configured(self) -> bool:
+        if not is_openai_active() or self.openai_failed:
+            return False
         current_key = self.get_api_key()
         return bool(current_key and current_key.startswith("sk-"))
 
@@ -133,6 +137,7 @@ class OpenAIService:
         except Exception as e:
             err_str = str(e)
             if "429" in err_str or "quota" in err_str.lower() or "credit_balance_exhausted" in err_str.lower() or "insufficient_quota" in err_str.lower():
+                mark_openai_failed(err_str)
                 if not self.openai_failed:
                     logger.info("OpenAI API quota exhausted. Switching to free fallback translation.")
                 self.openai_failed = True

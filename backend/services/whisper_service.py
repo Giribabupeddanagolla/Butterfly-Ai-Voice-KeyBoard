@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Dict, Any, Optional
-from config import config
+from config import config, is_openai_active, mark_openai_failed
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class WhisperService:
         self.whisper_failed = False
 
     def get_client(self):
-        if self.whisper_failed:
+        if not is_openai_active() or self.whisper_failed:
             return None
         current_key = config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
         if current_key and (not self.client or self.api_key != current_key):
@@ -111,6 +111,7 @@ class WhisperService:
             except Exception as e:
                 err_str = str(e)
                 if "429" in err_str or "quota" in err_str.lower() or "credit_balance_exhausted" in err_str.lower():
+                    mark_openai_failed(err_str)
                     if not self.whisper_failed:
                         logger.info("Whisper API quota/credit exhausted (HTTP 429). Switching to free fallback STT.")
                     self.whisper_failed = True

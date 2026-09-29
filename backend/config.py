@@ -33,13 +33,22 @@ class Config:
     AUDIO_INPUT_DIR: str = str(Path(__file__).resolve().parent / "audio" / "input")
     AUDIO_OUTPUT_DIR: str = str(Path(__file__).resolve().parent / "audio" / "output")
     
-    # App host & port
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
+    OPENAI_FAILED: bool = False
 
     def __init__(self):
         if self.HOST in ["127.0.0.1", "localhost"]:
             self.HOST = "0.0.0.0"
+
+def is_openai_active() -> bool:
+    if getattr(config, "OPENAI_FAILED", False):
+        return False
+    key = config.OPENAI_API_KEY
+    return bool(key and key.strip().startswith("sk-"))
+
+def mark_openai_failed(reason: str = ""):
+    config.OPENAI_FAILED = True
 
 def is_port_available(host: str, port: int) -> bool:
     import socket
