@@ -2168,10 +2168,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!mainSearchInput) return;
             const wrapper = mainSearchInput.closest('.vk-main-search-wrapper');
 
+            // If empty, reset cleanly to CSS single-line height without clipping
+            if (!mainSearchInput.value || mainSearchInput.value.trim() === '') {
+                mainSearchInput.style.height = '';
+                mainSearchInput.style.overflowY = 'hidden';
+                if (wrapper) wrapper.classList.remove('is-multiline');
+                return;
+            }
+
             mainSearchInput.style.height = 'auto';
             const scHeight = mainSearchInput.scrollHeight;
 
-            if (scHeight > 36) {
+            if (scHeight > 38) {
                 const targetHeight = Math.min(scHeight, 300);
                 mainSearchInput.style.height = targetHeight + 'px';
                 if (scHeight > 300) {
@@ -2181,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (wrapper) wrapper.classList.add('is-multiline');
             } else {
-                mainSearchInput.style.height = '28px';
+                mainSearchInput.style.height = '';
                 mainSearchInput.style.overflowY = 'hidden';
                 if (wrapper) wrapper.classList.remove('is-multiline');
             }

@@ -2621,6 +2621,7 @@ img {
 
 .vk-main-search-field {
     flex: 1;
+    min-width: 0;
     border: none;
     background: transparent;
     font-family: inherit;
@@ -2629,6 +2630,17 @@ img {
     outline: none;
     padding: 6px 8px;
     line-height: 1.4;
+    height: 34px;
+    min-height: 34px;
+    resize: none;
+    overflow-y: hidden;
+}
+
+.vk-main-search-field::placeholder {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: var(--text-muted);
 }
 
 .inline-mic-btn {
@@ -4537,10 +4549,15 @@ body.light-theme .search-result-snippet {
     .vk-main-search-wrapper {
         padding: 5px 8px;
         gap: 6px;
+        align-items: center;
     }
 
     .vk-main-search-field {
-        font-size: 0.9rem;
+        font-size: 0.92rem;
+        padding: 2px 4px;
+        line-height: 1.35;
+        height: 28px;
+        min-height: 28px;
     }
 
     .inline-mic-btn,
@@ -4548,6 +4565,7 @@ body.light-theme .search-result-snippet {
         width: 32px;
         height: 32px;
         min-width: 32px;
+        flex-shrink: 0;
     }
 
     .ime-row-controls {
