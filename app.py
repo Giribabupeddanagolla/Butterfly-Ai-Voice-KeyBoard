@@ -6,13 +6,20 @@ import os
 import sys
 from pathlib import Path
 
-# Add backend directory to sys.path and switch working directory
+# Add directories to sys.path
 ROOT_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = ROOT_DIR / "backend"
 
-os.chdir(str(BACKEND_DIR))
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
+
+# Expose app for uvicorn app:app or uvicorn backend.app:app
+try:
+    from backend.app import app
+except ImportError:
+    from app import app
 
 if __name__ == "__main__":
     import uvicorn

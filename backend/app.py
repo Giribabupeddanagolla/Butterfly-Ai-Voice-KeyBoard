@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import shutil
 import logging
@@ -8,6 +9,11 @@ import urllib.parse
 import urllib.request
 from typing import Optional
 from pathlib import Path
+
+# Ensure backend directory is in sys.path so internal imports (config, memory, etc.) work from anywhere
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +72,10 @@ async def add_no_cache_headers(request, call_next):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
     return response
+
+# Ensure audio storage directories exist before mounting
+Path(config.AUDIO_OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+Path(config.AUDIO_INPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Mount audio output directory statically
 app.mount("/audio/output", StaticFiles(directory=config.AUDIO_OUTPUT_DIR), name="audio_output")
