@@ -58,7 +58,11 @@ class SettingsActivity : AppCompatActivity() {
         imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        val currentUrl = prefs.getString("server_url", "http://192.168.1.105:8000")
+        var currentUrl = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com") ?: "https://butterfly-ai-voice-keyboard.onrender.com"
+        if (currentUrl.contains("192.168.") || currentUrl.contains("localhost")) {
+            currentUrl = "https://butterfly-ai-voice-keyboard.onrender.com"
+            prefs.edit().putString("server_url", currentUrl).apply()
+        }
         etServerUrl.setText(currentUrl)
 
         // Setup Theme Selector Spinner with custom layout for explicit high-contrast white text color
@@ -114,7 +118,7 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.edit().putString("server_url", inputUrl).apply()
                 Toast.makeText(this, "Server URL saved successfully!", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Please enter a valid HTTP/HTTPS URL (e.g. http://192.168.1.105:8000)", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Please enter a valid HTTP/HTTPS URL (e.g. https://butterfly-ai-voice-keyboard.onrender.com)", Toast.LENGTH_LONG).show()
             }
         }
 

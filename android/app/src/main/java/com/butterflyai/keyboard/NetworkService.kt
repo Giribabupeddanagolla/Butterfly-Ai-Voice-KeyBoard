@@ -49,7 +49,10 @@ class NetworkService(private val context: Context) {
 
     fun getBaseUrl(): String {
         val prefs = context.getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        var url = prefs.getString("server_url", "http://192.168.1.105:8000") ?: "http://192.168.1.105:8000"
+        var url = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com") ?: "https://butterfly-ai-voice-keyboard.onrender.com"
+        if (url.contains("192.168.") || url.contains("localhost")) {
+            url = "https://butterfly-ai-voice-keyboard.onrender.com"
+        }
         url = url.trim()
         if (url.endsWith("/")) {
             url = url.substring(0, url.length - 1)

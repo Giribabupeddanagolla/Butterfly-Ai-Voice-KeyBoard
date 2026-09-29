@@ -4,7 +4,7 @@
     <string name="ime_name">Butterfly AI Voice Keyboard</string>
     <string name="subtype_en_US">English (US) - Butterfly AI</string>
     <string name="settings_title">Butterfly AI Keyboard Settings</string>
-    <string name="backend_url_hint">http://192.168.1.105:8000</string>
+    <string name="backend_url_hint">https://butterfly-ai-voice-keyboard.onrender.com</string>
     <string name="enable_keyboard">1. Enable Keyboard in Android Settings</string>
     <string name="select_keyboard">2. Select Butterfly AI as Active Keyboard</string>
     <string name="test_connection">Test Backend Connection</string>
