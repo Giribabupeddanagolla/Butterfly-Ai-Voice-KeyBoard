@@ -1476,12 +1476,17 @@ img {
    ========================================================================== */
 .ime-flow-split-layout {
     display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
+    grid-template-columns: 1.15fr 0.85fr;
     gap: 48px;
     align-items: center;
 }
 
+.ime-pipeline-card {
+    order: 1;
+}
+
 .ime-mockup-card {
+    order: 2;
     display: flex;
     justify-content: center;
 }
@@ -2099,21 +2104,20 @@ img {
     padding: 56px 48px;
     box-shadow: var(--shadow-card);
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.05fr 0.95fr;
     gap: 48px;
     align-items: center;
 }
 
-.showcase-card-editorial.reverse-layout {
-    grid-template-columns: 1fr 1fr;
-}
-
+/* Maintain unified left-to-right order: copy on left, interactive preview on right across all cards */
+.showcase-card-editorial .showcase-copy,
 .showcase-card-editorial.reverse-layout .showcase-copy {
-    order: 2;
+    order: 1;
 }
 
+.showcase-card-editorial .showcase-visual-box,
 .showcase-card-editorial.reverse-layout .showcase-visual-box {
-    order: 1;
+    order: 2;
 }
 
 .showcase-tag {
@@ -3993,16 +3997,26 @@ body.light-theme .search-result-snippet {
         gap: 36px;
     }
 
+    .showcase-card-editorial .showcase-copy,
     .showcase-card-editorial.reverse-layout .showcase-copy {
         order: 1;
     }
 
+    .showcase-card-editorial .showcase-visual-box,
     .showcase-card-editorial.reverse-layout .showcase-visual-box {
         order: 2;
     }
 
     .ime-flow-split-layout {
         grid-template-columns: 1fr;
+    }
+
+    .ime-pipeline-card {
+        order: 1;
+    }
+
+    .ime-mockup-card {
+        order: 2;
     }
 
     .download-cards-grid {
