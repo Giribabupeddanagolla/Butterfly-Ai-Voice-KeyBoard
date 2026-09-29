@@ -207,6 +207,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     )
 
     private var isKeyboardGridVisible = true
+    private var lastSpokenText = ""
     private var lastOriginalText = ""
     private var lastTranslatedText = ""
     private var lastFinalText = ""
@@ -950,6 +951,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (!checkMicPermission()) return
 
         try {
+            lastSpokenText = ""
             audioFile = File(cacheDir, "butterfly_voice_${System.currentTimeMillis()}.m4a")
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(this)
@@ -1072,6 +1074,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     )
 
                     if (result.success && result.originalText.isNotBlank()) {
+                        lastSpokenText = result.originalText
                         lastOriginalText = result.originalText
                         lastTranslatedText = result.translatedText
 
@@ -1098,7 +1101,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                                 lblOriginalHeader.text = "You said:"
                                 lblOriginalHeader.visibility = View.VISIBLE
                             }
-                            tvOriginalText.text = lastOriginalText
+                            tvOriginalText.text = lastSpokenText
                             tvOriginalText.visibility = View.VISIBLE
 
                             lblTranslationHeader.text = "Translation ($targetName):"
@@ -1111,7 +1114,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                                 lblOriginalHeader.text = "You said:"
                                 lblOriginalHeader.visibility = View.VISIBLE
                             }
-                            tvOriginalText.text = lastOriginalText
+                            tvOriginalText.text = lastSpokenText
                             tvOriginalText.visibility = View.VISIBLE
                             lblTranslationHeader.visibility = View.GONE
                             tvTranslatedText.visibility = View.GONE
@@ -1328,14 +1331,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         retranslateJob?.cancel()
 
         if (!isTranslateOn) {
-            if (lastOriginalText.isNotBlank()) {
-                val textToRestore = lastOriginalText
+            val textToRestore = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText
+            if (textToRestore.isNotBlank()) {
                 lastFinalText = textToRestore
                 if (::lblOriginalHeader.isInitialized) {
-                    lblOriginalHeader.text = "You said:"
+                    lblOriginalHeader.text = if (lastSpokenText.isNotBlank()) "You said:" else "Original:"
                     lblOriginalHeader.visibility = View.VISIBLE
                 }
-                tvOriginalText.text = lastOriginalText
+                tvOriginalText.text = textToRestore
                 tvOriginalText.visibility = View.VISIBLE
                 lblTranslationHeader.visibility = View.GONE
                 tvTranslatedText.visibility = View.GONE
@@ -1357,29 +1360,56 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val activeBeforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
 
         val sourceTextToTranslate: String
-        val isExplicitSelection = activeSelected.isNotBlank()
+        val isExplicitSelection = activeSelected.isNotBlank() && activeSelected != lastCommittedText && activeSelected != lastTranslatedText
 
-        if (isExplicitSelection) {
+        if (lastSpokenText.isNotBlank()) {
+            // Authentic spoken speech ALWAYS takes top priority for "You said:"!
+            // Never allow translated text from editor or activeSelected to overwrite what the user spoke!
+            sourceTextToTranslate = lastSpokenText
+            lastOriginalText = lastSpokenText
+            if (::lblOriginalHeader.isInitialized) {
+                lblOriginalHeader.text = "You said:"
+                lblOriginalHeader.visibility = View.VISIBLE
+            }
+            tvOriginalText.text = lastSpokenText
+            tvOriginalText.visibility = View.VISIBLE
+        } else if (isExplicitSelection) {
+            // User explicitly selected distinct text in host app
             sourceTextToTranslate = activeSelected
             lastOriginalText = activeSelected
             if (::lblOriginalHeader.isInitialized) {
                 lblOriginalHeader.text = "Selected text:"
                 lblOriginalHeader.visibility = View.VISIBLE
             }
-        } else if (lastOriginalText.isNotBlank()) {
-            // Keep the authentic spoken or original text! DO NOT overwrite lastOriginalText with previous translation or input buffer
+            tvOriginalText.text = activeSelected
+            tvOriginalText.visibility = View.VISIBLE
+        } else if (lastOriginalText.isNotBlank() && lastOriginalText != lastTranslatedText) {
+            // Authentic original text exists
             sourceTextToTranslate = lastOriginalText
             if (::lblOriginalHeader.isInitialized) {
                 lblOriginalHeader.text = "You said:"
                 lblOriginalHeader.visibility = View.VISIBLE
             }
-        } else if (activeBeforeCursor.isNotBlank()) {
+            tvOriginalText.text = lastOriginalText
+            tvOriginalText.visibility = View.VISIBLE
+        } else if (activeBeforeCursor.isNotBlank() && activeBeforeCursor != lastCommittedText && activeBeforeCursor != lastTranslatedText) {
+            // Untranslated text typed before cursor in host app
             sourceTextToTranslate = activeBeforeCursor
             lastOriginalText = activeBeforeCursor
             if (::lblOriginalHeader.isInitialized) {
                 lblOriginalHeader.text = "You typed:"
                 lblOriginalHeader.visibility = View.VISIBLE
             }
+            tvOriginalText.text = activeBeforeCursor
+            tvOriginalText.visibility = View.VISIBLE
+        } else if (lastOriginalText.isNotBlank()) {
+            sourceTextToTranslate = lastOriginalText
+            if (::lblOriginalHeader.isInitialized) {
+                lblOriginalHeader.text = "You said:"
+                lblOriginalHeader.visibility = View.VISIBLE
+            }
+            tvOriginalText.text = lastOriginalText
+            tvOriginalText.visibility = View.VISIBLE
         } else {
             sourceTextToTranslate = ""
         }
@@ -1392,7 +1422,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         // Always display original spoken text in tvOriginalText
-        tvOriginalText.text = lastOriginalText
+        val originalDisplay = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText
+        tvOriginalText.text = originalDisplay
         tvOriginalText.visibility = View.VISIBLE
 
         tvInsertedNotice.text = "🔄 Translating to $targetLangName..."
@@ -1404,12 +1435,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val translated = networkService.translateTextDirect(sourceTextToTranslate, srcLang, reqTarget)
 
                 if (!translated.isNullOrBlank()) {
-                    // Do NOT overwrite lastOriginalText! Only update lastTranslatedText and lastFinalText!
+                    // Do NOT overwrite lastSpokenText or lastOriginalText! Only update lastTranslatedText and lastFinalText!
                     lastTranslatedText = translated
                     lastFinalText = translated
 
-                    // "You said:" always keeps what the user spoke!
-                    tvOriginalText.text = lastOriginalText
+                    // "You said:" strictly displays authentic spoken or original input!
+                    val finalOriginalDisplay = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText
+                    tvOriginalText.text = finalOriginalDisplay
                     tvOriginalText.visibility = View.VISIBLE
 
                     lblTranslationHeader.text = "Translation ($targetLangName):"
@@ -1427,7 +1459,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                             currentIc.deleteSurroundingText(lastCommittedText.length, 0)
                             currentIc.commitText(translated, 1)
                             lastCommittedText = translated
-                        } else if (activeBeforeCursor.isNotBlank()) {
+                        } else if (activeBeforeCursor.isNotBlank() && activeBeforeCursor != translated) {
                             currentIc.deleteSurroundingText(activeBeforeCursor.length, 0)
                             currentIc.commitText(translated, 1)
                             lastCommittedText = translated

@@ -145,16 +145,22 @@ class NetworkService(private val context: Context) {
                     return@withContext TranscriptionResult(false, error = err)
                 }
 
-                val originalText = jsonObj.get("text")?.asString
+                val originalText = jsonObj.get("original_text")?.asString
                     ?: jsonObj.get("transcription")?.asString
-                    ?: jsonObj.get("original_text")?.asString
+                    ?: jsonObj.get("spoken_text")?.asString
+                    ?: jsonObj.get("source_text")?.asString
+                    ?: jsonObj.get("text")?.asString
                     ?: ""
 
                 val detectedLang = jsonObj.get("language")?.asString ?: sourceLanguage
 
                 var finalTranslatedText = jsonObj.get("translation")?.asString
                     ?: jsonObj.get("translated_text")?.asString
-                    ?: originalText
+                    ?: ""
+
+                if (finalTranslatedText.isBlank()) {
+                    finalTranslatedText = originalText
+                }
 
                 if (isTranslateOn && originalText.isNotBlank() && detectedLang != targetLanguage && (finalTranslatedText == originalText || finalTranslatedText.isBlank())) {
                     val translated = translateTextDirect(originalText, detectedLang, targetLanguage)
