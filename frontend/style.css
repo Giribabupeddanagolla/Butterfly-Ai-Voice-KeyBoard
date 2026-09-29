@@ -67,13 +67,18 @@ html {
     background-color: var(--canvas-bg);
     color: var(--text-primary);
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
 }
 
 body.editorial-body {
     min-height: 100vh;
     width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
     overflow-y: auto;
+    position: relative;
     background-color: var(--canvas-bg);
     color: var(--text-primary);
     font-family: var(--font-body);
@@ -81,6 +86,11 @@ body.editorial-body {
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+img, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
 }
 
 a {
@@ -4068,6 +4078,11 @@ body.light-theme .search-result-snippet {
     }
 }
 
+/* ==========================================================================
+   20. RESPONSIVE DESIGN BREAKPOINTS (MOBILE & TABLET EXCELLENCE)
+   ========================================================================== */
+
+/* TABLET & MOBILE (< 768px) */
 @media (max-width: 768px) {
     .editorial-navbar-wrapper {
         padding: 0 10px;
@@ -4075,59 +4090,504 @@ body.light-theme .search-result-snippet {
     }
 
     .editorial-navbar {
-        height: 60px;
-        padding: 6px 12px 6px 16px;
+        height: 56px;
+        padding: 6px 12px;
+    }
+
+    .nav-brand-text {
+        font-size: 1.05rem;
+    }
+
+    .nav-brand-icon {
+        max-width: 36px;
     }
 
     .nav-center-links,
     .editorial-navbar .btn-portfolite-primary {
-        display: none;
+        display: none !important;
     }
 
     .mobile-hamburger-btn {
         display: flex;
+        width: 36px;
+        height: 36px;
     }
 
+    .btn-nav-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* SECTIONS */
     .editorial-hero-section {
-        padding: 24px 16px 50px;
+        padding: 24px 16px 44px;
+        gap: 36px;
     }
 
     .editorial-section {
-        padding: 60px 16px;
+        padding: 56px 16px;
     }
 
     .editorial-intro-section {
-        padding: 60px 16px;
+        padding: 56px 16px;
     }
 
+    .editorial-final-cta-section {
+        padding: 60px 16px 80px;
+    }
+
+    .editorial-footer {
+        padding: 48px 16px 32px;
+    }
+
+    /* TYPOGRAPHY */
     .hero-main-heading {
-        font-size: 2.6rem;
+        font-size: clamp(2rem, 6.8vw, 2.5rem);
+        line-height: 1.18;
     }
 
     .editorial-giant-statement {
-        font-size: 2.4rem;
+        font-size: clamp(1.65rem, 5.8vw, 2.15rem);
+        line-height: 1.25;
     }
 
+    .section-display-heading {
+        font-size: clamp(1.65rem, 5.5vw, 2.15rem);
+        line-height: 1.25;
+        word-break: break-word;
+    }
+
+    .pipeline-heading {
+        font-size: 1.45rem;
+    }
+
+    .showcase-heading {
+        font-size: clamp(1.35rem, 4.8vw, 1.75rem);
+    }
+
+    .final-cta-heading {
+        font-size: clamp(1.65rem, 5.5vw, 2.1rem);
+    }
+
+    .section-header-wrap,
+    .section-header-center {
+        margin-bottom: 32px;
+    }
+
+    .section-sub-text,
+    .hero-sub-text,
+    .pipeline-sub-heading,
+    .editorial-sub-headline {
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+    /* GRIDS TO SINGLE COLUMN */
     .process-steps-grid-4,
     .features-editorial-grid,
     .process-grid-editorial,
     .portfolite-metrics-grid,
     .usecases-grid-8 {
         grid-template-columns: 1fr;
-    }
-
-    .final-cta-inner-card {
-        padding: 48px 20px;
+        gap: 16px;
     }
 
     .footer-top-grid {
         grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    /* CARDS & PADDING ADJUSTMENTS */
+    .showcase-card-editorial {
+        padding: 28px 20px;
+        gap: 24px;
+        border-radius: var(--radius-lg);
+    }
+
+    .showcase-visual-box {
+        padding: 20px 16px;
+        border-radius: var(--radius-md);
+    }
+
+    .ime-pipeline-card {
+        padding: 24px 18px;
+        border-radius: var(--radius-lg);
+    }
+
+    .live-testbed-card {
+        padding: 24px 18px;
+        border-radius: var(--radius-lg);
+    }
+
+    .dl-platform-card {
+        padding: 26px 18px;
+        border-radius: var(--radius-lg);
+    }
+
+    .portfolite-metric-card,
+    .step-card-editorial,
+    .feat-editorial-card,
+    .pillar-card,
+    .usecase-card {
+        padding: 22px 18px;
+        border-radius: var(--radius-lg);
+    }
+
+    .apps-presence-box {
+        padding: 20px 16px;
+    }
+
+    .final-cta-inner-card {
+        padding: 40px 20px;
+        border-radius: var(--radius-xl);
     }
 
     .download-toast {
         left: 16px;
         right: 16px;
         bottom: 16px;
+    }
+}
+
+/* SMARTPHONES & PHABLETS (< 640px) */
+@media (max-width: 640px) {
+    /* HERO CTA & FLOW BADGES */
+    .hero-cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .hero-cta-group .btn-portfolite-primary,
+    .hero-cta-group .btn-portfolite-secondary {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 13px 18px;
+        font-size: 0.95rem;
+    }
+
+    .hero-product-flow-wrap {
+        border-radius: var(--radius-lg);
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px 10px;
+        font-size: 0.78rem;
+        width: 100%;
+    }
+
+    /* FINAL CTA BUTTONS */
+    .final-cta-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .final-cta-actions .btn-portfolite-primary,
+    .final-cta-actions .btn-portfolite-secondary {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* LIVE WORKSPACE / TESTBED */
+    .testbed-top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .ime-row-languages {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .ime-lang-group {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ime-select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ime-row-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .ime-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 14px;
+    }
+
+    /* FOOTER */
+    .footer-bottom-bar {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        align-items: center;
+    }
+
+    .footer-legal-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 16px;
+    }
+
+    /* MODAL */
+    .modal-card {
+        max-width: 94vw;
+        width: 94vw;
+        padding: 22px 16px;
+        border-radius: var(--radius-lg);
+    }
+}
+
+/* ULTRA MOBILE / SMARTPHONES (< 480px) */
+@media (max-width: 480px) {
+    .editorial-section,
+    .editorial-intro-section {
+        padding: 44px 12px;
+    }
+
+    .editorial-hero-section {
+        padding: 16px 12px 36px;
+        gap: 24px;
+    }
+
+    .section-header-wrap,
+    .section-header-center {
+        margin-bottom: 24px;
+    }
+
+    .hero-main-heading {
+        font-size: clamp(1.75rem, 6.8vw, 2.15rem);
+    }
+
+    .editorial-giant-statement {
+        font-size: clamp(1.35rem, 5.2vw, 1.65rem);
+    }
+
+    .section-display-heading {
+        font-size: clamp(1.35rem, 5vw, 1.7rem);
+    }
+
+    .showcase-heading {
+        font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+    }
+
+    .pipeline-heading {
+        font-size: 1.25rem;
+    }
+
+    .final-cta-heading {
+        font-size: clamp(1.35rem, 5vw, 1.75rem);
+    }
+
+    /* COMPACT CARD PADDINGS */
+    .showcase-card-editorial {
+        padding: 18px 12px;
+        gap: 16px;
+        border-radius: var(--radius-md);
+    }
+
+    .showcase-visual-box {
+        padding: 14px 10px;
+        border-radius: var(--radius-sm);
+    }
+
+    .ime-pipeline-card {
+        padding: 18px 12px;
+    }
+
+    .live-testbed-card {
+        padding: 16px 10px;
+        border-radius: var(--radius-md);
+    }
+
+    .dl-platform-card {
+        padding: 18px 12px;
+    }
+
+    .portfolite-metric-card,
+    .step-card-editorial,
+    .feat-editorial-card,
+    .pillar-card,
+    .usecase-card {
+        padding: 16px 12px;
+        border-radius: var(--radius-md);
+    }
+
+    .final-cta-inner-card {
+        padding: 24px 14px;
+        border-radius: var(--radius-lg);
+    }
+
+    .editorial-footer {
+        padding: 36px 12px 24px;
+    }
+
+    /* VIRTUAL KEYBOARD MOCKUPS */
+    .mockup-bezel {
+        padding: 6px;
+        border-radius: 22px;
+        max-width: 100%;
+    }
+
+    .mockup-screen {
+        border-radius: 16px;
+    }
+
+    .mockup-app-bar {
+        padding: 8px 10px;
+    }
+
+    .mockup-ime-bar {
+        padding: 6px 4px 10px 4px;
+    }
+
+    .ime-toolbar-icons {
+        gap: 3px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+    }
+
+    .ime-toolbar-icons::-webkit-scrollbar {
+        display: none;
+    }
+
+    .ime-tool-pill {
+        flex: 0 0 auto;
+        padding: 4px 6px;
+        font-size: 0.62rem;
+    }
+
+    .mock-row {
+        gap: 2px;
+    }
+
+    .k {
+        height: 28px;
+        font-size: 0.66rem;
+        border-radius: 3px;
+    }
+
+    .mock-row-3 .k.key-shift,
+    .mock-row-3 .k.key-backspace {
+        font-size: 0.58rem;
+    }
+
+    .mock-row-4 .k.key-num,
+    .mock-row-4 .k.key-enter {
+        font-size: 0.58rem;
+    }
+
+    /* HERO KEYBOARD PREVIEW */
+    .hero-device-card {
+        border-radius: var(--radius-lg);
+    }
+
+    .device-card-header {
+        padding: 10px 12px;
+    }
+
+    .chat-body-scroll {
+        padding: 12px 10px;
+    }
+
+    .device-keyboard-mockup {
+        padding: 10px 8px;
+    }
+
+    .kb-action-pills {
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+    }
+
+    .kb-action-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    .kb-pill-btn {
+        flex: 0 0 auto;
+        padding: 5px 8px;
+        font-size: 0.68rem;
+    }
+
+    .kb-key-row .k {
+        height: 28px;
+        font-size: 0.66rem;
+    }
+
+    /* SEARCH WRAPPER & CONTROLS */
+    .vk-main-search-wrapper {
+        padding: 5px 8px;
+        gap: 6px;
+    }
+
+    .vk-main-search-field {
+        font-size: 0.9rem;
+    }
+
+    .inline-mic-btn,
+    .search-submit-btn {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+    }
+
+    .ime-row-controls {
+        gap: 4px;
+    }
+
+    .ime-ctrl-btn {
+        font-size: 0.78rem;
+        padding: 8px 6px;
+    }
+
+    .vrc-recording-card {
+        padding: 14px 10px;
+    }
+
+    .vrc-action-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .vrc-btn {
+        flex: 1 1 110px;
+        font-size: 0.78rem;
+        padding: 8px 10px;
+    }
+
+    /* MODAL */
+    .modal-card {
+        padding: 18px 12px;
+        max-width: 95vw;
+        width: 95vw;
+    }
+
+    .setting-item-row {
+        padding: 10px 0;
+        gap: 8px;
+    }
+
+    .setting-title {
+        font-size: 0.9rem;
     }
 }
 
