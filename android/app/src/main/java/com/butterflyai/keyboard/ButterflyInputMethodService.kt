@@ -391,6 +391,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
         updateTranslateToggleUI()
 
+        // Central Directional Arrow (Tap to Translate)
+        val tvLangArrow = inputView.findViewById<TextView>(R.id.tvLangArrow)
+        tvLangArrow?.setOnClickListener {
+            isTranslateOn = true
+            updateTranslateToggleUI()
+            retranslateAndUpdate()
+        }
+
         // Tap to Speak Action (IDLE state) - Handles both main mic button & Voice Keyboard card
         val startVoiceRecordingAction = View.OnClickListener {
             if (currentState == KeyboardState.IDLE) {
@@ -1072,7 +1080,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                                 lastFinalText = lastTranslatedText
                             } else {
                                 // Fallback: If backend returned raw text, perform direct translation call to target language
-                                val reqTarget = if (tgtLang == "auto" || tgtLang == "en") "te" else tgtLang
+                                val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
                                 val fallbackTranslated = networkService.translateTextDirect(lastOriginalText, result.language, reqTarget)
                                 if (!fallbackTranslated.isNullOrBlank() && fallbackTranslated != lastOriginalText) {
                                     lastTranslatedText = fallbackTranslated
@@ -1334,21 +1342,29 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val ic = currentInputConnection
         val textToTranslate = when {
             lastOriginalText.isNotBlank() -> lastOriginalText
-            ic != null -> ic.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
+            ic != null -> {
+                val selected = ic.getSelectedText(0)?.toString()?.trim()
+                if (!selected.isNullOrBlank()) selected
+                else ic.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
+            }
             else -> ""
         }
 
-        if (textToTranslate.isBlank()) return
+        if (textToTranslate.isBlank()) {
+            Toast.makeText(this, "Type or speak text to translate", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         tvInsertedNotice.text = "🔄 Translating to $targetLangName..."
         tvInsertedNotice.visibility = View.VISIBLE
 
         retranslateJob = serviceScope.launch {
             try {
-                val reqTarget = if (tgtLang == "auto") "te" else tgtLang
+                val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
                 val translated = networkService.translateTextDirect(textToTranslate, srcLang, reqTarget)
 
                 if (!translated.isNullOrBlank()) {
+                    lastOriginalText = textToTranslate
                     lastTranslatedText = translated
                     lastFinalText = translated
 
@@ -1359,14 +1375,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
                     val currentIc = currentInputConnection
                     if (currentIc != null) {
-                        if (lastCommittedText.isNotBlank()) {
-                            currentIc.deleteSurroundingText(lastCommittedText.length, 0)
-                        }
+                        val toDelete = if (lastCommittedText.isNotBlank()) lastCommittedText.length else textToTranslate.length
+                        currentIc.deleteSurroundingText(toDelete, 0)
                         currentIc.commitText(translated, 1)
                         lastCommittedText = translated
                         tvInsertedNotice.text = "✓ Automatically translated to $targetLangName"
                         tvInsertedNotice.visibility = View.VISIBLE
                     }
+                    setKeyboardState(KeyboardState.RESULT)
                 } else {
                     tvInsertedNotice.text = "⚠️ Translation failed. Check connection."
                     tvInsertedNotice.visibility = View.VISIBLE

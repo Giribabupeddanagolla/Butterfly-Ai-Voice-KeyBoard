@@ -232,14 +232,16 @@ def translate_endpoint(request: TranslateRequest):
     
     src_lang = request.source_language or "auto"
     tgt_lang = request.target_language or request.translation_language or request.text_language or "en"
+    if tgt_lang == "auto" or not tgt_lang.strip():
+        tgt_lang = "te" if src_lang != "te" else "en"
     
-    if openai_service.is_configured():
+    if openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
         trans_res = openai_service.translate_text(
             text=request.text,
             source_language=src_lang,
             target_language=tgt_lang
         )
-        if trans_res.get("success") and trans_res.get("translated_text"):
+        if trans_res.get("success") and trans_res.get("translated_text") and trans_res.get("translated_text").strip() != request.text.strip():
             return {
                 "success": True,
                 "translation": trans_res["translated_text"],
@@ -352,13 +354,13 @@ async def transcribe_endpoint(
     translated_text = spoken_text
     if should_translate and spoken_text.strip():
         try:
-            if openai_service.is_configured():
+            if openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
                 trans_res = openai_service.translate_text(
                     text=spoken_text,
                     source_language=detected_lang,
                     target_language=tgt_lang
                 )
-                if trans_res.get("success") and trans_res.get("translated_text"):
+                if trans_res.get("success") and trans_res.get("translated_text") and trans_res.get("translated_text").strip() != spoken_text.strip():
                     translated_text = trans_res["translated_text"]
             if translated_text == spoken_text:
                 translated_text = translate_text(spoken_text, target_language=tgt_lang, source_language=detected_lang)

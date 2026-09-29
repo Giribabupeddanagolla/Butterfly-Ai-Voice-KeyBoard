@@ -125,20 +125,23 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
             logger.debug(f"OpenAI translation unavailable: {e}")
             stt_service.openai_stt_failed = True
 
-    # 2. Try Google Translate API (Primary fast & free provider)
+    # 2. Try Google Translate API (with resilient client tokens)
     if not translated_result:
-        try:
-            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={effective_source}&tl={target_lang}&dt=t&q={urllib.parse.quote(text_clean)}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=4) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                if data and isinstance(data, list) and len(data) > 0 and data[0]:
-                    translated_parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
-                    translated_text = "".join(translated_parts).strip()
-                    if translated_text and not translated_text.startswith("PLEASE SELECT"):
-                        translated_result = translated_text
-        except Exception as e:
-            logger.debug(f"Google Translate endpoint failed: {e}")
+        google_clients = ['dict-chrome-ex', 'it', 'at', 'gtx']
+        for g_client in google_clients:
+            try:
+                url = f"https://translate.googleapis.com/translate_a/single?client={g_client}&sl={effective_source}&tl={target_lang}&dt=t&q={urllib.parse.quote(text_clean)}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                with urllib.request.urlopen(req, timeout=3) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                    if data and isinstance(data, list) and len(data) > 0 and data[0]:
+                        translated_parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
+                        translated_text = "".join(translated_parts).strip()
+                        if translated_text and not translated_text.startswith("PLEASE SELECT") and translated_text.lower() != text_clean.lower():
+                            translated_result = translated_text
+                            break
+            except Exception as e:
+                logger.debug(f"Google Translate ({g_client}) failed: {e}")
 
     # 3. Try deep_translator library
     if not translated_result:
@@ -150,7 +153,7 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
         except Exception as e:
             logger.debug(f"deep_translator failed: {e}")
 
-    # 4. Try MyMemory API (with circuit breaker on HTTP 429)
+    # 4. Try MyMemory API (with circuit breaker on HTTP 429 and matches fallback)
     global _mymemory_blocked_until
     import time
     if not translated_result and time.time() > _mymemory_blocked_until:
@@ -161,10 +164,18 @@ def perform_single_translation(text: str, source_lang: str, target_lang: str) ->
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=4) as response:
                 data = json.loads(response.read().decode('utf-8'))
-                if data and "responseData" in data and "translatedText" in data["responseData"]:
-                    status = str(data.get("responseStatus", "200"))
-                    translated = data["responseData"]["translatedText"].strip()
-                    if status == "200" and translated and not translated.startswith("PLEASE SELECT") and not translated.startswith("MYMEMORY WARNING"):
+                if data:
+                    translated = ""
+                    if "responseData" in data and "translatedText" in data["responseData"]:
+                        translated = (data["responseData"]["translatedText"] or "").strip()
+                    if not translated or translated.lower() == text_clean.lower():
+                        matches = data.get("matches", [])
+                        for m in matches:
+                            candidate = (m.get("translation") or "").strip()
+                            if candidate and candidate.lower() != text_clean.lower() and not candidate.startswith("PLEASE SELECT") and not candidate.startswith("MYMEMORY WARNING"):
+                                translated = candidate
+                                break
+                    if translated and not translated.startswith("PLEASE SELECT") and not translated.startswith("MYMEMORY WARNING"):
                         translated_result = translated
         except Exception as e:
             if "429" in str(e):

@@ -254,16 +254,20 @@
 
         </LinearLayout>
 
-        <!-- Central Directional Arrow -->
+        <!-- Central Directional Arrow (Tap to Translate) -->
         <TextView
             android:id="@+id/tvLangArrow"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
             android:text="➔"
             android:textColor="#475569"
-            android:textSize="11sp"
+            android:textSize="14sp"
             android:textStyle="bold"
-            android:layout_marginHorizontal="3dp" />
+            android:paddingHorizontal="6dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginHorizontal="2dp" />
 
         <!-- Target Language Pill Card -->
         <LinearLayout
