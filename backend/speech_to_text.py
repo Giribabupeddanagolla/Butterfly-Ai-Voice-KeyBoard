@@ -345,21 +345,28 @@ class SpeechToTextService:
                         if fallback_lang in SR_LANG_MAP:
                             candidate_langs.append(SR_LANG_MAP[fallback_lang])
                     
-                    if "en-IN" not in candidate_langs:
-                        candidate_langs.append("en-IN")
-                    if "te-IN" not in candidate_langs:
-                        candidate_langs.append("te-IN")
+                    # For auto-detection, support major Indian languages & English
+                    for default_sr in ["te-IN", "hi-IN", "en-IN", "ml-IN", "ta-IN", "kn-IN", "pa-IN", "bn-IN", "mr-IN", "gu-IN"]:
+                        if default_sr not in candidate_langs:
+                            candidate_langs.append(default_sr)
                     
                     seen = set()
-                    target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))][:2]
+                    target_langs = [x for x in candidate_langs if not (x in seen or seen.add(x))]
                     
                     for sr_lang in target_langs:
                         try:
                             transcribed_text = r.recognize_google(audio_data, language=sr_lang)
                             if transcribed_text and transcribed_text.strip():
                                 detected_lang = detect_language_from_text(transcribed_text.strip())
-                                final_lang = language if (language and language != "auto") else detected_lang
-                                logger.info(f"Google SR fallback successful ({sr_lang}): {transcribed_text[:30]}...")
+                                inv_sr_map = {v: k for k, v in SR_LANG_MAP.items()}
+                                sr_base = inv_sr_map.get(sr_lang, "en")
+                                if detected_lang and detected_lang != "en":
+                                    final_lang = detected_lang
+                                else:
+                                    final_lang = sr_base if sr_base != "en" else detected_lang
+                                if language and language != "auto":
+                                    final_lang = language
+                                logger.info(f"Google SR fallback successful ({sr_lang} -> {final_lang}): {transcribed_text[:30]}...")
                                 punct_text = apply_smart_punctuation(transcribed_text.strip(), final_lang)
                                 return {
                                     "success": True,

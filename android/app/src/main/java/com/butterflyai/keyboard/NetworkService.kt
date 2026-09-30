@@ -16,6 +16,7 @@ data class TranscriptionResult(
     val originalText: String = "",
     val translatedText: String = "",
     val language: String = "en",
+    val languageName: String = "",
     val error: String? = null
 )
 
@@ -153,6 +154,7 @@ class NetworkService(private val context: Context) {
                     ?: ""
 
                 val detectedLang = jsonObj.get("language")?.asString ?: sourceLanguage
+                val detectedLangName = jsonObj.get("language_name")?.asString ?: ""
 
                 var finalTranslatedText = jsonObj.get("translation")?.asString
                     ?: jsonObj.get("translated_text")?.asString
@@ -173,7 +175,8 @@ class NetworkService(private val context: Context) {
                     success = true,
                     originalText = originalText,
                     translatedText = finalTranslatedText,
-                    language = detectedLang
+                    language = detectedLang,
+                    languageName = detectedLangName
                 )
             }
         } catch (e: Exception) {
