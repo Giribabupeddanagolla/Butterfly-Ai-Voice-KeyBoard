@@ -685,7 +685,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         // Key Listeners Setup
         setupKeyListeners(inputView)
 
-        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
         val initialTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
         applyTheme(initialTheme, inputView)
 
