@@ -18,7 +18,7 @@ if str(BACKEND_DIR) not in sys.path:
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from config import config
@@ -869,15 +869,29 @@ def search_endpoint(q: str = Query("", alias="q")):
     return {"success": True, "query": query_clean, "results": results}
 
 @app.get("/downloads/butterfly-ai-keyboard.apk")
-def download_apk_endpoint():
+def download_apk_endpoint(source: Optional[str] = Query(None)):
+    github_cdn_url = "https://github.com/Giribabupeddanagolla/Butterfly-Ai-Voice-KeyBoard/releases/latest/download/butterfly-ai-keyboard.apk"
     apk_file = Path(__file__).resolve().parent.parent / "frontend" / "downloads" / "butterfly-ai-keyboard.apk"
+
+    # Default to direct GitHub CDN redirect to prevent mobile browser download truncation and Render timeout issues
+    if source != "local":
+        return RedirectResponse(url=github_cdn_url, status_code=302)
+
     if apk_file.exists():
         return FileResponse(
             path=str(apk_file),
             filename="butterfly-ai-keyboard-v1.0.apk",
-            media_type="application/vnd.android.package-archive"
+            media_type="application/vnd.android.package-archive",
+            headers={
+                "Cache-Control": "no-cache",
+                "Content-Disposition": 'attachment; filename="butterfly-ai-keyboard-v1.0.apk"'
+            }
         )
-    raise HTTPException(status_code=404, detail="APK not found")
+    return RedirectResponse(url=github_cdn_url, status_code=302)
+
+@app.get("/downloads/butterfly-ai-keyboard-v1.0.apk")
+def download_apk_v1_endpoint(source: Optional[str] = Query(None)):
+    return download_apk_endpoint(source=source)
 
 # Mount Frontend directory at root `/`
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"

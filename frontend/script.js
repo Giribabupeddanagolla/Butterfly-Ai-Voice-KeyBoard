@@ -4221,12 +4221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. DOWNLOAD FLOWS (Section 11)
         function triggerAndroidDownload() {
             showToast('Download Started', 'Downloading butterfly-ai-keyboard-v1.0.apk...');
-            const link = document.createElement('a');
-            link.href = DOWNLOADS_CONFIG.android.url;
-            link.download = DOWNLOADS_CONFIG.android.filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Direct navigation triggers the native Android package download manager cleanly
+            window.location.href = DOWNLOADS_CONFIG.android.url;
         }
 
         if (btnDownloadAndroid) {
