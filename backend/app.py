@@ -256,7 +256,7 @@ def translate_endpoint(request: TranslateRequest):
     src_lang = request.source_language or "auto"
     tgt_lang = request.target_language or request.translation_language or request.text_language or "en"
     if tgt_lang == "auto" or not tgt_lang.strip():
-        tgt_lang = "te" if src_lang != "te" else "en"
+        tgt_lang = "en"
     
     if src_lang != "auto" and src_lang == tgt_lang:
         return {
@@ -381,7 +381,7 @@ async def transcribe_endpoint(
     should_translate = is_translate_on and is_translate_on.lower() in ["true", "1", "on", "yes"]
     tgt_lang = target_language or translation_language or ""
     if not tgt_lang or tgt_lang == "auto":
-        tgt_lang = "te" if detected_lang != "te" else "en"
+        tgt_lang = "en"
 
     translated_text = spoken_text
     if should_translate and tgt_lang != detected_lang and spoken_text.strip():

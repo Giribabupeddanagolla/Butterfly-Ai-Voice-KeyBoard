@@ -479,11 +479,26 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
-        spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
+
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        val savedSourceCode = prefs.getString("source_lang_code", "auto") ?: "auto"
+        val savedSourcePos = languages.indexOfFirst { it.first == savedSourceCode }.let { if (it >= 0) it else 0 }
+        spinnerSourceLang.setSelection(savedSourcePos)
+
+        val savedTargetCode = prefs.getString("target_lang_code", "en") ?: "en"
+        val savedTargetPos = languages.indexOfFirst { it.first == savedTargetCode }.let { if (it >= 0) it else 2 }
+        spinnerTargetLang.setSelection(savedTargetPos) // Default target to English (direct English)
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (!isSpinnerInitialized) return
+                if (parent == spinnerSourceLang) {
+                    val code = languages.getOrNull(position)?.first ?: "auto"
+                    prefs.edit().putString("source_lang_code", code).apply()
+                } else if (parent == spinnerTargetLang) {
+                    val code = languages.getOrNull(position)?.first ?: "en"
+                    prefs.edit().putString("target_lang_code", code).apply()
+                }
                 retranslateAndUpdate(showEmptyToast = false)
             }
 
@@ -1354,7 +1369,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val srcLang = languages[spinnerSourceLang.selectedItemPosition].first
         var tgtLang = languages[spinnerTargetLang.selectedItemPosition].first
         if (isTranslateOn && (tgtLang == "auto" || tgtLang.isBlank())) {
-            tgtLang = "te" // Default target language to Telugu
+            tgtLang = "en" // Default target language to English
         }
 
         if (currentAudio != null && currentAudio.exists() && currentAudio.length() > 0) {
@@ -1393,7 +1408,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         }
 
                         if (isTranslateOn) {
-                            val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
+                            val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "en" else tgtLang
                             if (lastTranslatedText.isNotBlank() && lastTranslatedText != lastOriginalText) {
                                 lastFinalText = lastTranslatedText
                             } else {
@@ -1647,7 +1662,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (!::spinnerSourceLang.isInitialized || !::spinnerTargetLang.isInitialized) return
 
         val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
-        val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "te"
+        val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "en"
         val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
 
         retranslateJob?.cancel()

@@ -345,8 +345,8 @@ class SpeechToTextService:
                         if fallback_lang in SR_LANG_MAP:
                             candidate_langs.append(SR_LANG_MAP[fallback_lang])
                     
-                    # For auto-detection, support major Indian languages & English
-                    for default_sr in ["te-IN", "hi-IN", "en-IN", "ml-IN", "ta-IN", "kn-IN", "pa-IN", "bn-IN", "mr-IN", "gu-IN"]:
+                    # For auto-detection, prioritize English first, followed by major Indian languages
+                    for default_sr in ["en-IN", "en-US", "te-IN", "hi-IN", "ta-IN", "kn-IN", "ml-IN", "mr-IN", "bn-IN", "gu-IN", "pa-IN"]:
                         if default_sr not in candidate_langs:
                             candidate_langs.append(default_sr)
                     
@@ -362,8 +362,10 @@ class SpeechToTextService:
                                 sr_base = inv_sr_map.get(sr_lang, "en")
                                 if detected_lang and detected_lang != "en":
                                     final_lang = detected_lang
+                                elif sr_base == "en" or detected_lang == "en":
+                                    final_lang = "en"
                                 else:
-                                    final_lang = sr_base if sr_base != "en" else detected_lang
+                                    final_lang = detected_lang or sr_base or "en"
                                 if language and language != "auto":
                                     final_lang = language
                                 logger.info(f"Google SR fallback successful ({sr_lang} -> {final_lang}): {transcribed_text[:30]}...")
