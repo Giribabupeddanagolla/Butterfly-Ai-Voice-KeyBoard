@@ -212,6 +212,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private var lastTranslatedText = ""
     private var lastFinalText = ""
     private var lastCommittedText = ""
+    private var lastDetectedLanguage = "auto"
     private var isSpinnerInitialized = false
     private var retranslateJob: Job? = null
 
@@ -371,18 +372,39 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         spinnerSourceLang.adapter = mainSourceAdapter
         spinnerTargetLang.adapter = mainTargetAdapter
         spinnerTargetLang.setSelection(1) // Default target to Telugu (తెలుగు)
+        var previousTargetPos = 1
+        var previousSourcePos = 0
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (!isSpinnerInitialized) return
-                retranslateAndUpdate(showEmptyToast = false)
+                if (parent == spinnerTargetLang) {
+                    if (position != previousTargetPos) {
+                        previousTargetPos = position
+                        // When user picks a new target language, ensure translation is enabled and update
+                        if (!isTranslateOn) {
+                            isTranslateOn = true
+                            updateTranslateToggleUI()
+                        }
+                        retranslateAndUpdate(showEmptyToast = false)
+                    }
+                } else if (parent == spinnerSourceLang) {
+                    if (position != previousSourcePos) {
+                        previousSourcePos = position
+                        if (isTranslateOn) {
+                            retranslateAndUpdate(showEmptyToast = false)
+                        }
+                    }
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         spinnerSourceLang.onItemSelectedListener = spinnerListener
         spinnerTargetLang.onItemSelectedListener = spinnerListener
-        isSpinnerInitialized = true
+        spinnerTargetLang.post {
+            isSpinnerInitialized = true
+        }
 
         // Translation ON/OFF Toggle
         btnToggleTranslate.setOnClickListener {
@@ -951,7 +973,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (!checkMicPermission()) return
 
         try {
-            lastSpokenText = ""
             audioFile = File(cacheDir, "butterfly_voice_${System.currentTimeMillis()}.m4a")
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(this)
@@ -1076,6 +1097,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     if (result.success && result.originalText.isNotBlank()) {
                         lastSpokenText = result.originalText
                         lastOriginalText = result.originalText
+                        lastDetectedLanguage = if (result.language.isNotBlank()) result.language else "auto"
                         lastTranslatedText = result.translatedText
 
                         val targetName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
@@ -1324,7 +1346,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private fun retranslateAndUpdate(showEmptyToast: Boolean = false) {
         if (!::spinnerSourceLang.isInitialized || !::spinnerTargetLang.isInitialized) return
 
-        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+        val selectedSrc = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+        val srcLang = if (selectedSrc != "auto") selectedSrc else if (lastDetectedLanguage.isNotBlank() && lastDetectedLanguage != "auto") lastDetectedLanguage else "auto"
         val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "te"
         val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
 
@@ -1335,7 +1358,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (textToRestore.isNotBlank()) {
                 lastFinalText = textToRestore
                 if (::lblOriginalHeader.isInitialized) {
-                    lblOriginalHeader.text = if (lastSpokenText.isNotBlank()) "You said:" else "Original:"
+                    lblOriginalHeader.text = if (lastSpokenText.isNotBlank()) "You said:" else "You typed:"
                     lblOriginalHeader.visibility = View.VISIBLE
                 }
                 tvOriginalText.text = textToRestore
@@ -1344,8 +1367,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 tvTranslatedText.visibility = View.GONE
 
                 val ic = currentInputConnection
-                if (ic != null && lastCommittedText.isNotBlank()) {
-                    ic.deleteSurroundingText(lastCommittedText.length, 0)
+                if (ic != null) {
+                    val before = ic.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                    val toDelete = when {
+                        lastCommittedText.isNotBlank() && before.endsWith(lastCommittedText) -> lastCommittedText.length
+                        lastTranslatedText.isNotBlank() && before.endsWith(lastTranslatedText) -> lastTranslatedText.length
+                        lastFinalText.isNotBlank() && before.endsWith(lastFinalText) -> lastFinalText.length
+                        lastCommittedText.isNotBlank() -> lastCommittedText.length
+                        else -> 0
+                    }
+                    if (toDelete > 0) {
+                        ic.deleteSurroundingText(toDelete, 0)
+                    }
                     ic.commitText(textToRestore, 1)
                     lastCommittedText = textToRestore
                     tvInsertedNotice.text = "✓ Showing original text (Trans: OFF)"
@@ -1359,9 +1392,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val activeSelected = ic?.getSelectedText(0)?.toString()?.trim() ?: ""
         val activeBeforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString()?.trim() ?: ""
 
-        val sourceTextToTranslate: String
         val isExplicitSelection = activeSelected.isNotBlank() && activeSelected != lastCommittedText && activeSelected != lastTranslatedText
 
+        val sourceTextToTranslate: String
         if (lastSpokenText.isNotBlank()) {
             // Authentic spoken speech ALWAYS takes top priority for "You said:"!
             // Never allow translated text from editor or activeSelected to overwrite what the user spoke!
@@ -1387,7 +1420,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             // Authentic original text exists
             sourceTextToTranslate = lastOriginalText
             if (::lblOriginalHeader.isInitialized) {
-                lblOriginalHeader.text = "You said:"
+                lblOriginalHeader.text = if (lastSpokenText.isNotBlank()) "You said:" else "You typed:"
                 lblOriginalHeader.visibility = View.VISIBLE
             }
             tvOriginalText.text = lastOriginalText
@@ -1405,7 +1438,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         } else if (lastOriginalText.isNotBlank()) {
             sourceTextToTranslate = lastOriginalText
             if (::lblOriginalHeader.isInitialized) {
-                lblOriginalHeader.text = "You said:"
+                lblOriginalHeader.text = if (lastSpokenText.isNotBlank()) "You said:" else "You typed:"
                 lblOriginalHeader.visibility = View.VISIBLE
             }
             tvOriginalText.text = lastOriginalText
@@ -1421,11 +1454,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             return
         }
 
-        // Always display original spoken text in tvOriginalText
-        val originalDisplay = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText
-        tvOriginalText.text = originalDisplay
+        // Always display original spoken/typed text in tvOriginalText
+        if (lastSpokenText.isNotBlank()) {
+            lblOriginalHeader.text = "You said:"
+            tvOriginalText.text = lastSpokenText
+        } else {
+            lblOriginalHeader.text = "You typed:"
+            tvOriginalText.text = lastOriginalText
+        }
         tvOriginalText.visibility = View.VISIBLE
 
+        lblTranslationHeader.text = "Translation ($targetLangName):"
+        lblTranslationHeader.visibility = View.VISIBLE
         tvInsertedNotice.text = "🔄 Translating to $targetLangName..."
         tvInsertedNotice.visibility = View.VISIBLE
 
@@ -1440,8 +1480,13 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     lastFinalText = translated
 
                     // "You said:" strictly displays authentic spoken or original input!
-                    val finalOriginalDisplay = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText
-                    tvOriginalText.text = finalOriginalDisplay
+                    if (lastSpokenText.isNotBlank()) {
+                        lblOriginalHeader.text = "You said:"
+                        tvOriginalText.text = lastSpokenText
+                    } else {
+                        lblOriginalHeader.text = "You typed:"
+                        tvOriginalText.text = lastOriginalText
+                    }
                     tvOriginalText.visibility = View.VISIBLE
 
                     lblTranslationHeader.text = "Translation ($targetLangName):"
@@ -1454,16 +1499,20 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         if (isExplicitSelection) {
                             currentIc.commitText(translated, 1)
                             lastCommittedText = translated
-                        } else if (lastCommittedText.isNotBlank()) {
-                            // Safely replace only the previously committed text!
-                            currentIc.deleteSurroundingText(lastCommittedText.length, 0)
-                            currentIc.commitText(translated, 1)
-                            lastCommittedText = translated
-                        } else if (activeBeforeCursor.isNotBlank() && activeBeforeCursor != translated) {
-                            currentIc.deleteSurroundingText(activeBeforeCursor.length, 0)
-                            currentIc.commitText(translated, 1)
-                            lastCommittedText = translated
                         } else {
+                            val before = currentIc.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                            val toDelete = when {
+                                lastCommittedText.isNotBlank() && before.endsWith(lastCommittedText) -> lastCommittedText.length
+                                lastTranslatedText.isNotBlank() && before.endsWith(lastTranslatedText) -> lastTranslatedText.length
+                                lastFinalText.isNotBlank() && before.endsWith(lastFinalText) -> lastFinalText.length
+                                lastOriginalText.isNotBlank() && before.endsWith(lastOriginalText) -> lastOriginalText.length
+                                lastCommittedText.isNotBlank() -> lastCommittedText.length
+                                activeBeforeCursor.isNotBlank() && before == activeBeforeCursor -> before.length
+                                else -> 0
+                            }
+                            if (toDelete > 0) {
+                                currentIc.deleteSurroundingText(toDelete, 0)
+                            }
                             currentIc.commitText(translated, 1)
                             lastCommittedText = translated
                         }
