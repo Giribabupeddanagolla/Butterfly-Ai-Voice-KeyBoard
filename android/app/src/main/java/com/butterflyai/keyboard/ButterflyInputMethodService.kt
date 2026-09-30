@@ -690,7 +690,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         applyTheme(initialTheme, inputView)
 
         setKeyboardState(KeyboardState.IDLE)
-        showDefaultPhrases()
+        hideSuggestions()
         return inputView
     }
 
@@ -749,7 +749,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (!selectedText.isNullOrEmpty()) {
             ic.commitText("", 1)
             currentTypingWord.setLength(0)
-            showDefaultPhrases()
+            hideSuggestions()
         } else {
             ic.deleteSurroundingText(1, 0)
             if (currentTypingWord.isNotEmpty()) {
@@ -758,7 +758,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (currentTypingWord.isNotEmpty()) {
                 updateWordSuggestions(currentTypingWord.toString())
             } else {
-                showDefaultPhrases()
+                hideSuggestions()
             }
         }
     }
@@ -806,7 +806,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             view.findViewById<Button>(id)?.setOnClickListener {
                 currentInputConnection?.commitText(charStr, 1)
                 currentTypingWord.setLength(0)
-                showDefaultPhrases()
+                hideSuggestions()
             }
         }
 
@@ -858,7 +858,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val commaListener = View.OnClickListener {
             currentInputConnection?.commitText(",", 1)
             currentTypingWord.setLength(0)
-            showDefaultPhrases()
+            hideSuggestions()
         }
         view.findViewById<Button>(R.id.btnComma)?.setOnClickListener(commaListener)
         view.findViewById<Button>(R.id.btnCommaNum)?.setOnClickListener(commaListener)
@@ -866,7 +866,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val periodListener = View.OnClickListener {
             currentInputConnection?.commitText(".", 1)
             currentTypingWord.setLength(0)
-            showDefaultPhrases()
+            hideSuggestions()
             checkAutoCapitalization()
         }
         view.findViewById<Button>(R.id.btnPeriod)?.setOnClickListener(periodListener)
@@ -876,7 +876,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val spaceListener = View.OnClickListener {
             currentInputConnection?.commitText(" ", 1)
             currentTypingWord.setLength(0)
-            showDefaultPhrases()
+            hideSuggestions()
             checkAutoCapitalization()
         }
         listOf(R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
@@ -915,7 +915,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         // 9. Enter Keys
         val enterListener = View.OnClickListener {
             currentTypingWord.setLength(0)
-            showDefaultPhrases()
+            hideSuggestions()
             val ic = currentInputConnection
             if (ic != null) {
                 val editorInfo = currentInputEditorInfo
@@ -945,7 +945,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         currentTypingWord.setLength(0)
-        showDefaultPhrases()
+        hideSuggestions()
         if (!isCapsLock) {
             isShifted = true
         }
@@ -1006,29 +1006,27 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 qwerty?.visibility = View.VISIBLE
                 numbers?.visibility = View.GONE
                 emoji?.visibility = View.GONE
-                scrollSuggestions?.visibility = View.VISIBLE
                 if (currentTypingWord.isNotEmpty()) {
                     updateWordSuggestions(currentTypingWord.toString())
                 } else {
-                    showDefaultPhrases()
+                    hideSuggestions()
                 }
             }
             KeyboardMode.NUMBERS -> {
                 qwerty?.visibility = View.GONE
                 numbers?.visibility = View.VISIBLE
                 emoji?.visibility = View.GONE
-                scrollSuggestions?.visibility = View.VISIBLE
                 if (currentTypingWord.isNotEmpty()) {
                     updateWordSuggestions(currentTypingWord.toString())
                 } else {
-                    showDefaultPhrases()
+                    hideSuggestions()
                 }
             }
             KeyboardMode.EMOJI -> {
                 qwerty?.visibility = View.GONE
                 numbers?.visibility = View.GONE
                 emoji?.visibility = View.VISIBLE
-                scrollSuggestions?.visibility = View.GONE
+                hideSuggestions()
                 loadEmojiCategory("smileys", rootView)
             }
         }
@@ -1091,7 +1089,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 setOnClickListener {
                     currentInputConnection?.commitText(emojiStr, 1)
                     currentTypingWord.setLength(0)
-                    showDefaultPhrases()
+                    hideSuggestions()
                 }
             }
             gridEmoji.addView(cell)
@@ -1102,20 +1100,56 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         return (dp * resources.displayMetrics.density).toInt()
     }
 
+    private fun hideSuggestions() {
+        layoutSuggestionsContainer?.removeAllViews()
+        scrollSuggestions?.visibility = View.GONE
+    }
+
     private fun showDefaultPhrases() {
-        populateSuggestions(defaultQuickPhrases, isWordPrediction = false)
+        hideSuggestions()
     }
 
     private fun updateWordSuggestions(prefix: String) {
         if (prefix.isBlank()) {
-            showDefaultPhrases()
+            hideSuggestions()
             return
         }
-        val suggestions = getWordSuggestions(prefix)
-        if (suggestions.isEmpty()) {
-            showDefaultPhrases()
+        val lowerPrefix = prefix.lowercase(Locale.ROOT)
+
+        // 1. Direct phrase matches starting with prefix (e.g. "Hi", "Hello", "How are you?")
+        val directPhraseMatches = defaultQuickPhrases.filter { phrase ->
+            phrase.startsWith(lowerPrefix, ignoreCase = true)
+        }
+
+        // 2. Phrase matches containing words with prefix (e.g. "fine" -> "I am fine")
+        val containedPhraseMatches = defaultQuickPhrases.filter { phrase ->
+            !phrase.startsWith(lowerPrefix, ignoreCase = true) &&
+            phrase.split(" ", "'", "?", "!").any { it.startsWith(lowerPrefix, ignoreCase = true) }
+        }
+
+        // 3. Dictionary word suggestions
+        val wordMatches = getWordSuggestions(prefix, limit = 15)
+
+        // 4. Combine results without duplicates
+        val combined = mutableListOf<String>()
+        for (item in directPhraseMatches) {
+            combined.add(item)
+        }
+        for (item in containedPhraseMatches) {
+            if (combined.none { it.equals(item, ignoreCase = true) }) {
+                combined.add(item)
+            }
+        }
+        for (item in wordMatches) {
+            if (combined.none { it.equals(item, ignoreCase = true) }) {
+                combined.add(item)
+            }
+        }
+
+        if (combined.isEmpty()) {
+            hideSuggestions()
         } else {
-            populateSuggestions(suggestions, isWordPrediction = true)
+            populateSuggestions(combined)
         }
     }
 
@@ -1139,7 +1173,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
-    private fun populateSuggestions(items: List<String>, isWordPrediction: Boolean) {
+    private fun populateSuggestions(items: List<String>) {
         val container = layoutSuggestionsContainer ?: return
         val scroll = scrollSuggestions ?: return
         container.removeAllViews()
@@ -1179,7 +1213,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
                 if (palette.isDark) {
                     setBackgroundResource(R.drawable.bg_suggestion_chip_dark)
-                    if (isWordPrediction && index == 0) {
+                    if (index == 0) {
                         backgroundTintList = ColorStateList.valueOf(palette.ctrlKeyBg)
                         setTextColor(palette.ctrlKeyText)
                         setTypeface(null, Typeface.BOLD)
@@ -1191,7 +1225,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     }
                 } else {
                     setBackgroundResource(R.drawable.bg_suggestion_chip)
-                    if (isWordPrediction && index == 0) {
+                    if (index == 0) {
                         backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E0F2FE"))
                         setTextColor(Color.parseColor("#0284C7"))
                         setTypeface(null, Typeface.BOLD)
@@ -1203,11 +1237,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 }
 
                 setOnClickListener {
-                    if (isWordPrediction) {
-                        insertWordSuggestion(text)
-                    } else {
-                        insertQuickPhrase(text)
-                    }
+                    insertSuggestion(text)
                 }
             }
             container.addView(chip)
@@ -1218,7 +1248,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
-    private fun insertWordSuggestion(word: String) {
+    private fun insertSuggestion(text: String) {
         val ic = currentInputConnection ?: return
         val typedLen = if (currentTypingWord.isNotEmpty()) {
             currentTypingWord.length
@@ -1229,17 +1259,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (typedLen > 0) {
             ic.deleteSurroundingText(typedLen, 0)
         }
-        ic.commitText("$word ", 1)
+        ic.commitText("$text ", 1)
         currentTypingWord.setLength(0)
         checkAutoCapitalization()
-        showDefaultPhrases()
+        hideSuggestions()
+    }
+
+    private fun insertWordSuggestion(word: String) {
+        insertSuggestion(word)
     }
 
     private fun insertQuickPhrase(phrase: String) {
-        val ic = currentInputConnection ?: return
-        ic.commitText("$phrase ", 1)
-        currentTypingWord.setLength(0)
-        checkAutoCapitalization()
+        insertSuggestion(phrase)
     }
 
     private fun checkMicPermission(): Boolean {
@@ -1907,6 +1938,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        currentTypingWord.setLength(0)
+        hideSuggestions()
         if (currentState == KeyboardState.RECORDING) {
             cancelRecording()
         }
@@ -2282,7 +2315,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         if (currentTypingWord.isNotEmpty()) {
             updateWordSuggestions(currentTypingWord.toString())
         } else {
-            showDefaultPhrases()
+            hideSuggestions()
         }
     }
 

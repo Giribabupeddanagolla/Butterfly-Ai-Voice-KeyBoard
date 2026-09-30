@@ -692,7 +692,7 @@
             android:fillViewport="false"
             android:layout_marginHorizontal="2dp"
             android:layout_marginBottom="2dp"
-            android:visibility="visible">
+            android:visibility="gone">
 
             <LinearLayout
                 android:id="@+id/layoutSuggestionsContainer"
