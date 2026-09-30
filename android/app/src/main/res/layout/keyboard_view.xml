@@ -682,6 +682,27 @@
         android:layout_marginTop="1dp"
         android:visibility="visible">
 
+        <!-- HORIZONTAL SUGGESTIONS & PREDICTIVE WORDS STRIP -->
+        <HorizontalScrollView
+            android:id="@+id/scrollSuggestions"
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:scrollbars="none"
+            android:overScrollMode="never"
+            android:fillViewport="false"
+            android:layout_marginHorizontal="2dp"
+            android:layout_marginBottom="2dp"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:id="@+id/layoutSuggestionsContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="2dp" />
+        </HorizontalScrollView>
+
         <!-- 1. QWERTY LETTERS VIEW -->
         <LinearLayout
             android:id="@+id/keyboardQwertyView"

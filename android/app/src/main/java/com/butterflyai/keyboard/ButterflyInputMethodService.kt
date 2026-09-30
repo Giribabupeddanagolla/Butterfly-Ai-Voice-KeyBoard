@@ -12,6 +12,7 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.media.MediaRecorder
@@ -88,6 +89,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     private lateinit var btnToggleKeyboard: Button
     private lateinit var keyboardKeysLayout: LinearLayout
+    private var scrollSuggestions: HorizontalScrollView? = null
+    private var layoutSuggestionsContainer: LinearLayout? = null
+    private val currentTypingWord = StringBuilder()
     private lateinit var spinnerSourceLang: Spinner
     private lateinit var spinnerTargetLang: Spinner
     private lateinit var btnCycleTheme: Button
@@ -206,6 +210,106 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         )
     )
 
+    private val defaultQuickPhrases = listOf(
+        "Hi", "Hello", "How are you?", "What are you doing?", "I am fine",
+        "Thank you", "Thanks a lot", "Good morning", "Good night", "Good evening",
+        "Where are you?", "Call you later", "I'm busy right now", "See you soon",
+        "Take care", "Ok", "Sure", "No problem", "Yes", "No", "Please call me",
+        "Can we talk?", "I'm on my way", "All the best", "Sounds good", "Have a nice day"
+    )
+
+    private val wordDictionary: List<String> = listOf(
+        // High-frequency H words (prioritized for user request: "hi, hello, how, have")
+        "hi", "hello", "how", "have", "here", "help", "hope", "hey", "home", "happy",
+        "has", "had", "having", "hear", "heard", "hard", "high", "huge", "hand", "hands",
+        "hold", "hour", "hours", "house", "heart", "head", "health", "half", "hate", "hot",
+        "hit", "hair", "happen", "happened", "history", "holiday", "honest", "hospital", "human",
+        "hurry", "husband",
+        // A words
+        "and", "are", "about", "all", "also", "always", "any", "after", "again", "am", "an",
+        "as", "at", "ask", "asked", "able", "above", "across", "action", "actually", "almost",
+        "alone", "already", "although", "among", "amount", "answer", "anyone", "anything", "anyway",
+        "app", "apply", "area", "around", "arrive", "art", "away", "awesome",
+        // B words
+        "be", "been", "but", "by", "back", "because", "before", "being", "best", "better",
+        "between", "both", "busy", "bring", "brother", "build", "building", "built", "business",
+        "buy", "bye", "beautiful", "believe", "big", "book", "boy", "break", "bad", "baby",
+        // C words
+        "can", "call", "called", "calling", "came", "come", "coming", "could", "care", "case",
+        "change", "check", "city", "clear", "clearly", "close", "company", "complete", "continue",
+        "cool", "copy", "correct", "cost", "country", "couple", "course", "create", "current",
+        // D words
+        "do", "did", "does", "done", "doing", "don't", "day", "days", "dear", "different",
+        "difficult", "dinner", "direct", "doctor", "down", "drive", "during", "dead", "deal",
+        // E words
+        "every", "everyone", "everything", "each", "early", "easy", "easily", "eat", "email",
+        "end", "enjoy", "enough", "enter", "even", "evening", "ever", "everywhere", "example",
+        "excellent", "excited", "expect", "experience", "explain",
+        // F words
+        "for", "from", "fine", "find", "first", "feel", "few", "family", "fast", "favorite",
+        "final", "finally", "finish", "finished", "follow", "food", "free", "friend", "friends",
+        "full", "fun", "funny", "future",
+        // G words
+        "good", "great", "get", "getting", "go", "going", "give", "given", "giving", "glad",
+        "god", "gone", "got", "game", "girl", "group", "grow", "guess", "guy", "guys",
+        // I words
+        "i", "i'm", "i'll", "i've", "is", "it", "its", "in", "if", "into", "idea", "important",
+        "inside", "instead", "interest", "interesting", "issue",
+        // J words
+        "just", "job", "join", "joke", "journey", "joy", "judge", "jump",
+        // K words
+        "know", "knowing", "known", "knows", "keep", "keeping", "key", "kind", "knew", "kid", "kids", "kitchen",
+        // L words
+        "like", "look", "looking", "love", "later", "let", "let's", "last", "leave", "left",
+        "life", "light", "line", "listen", "little", "live", "living", "location", "long", "lot", "lots", "lunch",
+        // M words
+        "me", "my", "myself", "more", "make", "making", "many", "much", "must", "may", "maybe",
+        "mean", "meet", "meeting", "message", "might", "minute", "minutes", "miss", "money",
+        "month", "morning", "most", "mother", "move", "music",
+        // N words
+        "no", "not", "now", "new", "name", "need", "needed", "needs", "never", "next", "nice",
+        "night", "nine", "normal", "nothing", "number",
+        // O words
+        "ok", "okay", "on", "of", "or", "one", "ones", "our", "out", "outside", "other", "others",
+        "only", "open", "order", "over", "own", "office", "often", "once", "online",
+        // P words
+        "please", "people", "part", "party", "pay", "person", "phone", "photo", "picture",
+        "place", "plan", "play", "point", "possible", "post", "power", "problem", "problems",
+        "program", "project", "put",
+        // Q words
+        "quick", "quickly", "question", "questions", "quite", "quality", "quiet",
+        // R words
+        "really", "right", "read", "reading", "ready", "real", "reason", "remember", "reply",
+        "report", "rest", "result", "return", "road", "room", "run", "running",
+        // S words
+        "so", "see", "seen", "say", "saying", "said", "some", "someone", "something", "same",
+        "send", "sending", "sent", "she", "should", "show", "side", "simple", "simply", "since",
+        "sleep", "small", "smile", "sorry", "speak", "special", "start", "stay", "still", "stop",
+        "story", "student", "study", "such", "sure", "system",
+        // T words
+        "the", "to", "that", "that's", "this", "there", "there's", "they", "they're", "their",
+        "then", "them", "think", "thinking", "time", "times", "take", "taking", "talk", "talking",
+        "tell", "than", "thank", "thanks", "thing", "things", "through", "today", "together",
+        "tomorrow", "tonight", "too", "true", "try", "trying", "two", "type",
+        // U words
+        "up", "us", "use", "used", "under", "understand", "until", "upon", "urgent", "user", "usually",
+        // V words
+        "very", "video", "view", "visit", "voice", "value",
+        // W words
+        "we", "with", "what", "what's", "when", "where", "who", "which", "why", "will", "would",
+        "way", "well", "went", "were", "want", "wanted", "wants", "water", "week", "weekend",
+        "welcome", "wish", "without", "word", "words", "work", "working", "world", "worry", "write",
+        // Y words
+        "you", "you're", "you'll", "you've", "your", "yours", "yourself", "yes", "yeah", "year",
+        "years", "yesterday", "yet", "young",
+        // Z words
+        "zero", "zone", "zoom",
+        // Popular Indian chat words transliterated in English
+        "namaste", "bagunnara", "ela", "unnaru", "enti", "cheppu", "avunu", "kadu", "telsu",
+        "eppudu", "ekkada", "ravali", "vasthunna", "chusthunna", "bhayya", "bro", "dost",
+        "kya", "hai", "haan", "theek", "shukriya", "dhanyavadalu", "krupaya", "kaise", "acha", "kal"
+    )
+
     private var isKeyboardGridVisible = true
     private var lastSpokenText = ""
     private var lastSpokenLanguageCode = ""
@@ -298,6 +402,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         btnToggleKeyboard = inputView.findViewById(R.id.btnToggleKeyboard)
         keyboardKeysLayout = inputView.findViewById(R.id.keyboardKeysLayout)
+        scrollSuggestions = inputView.findViewById(R.id.scrollSuggestions)
+        layoutSuggestionsContainer = inputView.findViewById(R.id.layoutSuggestionsContainer)
         spinnerSourceLang = inputView.findViewById(R.id.spinnerSourceLang)
         spinnerTargetLang = inputView.findViewById(R.id.spinnerTargetLang)
 
@@ -569,6 +675,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         applyTheme(initialTheme, inputView)
 
         setKeyboardState(KeyboardState.IDLE)
+        showDefaultPhrases()
         return inputView
     }
 
@@ -626,8 +733,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val selectedText = ic.getSelectedText(0)
         if (!selectedText.isNullOrEmpty()) {
             ic.commitText("", 1)
+            currentTypingWord.setLength(0)
+            showDefaultPhrases()
         } else {
             ic.deleteSurroundingText(1, 0)
+            if (currentTypingWord.isNotEmpty()) {
+                currentTypingWord.deleteCharAt(currentTypingWord.length - 1)
+            }
+            if (currentTypingWord.isNotEmpty()) {
+                updateWordSuggestions(currentTypingWord.toString())
+            } else {
+                showDefaultPhrases()
+            }
         }
     }
 
@@ -639,6 +756,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val isUpper = isShifted || isCapsLock
                 val textToCommit = if (isUpper) charStr.uppercase(Locale.US) else charStr.lowercase(Locale.US)
                 currentInputConnection?.commitText(textToCommit, 1)
+
+                currentTypingWord.append(textToCommit)
+                updateWordSuggestions(currentTypingWord.toString())
 
                 if (isShifted && !isCapsLock) {
                     isShifted = false
@@ -670,6 +790,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         for ((id, charStr) in numberKeysMap) {
             view.findViewById<Button>(id)?.setOnClickListener {
                 currentInputConnection?.commitText(charStr, 1)
+                currentTypingWord.setLength(0)
+                showDefaultPhrases()
             }
         }
 
@@ -718,12 +840,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         view.findViewById<Button>(R.id.tabEmojiFlags)?.setOnClickListener { loadEmojiCategory("flags", view) }
 
         // 6. Punctuation Keys (, and .)
-        val commaListener = View.OnClickListener { currentInputConnection?.commitText(",", 1) }
+        val commaListener = View.OnClickListener {
+            currentInputConnection?.commitText(",", 1)
+            currentTypingWord.setLength(0)
+            showDefaultPhrases()
+        }
         view.findViewById<Button>(R.id.btnComma)?.setOnClickListener(commaListener)
         view.findViewById<Button>(R.id.btnCommaNum)?.setOnClickListener(commaListener)
 
         val periodListener = View.OnClickListener {
             currentInputConnection?.commitText(".", 1)
+            currentTypingWord.setLength(0)
+            showDefaultPhrases()
             checkAutoCapitalization()
         }
         view.findViewById<Button>(R.id.btnPeriod)?.setOnClickListener(periodListener)
@@ -732,6 +860,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         // 7. Spacebar Keys
         val spaceListener = View.OnClickListener {
             currentInputConnection?.commitText(" ", 1)
+            currentTypingWord.setLength(0)
+            showDefaultPhrases()
             checkAutoCapitalization()
         }
         listOf(R.id.btnSpaceQwerty, R.id.btnSpaceNum, R.id.btnSpaceEmoji).forEach { id ->
@@ -769,6 +899,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         // 9. Enter Keys
         val enterListener = View.OnClickListener {
+            currentTypingWord.setLength(0)
+            showDefaultPhrases()
             val ic = currentInputConnection
             if (ic != null) {
                 val editorInfo = currentInputEditorInfo
@@ -797,6 +929,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        currentTypingWord.setLength(0)
+        showDefaultPhrases()
         if (!isCapsLock) {
             isShifted = true
         }
@@ -857,16 +991,29 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 qwerty?.visibility = View.VISIBLE
                 numbers?.visibility = View.GONE
                 emoji?.visibility = View.GONE
+                scrollSuggestions?.visibility = View.VISIBLE
+                if (currentTypingWord.isNotEmpty()) {
+                    updateWordSuggestions(currentTypingWord.toString())
+                } else {
+                    showDefaultPhrases()
+                }
             }
             KeyboardMode.NUMBERS -> {
                 qwerty?.visibility = View.GONE
                 numbers?.visibility = View.VISIBLE
                 emoji?.visibility = View.GONE
+                scrollSuggestions?.visibility = View.VISIBLE
+                if (currentTypingWord.isNotEmpty()) {
+                    updateWordSuggestions(currentTypingWord.toString())
+                } else {
+                    showDefaultPhrases()
+                }
             }
             KeyboardMode.EMOJI -> {
                 qwerty?.visibility = View.GONE
                 numbers?.visibility = View.GONE
                 emoji?.visibility = View.VISIBLE
+                scrollSuggestions?.visibility = View.GONE
                 loadEmojiCategory("smileys", rootView)
             }
         }
@@ -928,6 +1075,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutParams = params
                 setOnClickListener {
                     currentInputConnection?.commitText(emojiStr, 1)
+                    currentTypingWord.setLength(0)
+                    showDefaultPhrases()
                 }
             }
             gridEmoji.addView(cell)
@@ -936,6 +1085,146 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
+    }
+
+    private fun showDefaultPhrases() {
+        populateSuggestions(defaultQuickPhrases, isWordPrediction = false)
+    }
+
+    private fun updateWordSuggestions(prefix: String) {
+        if (prefix.isBlank()) {
+            showDefaultPhrases()
+            return
+        }
+        val suggestions = getWordSuggestions(prefix)
+        if (suggestions.isEmpty()) {
+            showDefaultPhrases()
+        } else {
+            populateSuggestions(suggestions, isWordPrediction = true)
+        }
+    }
+
+    private fun getWordSuggestions(prefix: String, limit: Int = 15): List<String> {
+        if (prefix.isBlank()) return emptyList()
+        val lowerPrefix = prefix.lowercase(Locale.ROOT)
+        val isTitleCase = prefix.firstOrNull()?.isUpperCase() == true && prefix.drop(1).all { it.isLowerCase() }
+        val isAllCaps = prefix.length > 1 && prefix.all { it.isUpperCase() }
+
+        val matches = wordDictionary
+            .filter { it.startsWith(lowerPrefix) }
+            .distinct()
+            .take(limit)
+
+        return matches.map { word ->
+            when {
+                isAllCaps -> word.uppercase(Locale.ROOT)
+                isTitleCase -> word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+                else -> word
+            }
+        }
+    }
+
+    private fun populateSuggestions(items: List<String>, isWordPrediction: Boolean) {
+        val container = layoutSuggestionsContainer ?: return
+        val scroll = scrollSuggestions ?: return
+        container.removeAllViews()
+
+        if (items.isEmpty()) {
+            scroll.visibility = View.GONE
+            return
+        }
+        scroll.visibility = View.VISIBLE
+
+        val palette = getThemePalette(currentThemeKey)
+        val padH = dpToPx(12)
+        val padV = dpToPx(4)
+        val marginH = dpToPx(3)
+        val minW = dpToPx(36)
+        val chipHeight = dpToPx(28)
+
+        for ((index, text) in items.withIndex()) {
+            val chip = TextView(this).apply {
+                this.text = text
+                textSize = 12.5f
+                isClickable = true
+                isFocusable = true
+                gravity = android.view.Gravity.CENTER
+                setPadding(padH, padV, padH, padV)
+                minWidth = minW
+                includeFontPadding = false
+
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    chipHeight
+                ).apply {
+                    setMargins(marginH, 0, marginH, 0)
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                }
+                layoutParams = lp
+
+                if (palette.isDark) {
+                    setBackgroundResource(R.drawable.bg_suggestion_chip_dark)
+                    if (isWordPrediction && index == 0) {
+                        backgroundTintList = ColorStateList.valueOf(palette.ctrlKeyBg)
+                        setTextColor(palette.ctrlKeyText)
+                        setTypeface(null, Typeface.BOLD)
+                    } else {
+                        backgroundTintList = ColorStateList.valueOf(palette.cardBg)
+                        val textColor = if (currentThemeKey == "cyber") Color.parseColor("#00F0FF") else Color.WHITE
+                        setTextColor(textColor)
+                        setTypeface(null, Typeface.NORMAL)
+                    }
+                } else {
+                    setBackgroundResource(R.drawable.bg_suggestion_chip)
+                    if (isWordPrediction && index == 0) {
+                        backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E0F2FE"))
+                        setTextColor(Color.parseColor("#0284C7"))
+                        setTypeface(null, Typeface.BOLD)
+                    } else {
+                        backgroundTintList = ColorStateList.valueOf(Color.WHITE)
+                        setTextColor(Color.parseColor("#1E293B"))
+                        setTypeface(null, Typeface.NORMAL)
+                    }
+                }
+
+                setOnClickListener {
+                    if (isWordPrediction) {
+                        insertWordSuggestion(text)
+                    } else {
+                        insertQuickPhrase(text)
+                    }
+                }
+            }
+            container.addView(chip)
+        }
+
+        scroll.post {
+            scroll.scrollTo(0, 0)
+        }
+    }
+
+    private fun insertWordSuggestion(word: String) {
+        val ic = currentInputConnection ?: return
+        val typedLen = if (currentTypingWord.isNotEmpty()) {
+            currentTypingWord.length
+        } else {
+            val textBefore = ic.getTextBeforeCursor(25, 0)?.toString() ?: ""
+            textBefore.takeLastWhile { it.isLetter() }.length
+        }
+        if (typedLen > 0) {
+            ic.deleteSurroundingText(typedLen, 0)
+        }
+        ic.commitText("$word ", 1)
+        currentTypingWord.setLength(0)
+        checkAutoCapitalization()
+        showDefaultPhrases()
+    }
+
+    private fun insertQuickPhrase(phrase: String) {
+        val ic = currentInputConnection ?: return
+        ic.commitText("$phrase ", 1)
+        currentTypingWord.setLength(0)
+        checkAutoCapitalization()
     }
 
     private fun checkMicPermission(): Boolean {
@@ -1973,6 +2262,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         if (::btnTapToSpeak.isInitialized && currentState == KeyboardState.IDLE) {
             btnTapToSpeak.setBackgroundColor(palette.accentColor)
+        }
+
+        if (currentTypingWord.isNotEmpty()) {
+            updateWordSuggestions(currentTypingWord.toString())
+        } else {
+            showDefaultPhrases()
         }
     }
 
