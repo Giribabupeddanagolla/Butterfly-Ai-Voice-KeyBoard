@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 import logging
 from typing import Dict, Any
@@ -126,6 +127,48 @@ class TextToSpeechService:
         self.api_key = None
         self.client = None
         self.openai_tts_failed = False
+        self.last_cleanup_time = 0.0
+        self.MAX_CACHE_FILES = 100
+        self.MAX_FILE_AGE_SECONDS = 3600  # 1 hour TTL
+        self.CLEANUP_INTERVAL_SECONDS = 60
+
+    def cleanup_output_cache(self, force: bool = False):
+        """Purge expired TTS audio files and evict old files when cache limit is exceeded (LRU)."""
+        now = time.time()
+        if not force and (now - self.last_cleanup_time < self.CLEANUP_INTERVAL_SECONDS):
+            return
+        self.last_cleanup_time = now
+
+        for target_dir in [config.AUDIO_OUTPUT_DIR, config.AUDIO_INPUT_DIR]:
+            try:
+                if not os.path.exists(target_dir):
+                    continue
+                audio_files = []
+                for entry in os.scandir(target_dir):
+                    if entry.is_file() and entry.name.lower().endswith((".mp3", ".wav", ".webm", ".m4a", ".ogg")):
+                        try:
+                            mtime = entry.stat().st_mtime
+                            # Purge expired files (older than MAX_FILE_AGE_SECONDS)
+                            if now - mtime > self.MAX_FILE_AGE_SECONDS:
+                                os.remove(entry.path)
+                                logger.debug(f"Removed expired audio file: {entry.name}")
+                            else:
+                                audio_files.append((mtime, entry.path))
+                        except (OSError, PermissionError):
+                            pass
+
+                # LRU Eviction: if still more files than MAX_CACHE_FILES, remove oldest
+                if len(audio_files) > self.MAX_CACHE_FILES:
+                    audio_files.sort(key=lambda x: x[0])  # oldest first
+                    excess_count = len(audio_files) - self.MAX_CACHE_FILES
+                    for _, file_path in audio_files[:excess_count]:
+                        try:
+                            os.remove(file_path)
+                            logger.debug(f"Evicted old audio cache file: {os.path.basename(file_path)}")
+                        except (OSError, PermissionError):
+                            pass
+            except Exception as e:
+                logger.warning(f"Error during audio cache cleanup in {target_dir}: {e}")
 
     def get_client(self):
         if self.openai_tts_failed:
@@ -148,6 +191,9 @@ class TextToSpeechService:
         """Convert text to speech audio file (.mp3) and return relative URL."""
         if not text or not text.strip():
             return {"success": False, "error": "Empty text provided", "audio_url": ""}
+
+        # Clean up expired and excess audio files to prevent unbounded disk growth
+        self.cleanup_output_cache()
 
         filename = f"tts_{uuid.uuid4().hex[:10]}.mp3"
         output_path = os.path.join(config.AUDIO_OUTPUT_DIR, filename)
@@ -196,7 +242,19 @@ class TextToSpeechService:
             import edge_tts
             edge_voice = get_edge_voice(base_lang, tts_voice)
             communicate = edge_tts.Communicate(text[:4090], edge_voice)
-            asyncio.run(communicate.save(output_path))
+            
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(lambda: asyncio.run(communicate.save(output_path))).result()
+            else:
+                asyncio.run(communicate.save(output_path))
+
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                 logger.info(f"Edge TTS generated successfully using voice '{edge_voice}' ({tts_voice})")
                 return {

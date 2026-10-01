@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card_voice"
+    android:backgroundTint="#1E293B"
+    android:padding="14dp"
+    android:layout_marginBottom="12dp">
+
+    <!-- Top Metadata Row: Language Pair & Date -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/tvHistoryLanguages"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Telugu ➔ English"
+            android:textColor="#38BDF8"
+            android:textSize="12.5sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvHistoryDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today, 10:45 AM"
+            android:textColor="#94A3B8"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Original Spoken / Typed Text -->
+    <LinearLayout
+        android:id="@+id/layoutOriginal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:id="@+id/lblOriginal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ORIGINAL:"
+            android:textColor="#60A5FA"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvOriginalText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="నమస్కారం ఎలా ఉన్నారు?"
+            android:textColor="#CBD5E1"
+            android:textSize="13.5sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Translated / Processed Text -->
+    <LinearLayout
+        android:id="@+id/layoutTranslated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            android:id="@+id/lblTranslated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TRANSLATION / AI ANSWER:"
+            android:textColor="#34D399"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvTranslatedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hello, how are you?"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Actions Row: Copy, Speak, Delete -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnCopyHistory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="📋 Copy"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_quick_toolbar_pill"
+            android:backgroundTint="#334155"
+            android:padding="0dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnSpeakHistory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="🔊 Speak"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_quick_toolbar_pill"
+            android:backgroundTint="#334155"
+            android:padding="0dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnDeleteHistory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="🗑️ Delete"
+            android:textAllCaps="false"
+            android:textColor="#EF4444"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_quick_toolbar_pill"
+            android:backgroundTint="#334155"
+            android:padding="0dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp" />
+    </LinearLayout>
+
+</LinearLayout>

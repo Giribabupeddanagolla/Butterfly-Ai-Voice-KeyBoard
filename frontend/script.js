@@ -24,8 +24,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     disableMediaSession();
 
-    // API Config
-    const API_BASE = '';
+    // API Config - Resolves dynamically whether hosted alongside backend or on external hosting (GitHub Pages, Vercel, Netlify)
+    function resolveApiBaseUrl() {
+        const savedUrl = (localStorage.getItem('butterfly_server_url') || localStorage.getItem('server_url') || window.BUTTERFLY_API_BASE || '').trim();
+        if (savedUrl) {
+            return savedUrl.replace(/\/+$/, '');
+        }
+        // If hosted on external static hosting (e.g. GitHub Pages, Vercel, Netlify)
+        const hostname = window.location.hostname;
+        if (hostname.endsWith('github.io') || hostname.endsWith('vercel.app') || hostname.endsWith('netlify.app')) {
+            return 'https://butterfly-ai-voice-keyboard.onrender.com';
+        }
+        // Same-origin (e.g. served directly by FastAPI or local development reverse proxy)
+        return '';
+    }
+    const API_BASE = resolveApiBaseUrl();
 
     // State Management
     let currentSessionId = localStorage.getItem('ai_agent_session') || generateUUID();
@@ -429,6 +442,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (hotkeyToggle) hotkeyToggle.checked = !!settings.hotkeyEnabled;
+        const adminTokenInput = document.getElementById('adminTokenInput');
+        if (adminTokenInput) {
+            adminTokenInput.value = localStorage.getItem('butterfly_admin_token') || '';
+        }
 
         updateDependentSettingsState();
     }
@@ -532,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (textToTranslate) {
                     const srcLang = getSourceLang();
                     try {
-                        const res = await fetch('/api/translate', {
+                        const res = await fetch(`${API_BASE}/api/translate`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -580,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const res = await fetch('/api/polish', {
+                const res = await fetch(`${API_BASE}/api/polish`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text, language: getSourceLang() })
@@ -928,14 +945,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (apiKeyInput && apiKeyInput.value.trim()) {
                     const keyVal = apiKeyInput.value.trim();
+                    const adminTokenInput = document.getElementById('adminTokenInput');
+                    const adminTokenVal = adminTokenInput ? adminTokenInput.value.trim() : (localStorage.getItem('butterfly_admin_token') || '');
                     try {
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (adminTokenVal) {
+                            headers['X-Admin-Token'] = adminTokenVal;
+                        }
                         const res = await fetch(`${API_BASE}/api/settings/key`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ api_key: keyVal })
+                            headers: headers,
+                            body: JSON.stringify({
+                                api_key: keyVal,
+                                admin_token: adminTokenVal || undefined
+                            })
                         });
                         if (res.ok) {
+                            if (adminTokenVal) localStorage.setItem('butterfly_admin_token', adminTokenVal);
                             checkOpenAIStatus();
+                        } else {
+                            const errData = await res.json().catch(() => ({}));
+                            console.warn('API key update rejected:', errData);
+                            alert(errData.detail || errData.message || 'Failed to update API key. Please check admin token or rate limits.');
                         }
                     } catch (e) {
                         console.warn('Failed to update API key:', e);
@@ -1880,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const speedVal = parseFloat(settings.speechPlaybackSpeed || settings.ttsSpeed) || 1.0;
 
                 activeTTSFetchController = new AbortController();
-                const res = await fetch('/api/voice/speak', {
+                const res = await fetch(`${API_BASE}/api/voice/speak`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1899,7 +1930,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await res.json();
                     console.log("TTS API response data:", data);
                     if (data.success && data.audio_url) {
-                        const fullUrl = data.audio_url.startsWith('http') ? data.audio_url : `${window.location.origin}${data.audio_url}?t=${Date.now()}`;
+                        const fullUrl = data.audio_url.startsWith('http') ? data.audio_url : `${API_BASE || window.location.origin}${data.audio_url}?t=${Date.now()}`;
                         const audio = new Audio(fullUrl);
                         audio.disableRemotePlayback = true;
                         if ('mediaSession' in navigator) {
@@ -2365,7 +2396,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const srcLang = getSourceLang() || 'auto';
-                const res = await fetch('/api/ai/chat', {
+                const res = await fetch(`${API_BASE}/api/ai/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2576,7 +2607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.lucide) lucide.createIcons();
 
                 try {
-                    const res = await fetch('/api/translate', {
+                    const res = await fetch(`${API_BASE}/api/translate`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3099,7 +3130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Sending audio for transcription");
 
                     try {
-                        const res = await fetch('/api/voice/transcribe', {
+                        const res = await fetch(`${API_BASE}/api/voice/transcribe`, {
                             method: 'POST',
                             body: formData
                         });
@@ -3173,7 +3204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isTranslationOn && originalSpokenText) {
                     setVoiceState('translating');
                     try {
-                        const transRes = await fetch('/api/translate', {
+                        const transRes = await fetch(`${API_BASE}/api/translate`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -3717,9 +3748,37 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleRecording();
     }
 
-    // --- Voice History (Disabled) ---
+    // --- Voice History & Session Management ---
     async function loadVoiceHistoryList() {
-        return;
+        try {
+            const res = await fetch(`${API_BASE}/conversations`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.sessions)) {
+                renderVoiceHistoryList(data.sessions);
+            }
+        } catch (e) {
+            console.warn('Could not load voice history list:', e);
+        }
+    }
+
+    async function renameHistorySession(sessionId, currentTitle) {
+        const newTitle = prompt('Enter a new title for this conversation:', currentTitle);
+        if (!newTitle || !newTitle.trim() || newTitle.trim() === currentTitle) return;
+        try {
+            const res = await fetch(`${API_BASE}/conversation/${sessionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle.trim() })
+            });
+            if (res.ok) {
+                loadVoiceHistoryList();
+            } else {
+                alert('Could not update conversation title.');
+            }
+        } catch (err) {
+            console.error('Failed to rename conversation:', err);
+        }
     }
 
     function renderVoiceHistoryList(sessions) {
@@ -3739,6 +3798,30 @@ document.addEventListener('DOMContentLoaded', () => {
             title.textContent = session.title || session.last_message || 'Voice Transcript';
             title.addEventListener('click', () => loadHistorySession(session.session_id));
 
+            const actionsWrap = document.createElement('div');
+            actionsWrap.className = 'session-actions';
+            actionsWrap.style.display = 'flex';
+            actionsWrap.style.alignItems = 'center';
+            actionsWrap.style.gap = '3px';
+
+            const renameBtn = document.createElement('button');
+            renameBtn.className = 'btn-delete-session';
+            renameBtn.setAttribute('title', 'Rename Conversation');
+            renameBtn.innerHTML = '<i data-lucide="edit-2"></i>';
+            renameBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renameHistorySession(session.session_id, session.title || session.last_message || '');
+            });
+
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'btn-delete-session';
+            exportBtn.setAttribute('title', 'Export Transcript (TXT)');
+            exportBtn.innerHTML = '<i data-lucide="download"></i>';
+            exportBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.open(`${API_BASE}/conversation/${session.session_id}/export?format=txt`, '_blank');
+            });
+
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-delete-session';
             delBtn.setAttribute('title', 'Delete Record');
@@ -3748,8 +3831,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteHistorySession(session.session_id);
             });
 
+            actionsWrap.appendChild(renameBtn);
+            actionsWrap.appendChild(exportBtn);
+            actionsWrap.appendChild(delBtn);
+
             item.appendChild(title);
-            item.appendChild(delBtn);
+            item.appendChild(actionsWrap);
             conversationList.appendChild(item);
         });
 
@@ -3953,7 +4040,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. BACKEND HEALTH CHECK (NON-BLOCKING)
         async function verifyBackendHealth() {
             try {
-                const res = await fetch('/health', { cache: 'no-cache' });
+                const res = await fetch(`${API_BASE}/health`, { cache: 'no-cache' });
                 if (res.ok) {
                     const data = await res.json();
                     if (startupBackendText) {
@@ -4508,4 +4595,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Butterfly Loading Page
     initButterflyLoadingPage();
+
+    // Register PWA Service Worker for offline shell caching
+    function registerPwaServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered successfully with scope:', registration.scope);
+                    })
+                    .catch((err) => {
+                        console.warn('[PWA] Service Worker registration failed:', err);
+                    });
+            });
+        }
+    }
+    registerPwaServiceWorker();
 });

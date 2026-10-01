@@ -37,6 +37,38 @@ class Config:
     PORT: int = int(os.getenv("PORT", "8000"))
     OPENAI_FAILED: bool = False
 
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+    ADMIN_SECRET_KEY: str = os.getenv("ADMIN_SECRET_KEY", os.getenv("ADMIN_API_TOKEN", ""))
+    
+    # Audio Upload Limits & Safety
+    MAX_AUDIO_FILE_SIZE: int = int(os.getenv("MAX_AUDIO_FILE_SIZE", 25 * 1024 * 1024)) # 25MB
+    ALLOWED_AUDIO_EXTENSIONS: set = {".webm", ".wav", ".mp3", ".m4a", ".ogg", ".aac", ".flac", ".mp4"}
+
+    def get_allowed_origins(self) -> list:
+        raw = os.getenv("ALLOWED_ORIGINS", "")
+        if raw.strip():
+            return [o.strip() for o in raw.split(",") if o.strip()]
+        if self.ENVIRONMENT == "production":
+            render_url = os.getenv("RENDER_EXTERNAL_URL", "")
+            origins = []
+            if render_url:
+                origins.append(render_url.rstrip("/"))
+            origins.append("https://butterfly-ai-voice-keyboard.onrender.com")
+            return origins
+        else:
+            return [
+                "http://localhost",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8000",
+                "http://127.0.0.1",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:8000",
+                "capacitor://localhost",
+                "ionic://localhost"
+            ]
+
     def __init__(self):
         if self.HOST in ["127.0.0.1", "localhost"]:
             self.HOST = "0.0.0.0"

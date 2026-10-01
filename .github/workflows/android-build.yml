@@ -31,6 +31,10 @@ jobs:
           chmod +x android/gradlew
           chmod +x android/gradlew.bat
 
+      - name: Run Android Unit Tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+        working-directory: ./android
+
       - name: Build Signed Release and Debug APKs
         run: ./gradlew assembleRelease assembleDebug --stacktrace
         working-directory: ./android

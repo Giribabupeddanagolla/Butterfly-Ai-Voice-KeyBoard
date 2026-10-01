@@ -1,9 +1,12 @@
 import logging
-from typing import Dict, Any, List
+import uuid
+from typing import Dict, Any, List, Optional, Callable
 from config import config
-from conversation_context import PROJECT_CONTEXT
+from conversation_context import PROJECT_CONTEXT, get_project_context
 from memory import memory_manager
-from speech_to_text import detect_language_from_text
+from speech_to_text import detect_language_from_text, translate_text
+from languages import get_language_name, normalize_language_code
+from services.openai_service import openai_service
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +19,10 @@ MOCK_RESPONSES = {
     "en": "Hello! I am your Multilingual Voice AI Agent. I received your message: \"{user_text}\". Currently, OpenAI API Key is not set in backend .env, so this is a demonstration response. Please add your key to enable full GPT responses!"
 }
 
-from speech_to_text import detect_language_from_text, translate_text
-
-logger = logging.getLogger(__name__)
+def get_mock_response(language_code: str, user_text: str) -> str:
+    """Return multilingual demonstration/fallback response when OpenAI is not configured."""
+    template = MOCK_RESPONSES.get(language_code, MOCK_RESPONSES.get("en"))
+    return template.format(user_text=user_text)
 
 class AIAgent:
     def __init__(self):
@@ -26,16 +30,150 @@ class AIAgent:
         self.client = None
 
     def get_client(self):
-        current_key = config.OPENAI_API_KEY
-        if current_key and (not self.client or self.api_key != current_key):
-            try:
-                from openai import OpenAI
-                self.api_key = current_key
-                self.client = OpenAI(api_key=current_key)
-            except Exception as e:
-                logger.warning(f"Could not initialize OpenAI client for AI Agent: {e}")
-                self.client = None
-        return self.client
+        client = openai_service.get_client()
+        self.client = client
+        self.api_key = openai_service.get_api_key()
+        return client
+
+    def handle_chat_request(
+        self,
+        message: str,
+        session_id: Optional[str] = None,
+        language: Optional[str] = None,
+        source_language: Optional[str] = None,
+        fallback_handler: Optional[Callable[[str, str], Optional[str]]] = None
+    ) -> Dict[str, Any]:
+        """
+        Central Chat Service:
+        1. Validate request
+        2. Resolve session_id
+        3. Load conversation history
+        4. Load PROJECT_CONTEXT
+        5. Build AI messages
+        6. Call OpenAI service
+        7. Save conversation to memory
+        8. Return response
+        """
+        # 1. Validate request
+        if not message or not message.strip():
+            raise ValueError("Message cannot be empty.")
+        clean_message = message.strip()
+
+        # 2. Resolve session_id
+        if session_id is not None:
+            s_id = session_id.strip()
+            if not s_id:
+                raise ValueError("Invalid session_id: cannot be empty whitespace.")
+            resolved_session_id = s_id
+        else:
+            resolved_session_id = f"session_{uuid.uuid4().hex[:8]}"
+
+        # Ensure session exists in memory manager
+        try:
+            memory_manager.get_or_create_session(resolved_session_id)
+        except Exception as e:
+            logger.error(f"Failed to access session in database: {e}")
+            raise RuntimeError("Database error while initializing session.")
+
+        # Resolve language
+        if language and language != "auto":
+            lang_code = normalize_language_code(language)
+        else:
+            lang_code = detect_language_from_text(clean_message)
+        lang_name = get_language_name(lang_code)
+
+        # 3. Load conversation history
+        try:
+            history_messages = memory_manager.get_session_messages(resolved_session_id, limit=20)
+        except Exception as e:
+            logger.error(f"Failed to load conversation history: {e}")
+            raise RuntimeError("Database error while loading conversation history.")
+
+        # 4 & 5. Build AI messages with PROJECT_CONTEXT as system instruction
+        ai_messages: List[Dict[str, str]] = [
+            {"role": "system", "content": PROJECT_CONTEXT.strip()}
+        ]
+        for prev in history_messages:
+            r = prev.get("role")
+            c = prev.get("content")
+            if r in ("user", "assistant") and c:
+                ai_messages.append({"role": r, "content": c})
+        ai_messages.append({"role": "user", "content": clean_message})
+
+        # 6. Call OpenAI service
+        is_configured = openai_service.is_configured()
+        answer = None
+        model = getattr(config, "AI_MODEL", "gpt-4o-mini")
+
+        if is_configured:
+            ai_res = openai_service.generate_chat_response(
+                messages=ai_messages,
+                language=lang_code
+            )
+            if ai_res.get("success"):
+                answer = ai_res["answer"]
+                model = ai_res.get("model", model)
+            else:
+                err_msg = ai_res.get("error", "AI service request failed")
+                if fallback_handler:
+                    try:
+                        answer = fallback_handler(clean_message, lang_code)
+                    except Exception as fb_err:
+                        logger.warning(f"Fallback handler error: {fb_err}")
+                if not answer:
+                    logger.error(f"OpenAI service failure: {err_msg}")
+                    raise RuntimeError(f"OpenAI service error: {err_msg}")
+        else:
+            # API key not configured - use intended multilingual fallback
+            if fallback_handler:
+                try:
+                    answer = fallback_handler(clean_message, lang_code)
+                except Exception as fb_err:
+                    logger.warning(f"Fallback handler error: {fb_err}")
+            
+            if not answer:
+                answer = get_mock_response(lang_code, clean_message)
+            model = "butterfly-ai-fallback"
+
+        # 7. Save conversation to memory (only after response is successfully produced)
+        try:
+            memory_manager.save_message(
+                session_id=resolved_session_id,
+                role="user",
+                content=clean_message,
+                language=lang_code,
+                original_text=clean_message,
+                source_language=lang_code,
+                translation_language=lang_code,
+                text_language=lang_code,
+                translated_text=clean_message,
+                input_type="chat"
+            )
+            memory_manager.save_message(
+                session_id=resolved_session_id,
+                role="assistant",
+                content=answer,
+                language=lang_code,
+                original_text=clean_message,
+                source_language=lang_code,
+                translation_language=lang_code,
+                text_language=lang_code,
+                translated_text=answer,
+                input_type="chat"
+            )
+        except Exception as e:
+            logger.error(f"Failed to save messages to database: {e}")
+            raise RuntimeError("Database error while saving message.")
+
+        return {
+            "success": True,
+            "session_id": resolved_session_id,
+            "message": answer,
+            "answer": answer,
+            "language": lang_name,
+            "language_code": lang_code,
+            "model": model
+        }
 
     def process_translation(
         self,

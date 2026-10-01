@@ -7,23 +7,30 @@ import json
 import re
 import urllib.parse
 import urllib.request
+import secrets
 from typing import Optional
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 # Ensure backend directory is in sys.path so internal imports (config, memory, etc.) work from anywhere
 BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Query, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, PlainTextResponse
 from pydantic import BaseModel
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from config import config
 from memory import memory_manager
-from ai_agent import ai_agent
+from ai_agent import ai_agent, get_mock_response
 from speech_to_text import stt_service, detect_language_from_text, translate_text
 from text_to_speech import tts_service
 from services.openai_service import openai_service
@@ -49,14 +56,8 @@ if config.OPENAI_API_KEY and config.OPENAI_API_KEY.startswith("sk-"):
 else:
     logger.warning("WARNING: OPENAI_API_KEY is not configured.")
 
-app = FastAPI(
-    title="Multilingual Voice AI Agent API",
-    description="Backend API for Multilingual Voice & Text AI Assistant",
-    version="1.0.0"
-)
-
-@app.on_event("startup")
-async def startup_preflight():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     import threading
     def check_openai():
         from config import config, mark_openai_failed
@@ -75,16 +76,43 @@ async def startup_preflight():
                 logger.warning(f"OpenAI API key validation failed on startup: {err_str}. Pre-emptively switching to fast free fallback STT/translation.")
                 mark_openai_failed(err_str)
     threading.Thread(target=check_openai, daemon=True).start()
+    yield
 
-
-# CORS configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Multilingual Voice AI Agent API",
+    description="Backend API for Multilingual Voice & Text AI Assistant",
+    version="1.0.0",
+    lifespan=lifespan
 )
+
+
+# Rate Limiting configuration via SlowAPI
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS configuration - restricted in production, flexible in development
+allowed_origins = config.get_allowed_origins()
+if config.ENVIRONMENT == "production":
+    logger.info(f"Production environment detected: Restricting CORS to {allowed_origins}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins if allowed_origins else ["https://butterfly-ai-voice-keyboard.onrender.com"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+else:
+    logger.info("Development environment detected: Allowing localhost and mobile origins")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 @app.middleware("http")
 async def add_no_cache_headers(request, call_next):
@@ -106,6 +134,12 @@ app.mount("/audio/output", StaticFiles(directory=config.AUDIO_OUTPUT_DIR), name=
 class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     message: str
+    language: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    session_id: str
+    message: str
+    language: str
 
 class TranslateRequest(BaseModel):
     session_id: Optional[str] = None
@@ -128,12 +162,16 @@ class VoiceSpeakRequest(BaseModel):
     speed: Optional[float] = 1.0
 
 class AssistantRequest(BaseModel):
+    session_id: Optional[str] = None
+    prompt: Optional[str] = None
     message: Optional[str] = None
     text: Optional[str] = None
     language: Optional[str] = "en"
     source_language: Optional[str] = "auto"
 
 class AskRequest(BaseModel):
+    session_id: Optional[str] = None
+    prompt: Optional[str] = None
     message: Optional[str] = None
     text: Optional[str] = None
     language: Optional[str] = "en"
@@ -150,6 +188,7 @@ class SnippetRequest(BaseModel):
 
 class APIKeyRequest(BaseModel):
     api_key: str
+    admin_token: Optional[str] = None
 
 # Endpoints
 
@@ -177,10 +216,59 @@ def openai_status():
         }
 
 @app.post("/api/settings/key")
-def update_api_key(request: APIKeyRequest):
-    new_key = request.api_key.strip()
+@limiter.limit("5/minute")
+def update_api_key(
+    request: Request,
+    body: APIKeyRequest,
+    x_admin_token: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None)
+):
+    # Authorization verification
+    auth_token = None
+    if body.admin_token and body.admin_token.strip():
+        auth_token = body.admin_token.strip()
+    elif x_admin_token and x_admin_token.strip():
+        auth_token = x_admin_token.strip()
+    elif authorization and authorization.strip():
+        parts = authorization.strip().split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            auth_token = parts[1].strip()
+        else:
+            auth_token = authorization.strip()
+
+    expected_token = (config.ADMIN_SECRET_KEY or "").strip()
+
+    # In production, ADMIN_SECRET_KEY MUST be configured and match
+    if config.ENVIRONMENT == "production":
+        if not expected_token:
+            logger.error("ADMIN_SECRET_KEY is not configured in production. Blocking key update.")
+            raise HTTPException(
+                status_code=403,
+                detail="Forbidden: ADMIN_SECRET_KEY must be configured on the server in production before updating settings."
+            )
+        if not auth_token or not secrets.compare_digest(auth_token, expected_token):
+            raise HTTPException(
+                status_code=401,
+                detail="Unauthorized: Valid admin token required to update API key."
+            )
+    else:
+        # In non-production, if ADMIN_SECRET_KEY is set, enforce it
+        if expected_token:
+            if not auth_token or not secrets.compare_digest(auth_token, expected_token):
+                raise HTTPException(
+                    status_code=401,
+                    detail="Unauthorized: Valid admin token required to update API key."
+                )
+        else:
+            logger.warning("ADMIN_SECRET_KEY is not set in non-production. Permitting key update.")
+
+    new_key = body.api_key.strip()
+    # Strip any carriage returns or newlines to prevent .env injection
+    new_key = re.sub(r'[\r\n]', '', new_key)
     if not new_key:
         raise HTTPException(status_code=400, detail="API key cannot be empty")
+    if not new_key.startswith("sk-"):
+        raise HTTPException(status_code=400, detail="Invalid OpenAI API key format (must start with 'sk-')")
     
     # 1. Update config & services in memory
     os.environ["OPENAI_API_KEY"] = new_key
@@ -224,18 +312,19 @@ def update_api_key(request: APIKeyRequest):
     return {"success": True, "message": "OpenAI API Key updated successfully"}
 
 @app.post("/api/text-translate")
-def text_translate_endpoint(request: TranslateRequest):
-    session_id = request.session_id or f"session_{uuid.uuid4().hex[:8]}"
-    if not request.text or not request.text.strip():
+@limiter.limit("45/minute")
+def text_translate_endpoint(request: Request, body: TranslateRequest):
+    session_id = body.session_id or f"session_{uuid.uuid4().hex[:8]}"
+    if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
         
-    tgt_lang = request.target_language or request.translation_language or "en"
+    tgt_lang = body.target_language or body.translation_language or "en"
     result = ai_agent.process_translation(
         session_id=session_id,
-        user_message=request.text,
-        source_language=request.source_language or "auto",
+        user_message=body.text,
+        source_language=body.source_language or "auto",
         translation_language=tgt_lang,
-        text_language=request.text_language or tgt_lang,
+        text_language=body.text_language or tgt_lang,
         input_type="text"
     )
     return result
@@ -249,21 +338,22 @@ def api_health():
 
 @app.post("/api/voice/translate")
 @app.post("/api/translate")
-def translate_endpoint(request: TranslateRequest):
-    if not request.text or not request.text.strip():
+@limiter.limit("45/minute")
+def translate_endpoint(request: Request, body: TranslateRequest):
+    if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
     
-    src_lang = request.source_language or "auto"
-    tgt_lang = request.target_language or request.translation_language or request.text_language or "en"
+    src_lang = body.source_language or "auto"
+    tgt_lang = body.target_language or body.translation_language or body.text_language or "en"
     if tgt_lang == "auto" or not tgt_lang.strip():
         tgt_lang = "en"
     
     if src_lang != "auto" and src_lang == tgt_lang:
         return {
             "success": True,
-            "translation": request.text,
-            "translated_text": request.text,
-            "original_text": request.text,
+            "translation": body.text,
+            "translated_text": body.text,
+            "original_text": body.text,
             "source_language": src_lang,
             "target_language": tgt_lang
         }
@@ -271,22 +361,22 @@ def translate_endpoint(request: TranslateRequest):
     from config import is_openai_active
     if is_openai_active() and openai_service.is_configured() and not getattr(openai_service, "openai_failed", False):
         trans_res = openai_service.translate_text(
-            text=request.text,
+            text=body.text,
             source_language=src_lang,
             target_language=tgt_lang
         )
-        if trans_res.get("success") and trans_res.get("translated_text") and trans_res.get("translated_text").strip() != request.text.strip():
+        if trans_res.get("success") and trans_res.get("translated_text") and trans_res.get("translated_text").strip() != body.text.strip():
             return {
                 "success": True,
                 "translation": trans_res["translated_text"],
                 "translated_text": trans_res["translated_text"],
-                "original_text": request.text,
+                "original_text": body.text,
                 "source_language": src_lang,
                 "target_language": tgt_lang
             }
             
     translated = translate_text(
-        text=request.text,
+        text=body.text,
         target_language=tgt_lang,
         source_language=src_lang
     )
@@ -295,7 +385,7 @@ def translate_endpoint(request: TranslateRequest):
         "success": True,
         "translation": translated,
         "translated_text": translated,
-        "original_text": request.text,
+        "original_text": body.text,
         "source_language": src_lang,
         "target_language": tgt_lang
     }
@@ -304,7 +394,9 @@ def translate_endpoint(request: TranslateRequest):
 @app.post("/api/voice/transcribe")
 @app.post("/api/voice-translate")
 @app.post("/speech-to-text")
+@limiter.limit("30/minute")
 async def transcribe_endpoint(
+    request: Request,
     audio: Optional[UploadFile] = File(None),
     fallback_text: Optional[str] = Form(None),
     session_id: Optional[str] = Form(None),
@@ -326,14 +418,33 @@ async def transcribe_endpoint(
     clean_fallback = fallback_text.strip() if (fallback_text and fallback_text.strip()) else ""
     
     if audio:
+        raw_name = audio.filename or 'recording.webm'
+        raw_ext = Path(raw_name).suffix.lower()
+        if raw_ext not in config.ALLOWED_AUDIO_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported audio format '{raw_ext}'. Allowed formats: {', '.join(sorted(config.ALLOWED_AUDIO_EXTENSIONS))}"
+            )
         logger.info(f"Received audio file upload: {audio.filename}, content_type={audio.content_type}")
-        temp_filename = f"whisper_{uuid.uuid4().hex[:10]}_{audio.filename or 'recording.webm'}"
+        temp_filename = f"whisper_{uuid.uuid4().hex[:10]}_{raw_name}"
         temp_path = os.path.join(config.AUDIO_INPUT_DIR, temp_filename)
         try:
+            total_size = 0
+            chunk_size = 1024 * 1024
             with open(temp_path, "wb") as buffer:
-                shutil.copyfileobj(audio.file, buffer)
+                while True:
+                    chunk = await audio.read(chunk_size)
+                    if not chunk:
+                        break
+                    total_size += len(chunk)
+                    if total_size > config.MAX_AUDIO_FILE_SIZE:
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"Audio file exceeds maximum allowed size of {config.MAX_AUDIO_FILE_SIZE // (1024 * 1024)}MB"
+                        )
+                    buffer.write(chunk)
             
-            file_size = os.path.getsize(temp_path)
+            file_size = total_size
             logger.info(f"Audio file saved to {temp_path} ({file_size} bytes)")
             
             if file_size > 0:
@@ -434,15 +545,16 @@ async def transcribe_endpoint(
 
 @app.post("/api/voice/speak")
 @app.post("/text-to-speech")
-def text_to_speech_endpoint(request: VoiceSpeakRequest):
-    if not request.text or not request.text.strip():
+@limiter.limit("30/minute")
+def text_to_speech_endpoint(request: Request, body: VoiceSpeakRequest):
+    if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
         
     result = tts_service.generate_speech(
-        text=request.text,
-        language=request.language or "en",
-        voice=request.voice or "nova",
-        speed=request.speed or 1.0
+        text=body.text,
+        language=body.language or "en",
+        voice=body.voice or "nova",
+        speed=body.speed or 1.0
     )
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "TTS synthesis failed"))
@@ -571,82 +683,130 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en")
         except Exception:
             pass
 
-    return f"Butterfly AI processed your question '{prompt}'. To enable deep GPT-4 reasoning, please update your OpenAI API key in Settings."
+    return get_mock_response(lang_key, prompt)
+
+@app.post("/chat")
+@app.post("/api/chat")
+@limiter.limit("30/minute")
+def chat_endpoint(request: Request, body: ChatRequest) -> ChatResponse:
+    if not body.message or not body.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Message cannot be empty."
+        )
+    if body.session_id is not None and not body.session_id.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid session_id: cannot be empty whitespace."
+        )
+
+    try:
+        result = ai_agent.handle_chat_request(
+            message=body.message,
+            session_id=body.session_id,
+            language=body.language
+        )
+        return ChatResponse(
+            session_id=result["session_id"],
+            message=result["message"],
+            language=result["language"]
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        err_msg = str(re)
+        if "Database error" in err_msg:
+            raise HTTPException(status_code=500, detail="Database operation failed.")
+        elif "OpenAI service error" in err_msg:
+            raise HTTPException(status_code=502, detail=err_msg)
+        else:
+            raise HTTPException(status_code=500, detail="Chat service error.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in /chat: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal chat service error.")
 
 @app.post("/api/ai/chat")
 @app.post("/api/ask")
 @app.post("/api/voice/assistant")
 @app.post("/api/assistant")
-def ai_assistant_endpoint(request: AskRequest):
-    prompt = (request.message or request.text or "").strip()
+@limiter.limit("30/minute")
+def ai_assistant_endpoint(request: Request, body: AskRequest):
+    prompt = (body.message or body.text or body.prompt or "").strip()
     if not prompt:
         return JSONResponse(
             status_code=400,
             content={"success": False, "error": "Question cannot be empty."}
         )
-    
-    session_id = f"session_{uuid.uuid4().hex[:8]}"
-    
-    ai_res = openai_service.generate_chat_response(prompt=prompt, language=request.language)
-    
-    if ai_res.get("success"):
-        answer = ai_res["answer"]
-        model = ai_res.get("model", config.AI_MODEL)
-    else:
+
+    def search_fallback_fn(user_text: str, lang_code: str) -> Optional[str]:
         ddg_answer = ""
         try:
-            url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(prompt)}&format=json&no_html=1"
+            url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(user_text)}&format=json&no_html=1"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=3) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 abstract = data.get("AbstractText", "")
-                if abstract and not is_bad_abstract(prompt, abstract):
+                if abstract and not is_bad_abstract(user_text, abstract):
                     ddg_answer = abstract
                 elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
                     for topic in data.get("RelatedTopics"):
                         if isinstance(topic, dict) and topic.get("Text"):
                             txt = topic.get("Text")
-                            if not is_bad_abstract(prompt, txt):
+                            if not is_bad_abstract(user_text, txt):
                                 ddg_answer = txt
                                 break
         except Exception as ddg_err:
             logger.warning(f"DuckDuckGo instant answer error: {ddg_err}")
 
         if not ddg_answer:
-            ddg_answer = get_intelligent_fallback_answer(prompt, language=request.language)
+            ddg_answer = get_intelligent_fallback_answer(user_text, language=lang_code)
+        return ddg_answer
 
-        answer = ddg_answer
-        model = "butterfly-ai-assistant"
-
-    # Save message to memory manager
-    memory_manager.save_message(
-        session_id=session_id,
-        role="user",
-        content=prompt,
-        language=request.language or "auto",
-        original_text=prompt,
-        translated_text=answer,
-        input_type="assistant"
-    )
-    
-    return {
-        "success": True,
-        "session_id": session_id,
-        "question": prompt,
-        "answer": answer,
-        "model": model,
-        "language": request.language or "auto"
-    }
+    try:
+        result = ai_agent.handle_chat_request(
+            message=prompt,
+            session_id=body.session_id,
+            language=body.language,
+            fallback_handler=search_fallback_fn
+        )
+        return {
+            "success": True,
+            "session_id": result["session_id"],
+            "question": prompt,
+            "answer": result["answer"],
+            "model": result.get("model", config.AI_MODEL),
+            "language": result.get("language_code", body.language or "auto")
+        }
+    except ValueError as ve:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": str(ve)}
+        )
+    except Exception as e:
+        logger.error(f"Error in ai_assistant_endpoint: {e}", exc_info=True)
+        fallback_ans = search_fallback_fn(prompt, body.language or "en") or "Butterfly AI was unable to process your request."
+        s_id = body.session_id or f"session_{uuid.uuid4().hex[:8]}"
+        return {
+            "success": True,
+            "session_id": s_id,
+            "question": prompt,
+            "answer": fallback_ans,
+            "model": "butterfly-ai-assistant",
+            "language": body.language or "auto"
+        }
 
 
 
 @app.post("/api/voice/polish")
 @app.post("/api/polish")
-def ai_polish_endpoint(request: PolishRequest):
-    if not request.text or not request.text.strip():
+@limiter.limit("30/minute")
+def ai_polish_endpoint(request: Request, body: PolishRequest):
+    if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
         
-    original = request.text.strip()
+    original = body.text.strip()
     polished = original
     
     if openai_service.is_configured():
@@ -688,7 +848,9 @@ def ai_polish_endpoint(request: PolishRequest):
     }
 
 @app.post("/api/voice/upload")
+@limiter.limit("20/minute")
 async def audio_upload_endpoint(
+    request: Request,
     file: UploadFile = File(...),
     source_language: Optional[str] = Form("auto"),
     translation_language: Optional[str] = Form("en")
@@ -696,15 +858,34 @@ async def audio_upload_endpoint(
     if not file or not file.filename:
         raise HTTPException(status_code=400, detail="No audio file uploaded")
         
+    raw_ext = Path(file.filename).suffix.lower()
+    if raw_ext not in config.ALLOWED_AUDIO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio format '{raw_ext}'. Allowed formats: {', '.join(sorted(config.ALLOWED_AUDIO_EXTENSIONS))}"
+        )
+
     logger.info(f"Audio upload endpoint received file: {file.filename}")
     temp_filename = f"upload_{uuid.uuid4().hex[:10]}_{file.filename}"
     temp_path = os.path.join(config.AUDIO_INPUT_DIR, temp_filename)
     
     try:
+        total_size = 0
+        chunk_size = 1024 * 1024
         with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        file_size = os.path.getsize(temp_path)
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > config.MAX_AUDIO_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"Audio file exceeds maximum allowed size of {config.MAX_AUDIO_FILE_SIZE // (1024 * 1024)}MB"
+                    )
+                buffer.write(chunk)
+                
+        file_size = total_size
         if file_size == 0:
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
             
@@ -777,6 +958,66 @@ def delete_conversation_session(session_id: str):
     deleted = memory_manager.delete_session(session_id)
     return {"success": deleted, "message": "Session deleted" if deleted else "Session not found"}
 
+class RenameSessionRequest(BaseModel):
+    title: str
+
+@app.patch("/conversation/{session_id}")
+@app.put("/conversation/{session_id}")
+@app.patch("/api/conversation/{session_id}")
+@app.put("/api/conversation/{session_id}")
+def rename_conversation_session(session_id: str, body: RenameSessionRequest):
+    new_title = body.title.strip() if body.title else ""
+    if not new_title:
+        raise HTTPException(status_code=400, detail="Title cannot be empty")
+    updated = memory_manager.update_session_title(session_id, new_title)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Session not found or title not updated")
+    return {"success": True, "session_id": session_id, "title": new_title}
+
+@app.get("/conversation/{session_id}/export")
+@app.get("/api/conversation/{session_id}/export")
+def export_conversation_session(session_id: str, format: Optional[str] = Query("txt")):
+    messages = memory_manager.get_session_messages(session_id)
+    if not messages:
+        raise HTTPException(status_code=404, detail="Session not found or contains no messages")
+    
+    fmt = (format or "txt").lower().strip()
+    if fmt == "json":
+        return JSONResponse(
+            content={"success": True, "session_id": session_id, "messages": messages},
+            headers={"Content-Disposition": f'attachment; filename="conversation_{session_id}.json"'}
+        )
+    elif fmt in ("md", "markdown"):
+        md_lines = [f"# Butterfly AI Conversation - {session_id}\n"]
+        for m in messages:
+            role_label = "**User**" if m.get("role") == "user" else "**Butterfly AI**"
+            ts = m.get("timestamp", "")
+            md_lines.append(f"### {role_label} ({ts})\n")
+            md_lines.append(f"{m.get('content', '')}\n")
+            if m.get("translated_text") and m.get("translated_text") != m.get("content"):
+                md_lines.append(f"> *Translation ({m.get('translation_language', 'en')}):* {m.get('translated_text')}\n")
+            md_lines.append("---\n")
+        return PlainTextResponse(
+            content="\n".join(md_lines),
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="conversation_{session_id}.md"'}
+        )
+    else:
+        txt_lines = [f"=== Butterfly AI Conversation: {session_id} ===\n"]
+        for m in messages:
+            role_label = "USER" if m.get("role") == "user" else "BUTTERFLY AI"
+            ts = m.get("timestamp", "")
+            txt_lines.append(f"[{ts}] {role_label}:")
+            txt_lines.append(f"{m.get('content', '')}")
+            if m.get("translated_text") and m.get("translated_text") != m.get("content"):
+                txt_lines.append(f"TRANSLATION: {m.get('translated_text')}")
+            txt_lines.append("-" * 40)
+        return PlainTextResponse(
+            content="\n".join(txt_lines),
+            media_type="text/plain",
+            headers={"Content-Disposition": f'attachment; filename="conversation_{session_id}.txt"'}
+        )
+
 @app.get("/api/snippets")
 def get_snippets():
     snippets = memory_manager.get_all_snippets()
@@ -800,7 +1041,8 @@ def delete_snippet_endpoint(snippet_id: int):
 
 @app.get("/api/search")
 @app.get("/search")
-def search_endpoint(q: str = Query("", alias="q")):
+@limiter.limit("20/minute")
+def search_endpoint(request: Request, q: str = Query("", alias="q")):
     query_clean = q.strip() if q else ""
     if not query_clean:
         return {"success": True, "query": "", "results": []}

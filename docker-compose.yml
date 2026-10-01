@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  butterfly-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: butterfly-ai-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DATABASE_PATH=/app/data/butterfly_memory.db
+      - AUDIO_OUTPUT_DIR=/app/backend/audio/output
+      - AUDIO_INPUT_DIR=/app/backend/audio/input
+      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    volumes:
+      - backend-data:/app/data
+      - audio-output:/app/backend/audio/output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  backend-data:
+    driver: local
+  audio-output:
+    driver: local

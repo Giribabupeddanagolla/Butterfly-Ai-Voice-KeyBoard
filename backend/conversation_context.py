@@ -24,3 +24,7 @@ CORE RULES:
 4. VOICE READINESS:
    - Keep spoken voice responses readable, expressive, and avoiding overly complex unpronounceable ASCII symbols when responding to general voice queries.
 """
+
+def get_project_context() -> str:
+    """Return the permanent system instructions for the AI model."""
+    return PROJECT_CONTEXT.strip()

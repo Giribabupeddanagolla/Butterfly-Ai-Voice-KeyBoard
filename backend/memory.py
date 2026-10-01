@@ -11,13 +11,22 @@ class MemoryManager:
         self.init_db()
 
     def get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(
+            self.db_path,
+            timeout=30.0,
+            check_same_thread=False
+        )
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA busy_timeout = 30000;")
         return conn
 
     def init_db(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            cursor.execute("PRAGMA journal_mode = WAL;")
+            cursor.execute("PRAGMA synchronous = NORMAL;")
             # Sessions table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (

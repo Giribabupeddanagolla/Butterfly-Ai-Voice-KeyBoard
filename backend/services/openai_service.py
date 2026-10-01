@@ -1,7 +1,8 @@
 import os
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from config import config, is_openai_active, mark_openai_failed
+from conversation_context import PROJECT_CONTEXT
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +153,14 @@ class OpenAIService:
                 "target_language": target_language
             }
 
-    def generate_chat_response(self, prompt: str, language: Optional[str] = None) -> Dict[str, Any]:
-        """Generate AI response using OpenAI Chat API preserving prompt language."""
+    def generate_chat_response(
+        self,
+        prompt: Optional[str] = None,
+        language: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
+        system_prompt: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate AI response using OpenAI Chat API preserving prompt language and conversation context."""
         client = self.get_client()
         if not client:
             return {
@@ -162,20 +169,30 @@ class OpenAIService:
             }
 
         try:
-            sys_msg = (
-                "You are Butterfly AI, an intelligent, helpful voice and text assistant. "
-                "Answer the user's question accurately, clearly, and concisely. "
-                "CRITICAL: Always answer in the exact same language that the user used in their question "
-                "(e.g., if asked in Telugu, answer in Telugu; if asked in English, answer in English; "
-                "if asked in Hindi, answer in Hindi, etc.). Do not translate or change the language unless explicitly requested."
-            )
+            effective_system = (system_prompt or PROJECT_CONTEXT).strip()
+            
+            chat_messages: List[Dict[str, str]] = []
+            if messages:
+                # If messages are passed, ensure system instruction is at the beginning
+                has_system = any(m.get("role") == "system" for m in messages)
+                if not has_system:
+                    chat_messages.append({"role": "system", "content": effective_system})
+                chat_messages.extend(messages)
+            elif prompt:
+                chat_messages = [
+                    {"role": "system", "content": effective_system},
+                    {"role": "user", "content": prompt}
+                ]
+            else:
+                return {
+                    "success": False,
+                    "error": "No prompt or messages provided for chat completion."
+                }
+
             model_name = getattr(config, "AI_MODEL", "gpt-4o-mini")
             response = client.chat.completions.create(
                 model=model_name,
-                messages=[
-                    {"role": "system", "content": sys_msg},
-                    {"role": "user", "content": prompt}
-                ],
+                messages=chat_messages,
                 temperature=0.7,
                 max_tokens=600
             )

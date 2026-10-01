@@ -1,7 +1,10 @@
 package com.butterflyai.keyboard
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -14,7 +17,10 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 
 class SettingsActivity : AppCompatActivity() {
@@ -30,6 +36,28 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnEnableIme: Button
     private lateinit var btnSelectIme: Button
     private lateinit var spinnerKeyboardTheme: Spinner
+
+    private lateinit var tvMicStatus: TextView
+    private lateinit var btnGrantMicPermission: Button
+    private lateinit var btnOpenAppSettings: Button
+    private lateinit var btnOpenHistory: Button
+
+    private val requestMicPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            updateMicPermissionUI(true)
+            Toast.makeText(this, "Microphone permission granted!", Toast.LENGTH_SHORT).show()
+        } else {
+            val permanentlyDenied = !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
+            updateMicPermissionUI(false, permanentlyDenied)
+            if (permanentlyDenied) {
+                Toast.makeText(this, "Microphone permission is disabled. Enable it from Android Settings.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Microphone permission is required for voice recording.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     private val themeOptions = arrayOf(
         "sky" to "☁️ Soft Sky (Default screenshot)",
@@ -54,16 +82,77 @@ class SettingsActivity : AppCompatActivity() {
         btnEnableIme = findViewById(R.id.btnEnableIme)
         btnSelectIme = findViewById(R.id.btnSelectIme)
         spinnerKeyboardTheme = findViewById(R.id.spinnerKeyboardTheme)
+
+        tvMicStatus = findViewById(R.id.tvMicStatus)
+        btnGrantMicPermission = findViewById(R.id.btnGrantMicPermission)
+        btnOpenAppSettings = findViewById(R.id.btnOpenAppSettings)
+        btnOpenHistory = findViewById(R.id.btnOpenHistory)
+
         val imgSettingsLogo = findViewById<android.widget.ImageView>(R.id.imgSettingsLogo)
         imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        var currentUrl = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com") ?: "https://butterfly-ai-voice-keyboard.onrender.com"
-        if (currentUrl.contains("192.168.") || currentUrl.contains("localhost")) {
-            currentUrl = "https://butterfly-ai-voice-keyboard.onrender.com"
-            prefs.edit().putString("server_url", currentUrl).apply()
-        }
+        // Priority: 1. User-configured/saved URL. 2. Safe default Render URL only if none configured.
+        // NOTE: Local/LAN URLs (e.g. 192.168.x.x, localhost, 127.0.0.1) MUST NOT be overwritten.
+        val currentUrl = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com") ?: "https://butterfly-ai-voice-keyboard.onrender.com"
         etServerUrl.setText(currentUrl)
+
+        btnGrantMicPermission.setOnClickListener {
+            val isGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            if (isGranted) {
+                Toast.makeText(this, "Microphone permission is already granted.", Toast.LENGTH_SHORT).show()
+                updateMicPermissionUI(true)
+            } else {
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+
+        btnOpenAppSettings.setOnClickListener {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Unable to open Android Settings", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnOpenHistory.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
+        }
+
+        // Typing & Feedback Preferences
+        val switchHaptic = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchHapticFeedback)
+        val switchDoubleSpace = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchDoubleSpacePeriod)
+        val btnCheckUpdates = findViewById<Button>(R.id.btnCheckUpdates)
+
+        switchHaptic?.isChecked = prefs.getBoolean("haptic_feedback", true)
+        switchHaptic?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("haptic_feedback", isChecked).apply()
+        }
+
+        switchDoubleSpace?.isChecked = prefs.getBoolean("double_space_period", true)
+        switchDoubleSpace?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("double_space_period", isChecked).apply()
+        }
+
+        btnCheckUpdates?.setOnClickListener {
+            try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Giribabupeddanagolla/Butterfly-Ai-Voice-KeyBoard/releases"))
+                startActivity(browserIntent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Could not open releases link", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Auto-launch permission dialog if opened specifically from the keyboard for mic permission
+        if (intent.getBooleanExtra("request_mic_permission", false)) {
+            val isGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            if (!isGranted) {
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
 
         // Setup Theme Selector Spinner with custom layout for explicit high-contrast white text color
         val themeNames = themeOptions.map { it.second }
@@ -154,11 +243,51 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         checkImeStatus()
+        checkMicPermissionStatus()
     }
 
     override fun onResume() {
         super.onResume()
         checkImeStatus()
+        checkMicPermissionStatus()
+    }
+
+    private fun checkMicPermissionStatus() {
+        val isGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (isGranted) {
+            updateMicPermissionUI(true)
+        } else {
+            val isPermanentlyDenied = !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
+            // If the user has denied and shouldShowRequestPermissionRationale is false, it's permanently disabled or not yet requested
+            updateMicPermissionUI(false, isPermanentlyDenied = false)
+        }
+    }
+
+    private fun updateMicPermissionUI(granted: Boolean, isPermanentlyDenied: Boolean = false) {
+        if (!::tvMicStatus.isInitialized || !::btnGrantMicPermission.isInitialized) return
+        when {
+            granted -> {
+                tvMicStatus.text = "✓ Status: Microphone permission granted"
+                tvMicStatus.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                btnGrantMicPermission.text = "Permission Granted"
+                btnGrantMicPermission.isEnabled = false
+                btnGrantMicPermission.alpha = 0.6f
+            }
+            isPermanentlyDenied -> {
+                tvMicStatus.text = "⚠️ Status: Microphone permission is disabled. Enable it from Android Settings."
+                tvMicStatus.setTextColor(android.graphics.Color.parseColor("#EF4444"))
+                btnGrantMicPermission.text = "Grant Mic Permission"
+                btnGrantMicPermission.isEnabled = true
+                btnGrantMicPermission.alpha = 1.0f
+            }
+            else -> {
+                tvMicStatus.text = "● Status: Microphone permission required for voice recording"
+                tvMicStatus.setTextColor(android.graphics.Color.parseColor("#F59E0B"))
+                btnGrantMicPermission.text = "Grant Mic Permission"
+                btnGrantMicPermission.isEnabled = true
+                btnGrantMicPermission.alpha = 1.0f
+            }
+        }
     }
 
     private fun checkImeStatus() {

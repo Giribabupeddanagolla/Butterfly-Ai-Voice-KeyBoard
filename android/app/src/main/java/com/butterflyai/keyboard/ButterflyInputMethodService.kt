@@ -87,6 +87,22 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     private var isAiAnswerLoading = false
 
+    // In-Keyboard Search Panel Controls
+    private lateinit var layoutSearchPanel: LinearLayout
+    private lateinit var tvSearchPanelTitle: TextView
+    private lateinit var btnCloseSearchPanel: Button
+    private lateinit var tvSearchStatus: TextView
+    private lateinit var layoutSearchResultsContainer: LinearLayout
+    private var isWebSearchLoading = false
+
+    // In-Keyboard Snippets Panel Controls
+    private lateinit var layoutSnippetsPanel: LinearLayout
+    private lateinit var tvSnippetsPanelTitle: TextView
+    private lateinit var btnCloseSnippetsPanel: Button
+    private lateinit var tvSnippetsStatus: TextView
+    private lateinit var layoutSnippetsContainer: LinearLayout
+    private var isSnippetsLoading = false
+
     private lateinit var btnToggleKeyboard: Button
     private lateinit var keyboardKeysLayout: LinearLayout
     private var scrollSuggestions: HorizontalScrollView? = null
@@ -407,6 +423,40 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         spinnerSourceLang = inputView.findViewById(R.id.spinnerSourceLang)
         spinnerTargetLang = inputView.findViewById(R.id.spinnerTargetLang)
 
+        // Bind Search and Snippets in-keyboard panels
+        layoutSearchPanel = inputView.findViewById(R.id.layoutSearchPanel)
+        tvSearchPanelTitle = inputView.findViewById(R.id.tvSearchPanelTitle)
+        btnCloseSearchPanel = inputView.findViewById(R.id.btnCloseSearchPanel)
+        tvSearchStatus = inputView.findViewById(R.id.tvSearchStatus)
+        layoutSearchResultsContainer = inputView.findViewById(R.id.layoutSearchResultsContainer)
+
+        layoutSnippetsPanel = inputView.findViewById(R.id.layoutSnippetsPanel)
+        tvSnippetsPanelTitle = inputView.findViewById(R.id.tvSnippetsPanelTitle)
+        btnCloseSnippetsPanel = inputView.findViewById(R.id.btnCloseSnippetsPanel)
+        tvSnippetsStatus = inputView.findViewById(R.id.tvSnippetsStatus)
+        layoutSnippetsContainer = inputView.findViewById(R.id.layoutSnippetsContainer)
+
+        btnCloseSearchPanel.setOnClickListener {
+            layoutSearchPanel.visibility = View.GONE
+        }
+
+        btnCloseSnippetsPanel.setOnClickListener {
+            layoutSnippetsPanel.visibility = View.GONE
+        }
+
+        // Header History Action -> Open Conversation History Activity
+        inputView.findViewById<View>(R.id.btnHistory)?.setOnClickListener {
+            try {
+                val intent = Intent(this, HistoryActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Open History error: ${e.message}", e)
+                Toast.makeText(this, "Unable to open History", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Setup Language Adapters with custom layout for explicit text color & dynamic theme styling
         val langNames = languages.map { it.second }
         val mainSourceAdapter = object : ArrayAdapter<String>(this, R.layout.spinner_item, langNames) {
@@ -535,7 +585,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         imgMicIconMain.setOnClickListener(startVoiceRecordingAction)
         inputView.findViewById<View>(R.id.btnCardVoice)?.setOnClickListener(startVoiceRecordingAction)
 
-        // Feature Card 2: Web Search -> DuckDuckGo in external browser
+        // Feature Card 2: Web Search -> In-keyboard search panel via backend /api/search
         inputView.findViewById<View>(R.id.btnCardSearch)?.setOnClickListener {
             handleSearchButtonClick()
         }
@@ -577,13 +627,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             }
         }
 
-        // Snippets Quick Action
+        // Snippets Quick Action -> Fetch user's snippets from backend API and show picker
         inputView.findViewById<View>(R.id.btnSnippets)?.setOnClickListener {
-            val ic = currentInputConnection
-            if (ic != null) {
-                ic.commitText("Hello! Thanks for reaching out. ", 1)
-                Toast.makeText(this, "Snippet inserted", Toast.LENGTH_SHORT).show()
-            }
+            handleSnippetsButtonClick()
         }
 
         // Recording State Actions
@@ -701,6 +747,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
+                if (::layoutSearchPanel.isInitialized) layoutSearchPanel.visibility = View.GONE
+                if (::layoutSnippetsPanel.isInitialized) layoutSnippetsPanel.visibility = View.GONE
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.VISIBLE
                 tvTapToSpeak.text = "🎙  TAP TO SPEAK"
                 btnTapToSpeak.setBackgroundColor(getThemePalette(currentThemeKey).accentColor)
@@ -710,6 +758,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.VISIBLE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.GONE
+                if (::layoutSearchPanel.isInitialized) layoutSearchPanel.visibility = View.GONE
+                if (::layoutSnippetsPanel.isInitialized) layoutSnippetsPanel.visibility = View.GONE
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.GONE
             }
             KeyboardState.PROCESSING -> {
@@ -717,6 +767,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.VISIBLE
                 layoutVoiceResult.visibility = View.GONE
+                if (::layoutSearchPanel.isInitialized) layoutSearchPanel.visibility = View.GONE
+                if (::layoutSnippetsPanel.isInitialized) layoutSnippetsPanel.visibility = View.GONE
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.GONE
                 tvProcessingStatus.text = "⏳ PROCESSING..."
             }
@@ -725,6 +777,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutRecordingState.visibility = View.GONE
                 layoutProcessingState.visibility = View.GONE
                 layoutVoiceResult.visibility = View.VISIBLE
+                if (::layoutSearchPanel.isInitialized) layoutSearchPanel.visibility = View.GONE
+                if (::layoutSnippetsPanel.isInitialized) layoutSnippetsPanel.visibility = View.GONE
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.VISIBLE
             }
         }
@@ -742,7 +796,28 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     private var backspaceRepeatJob: Job? = null
 
+    private fun triggerKeyHaptic(view: View? = null) {
+        try {
+            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("haptic_feedback", true)) return
+
+            if (view != null && view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)) {
+                return
+            }
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            if (v != null && v.hasVibrator()) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    v.vibrate(android.os.VibrationEffect.createOneShot(18, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v.vibrate(18)
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun performBackspace() {
+        triggerKeyHaptic()
         val ic = currentInputConnection ?: return
         val selectedText = ic.getSelectedText(0)
         if (!selectedText.isNullOrEmpty()) {
@@ -766,7 +841,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private fun setupKeyListeners(view: View) {
         // 1. QWERTY Letter Keys
         for ((id, charStr) in letterKeysMap) {
-            view.findViewById<Button>(id)?.setOnClickListener {
+            view.findViewById<Button>(id)?.setOnClickListener { btnView ->
+                triggerKeyHaptic(btnView)
                 val isUpper = isShifted || isCapsLock
                 val textToCommit = if (isUpper) charStr.uppercase(Locale.US) else charStr.lowercase(Locale.US)
                 currentInputConnection?.commitText(textToCommit, 1)
@@ -782,7 +858,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         // 2. Shift Key (Tap cycles: Shift -> Caps Lock -> Unshifted)
-        view.findViewById<Button>(R.id.btnShift)?.setOnClickListener {
+        view.findViewById<Button>(R.id.btnShift)?.setOnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
             when {
                 isCapsLock -> {
                     isCapsLock = false
@@ -802,7 +879,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         // 3. Numbers & Symbols Keys
         for ((id, charStr) in numberKeysMap) {
-            view.findViewById<Button>(id)?.setOnClickListener {
+            view.findViewById<Button>(id)?.setOnClickListener { btnView ->
+                triggerKeyHaptic(btnView)
                 currentInputConnection?.commitText(charStr, 1)
                 currentTypingWord.setLength(0)
                 hideSuggestions()
@@ -810,14 +888,23 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         // 4. Layout Mode Toggles (?123 | ABC | 😊)
-        val numModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.NUMBERS, view) }
+        val numModeListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
+            setKeyboardMode(KeyboardMode.NUMBERS, view)
+        }
         view.findViewById<Button>(R.id.btnNumMode)?.setOnClickListener(numModeListener)
 
-        val abcModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.LETTERS, view) }
+        val abcModeListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
+            setKeyboardMode(KeyboardMode.LETTERS, view)
+        }
         view.findViewById<Button>(R.id.btnAbcMode)?.setOnClickListener(abcModeListener)
         view.findViewById<Button>(R.id.btnAbcFromEmojiBottom)?.setOnClickListener(abcModeListener)
 
-        val emojiModeListener = View.OnClickListener { setKeyboardMode(KeyboardMode.EMOJI, view) }
+        val emojiModeListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
+            setKeyboardMode(KeyboardMode.EMOJI, view)
+        }
         view.findViewById<Button>(R.id.btnEmojiMode)?.apply {
             isAllCaps = false
             setOnClickListener(emojiModeListener)
@@ -843,18 +930,19 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             view.findViewById<Button>(id)?.isAllCaps = false
         }
 
-        view.findViewById<Button>(R.id.tabEmojiSmileys)?.setOnClickListener { loadEmojiCategory("smileys", view) }
-        view.findViewById<Button>(R.id.tabEmojiPeople)?.setOnClickListener { loadEmojiCategory("people", view) }
-        view.findViewById<Button>(R.id.tabEmojiAnimals)?.setOnClickListener { loadEmojiCategory("animals", view) }
-        view.findViewById<Button>(R.id.tabEmojiFood)?.setOnClickListener { loadEmojiCategory("food", view) }
-        view.findViewById<Button>(R.id.tabEmojiTravel)?.setOnClickListener { loadEmojiCategory("travel", view) }
-        view.findViewById<Button>(R.id.tabEmojiActivities)?.setOnClickListener { loadEmojiCategory("activities", view) }
-        view.findViewById<Button>(R.id.tabEmojiObjects)?.setOnClickListener { loadEmojiCategory("objects", view) }
-        view.findViewById<Button>(R.id.tabEmojiSymbols)?.setOnClickListener { loadEmojiCategory("symbols", view) }
-        view.findViewById<Button>(R.id.tabEmojiFlags)?.setOnClickListener { loadEmojiCategory("flags", view) }
+        view.findViewById<Button>(R.id.tabEmojiSmileys)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("smileys", view) }
+        view.findViewById<Button>(R.id.tabEmojiPeople)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("people", view) }
+        view.findViewById<Button>(R.id.tabEmojiAnimals)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("animals", view) }
+        view.findViewById<Button>(R.id.tabEmojiFood)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("food", view) }
+        view.findViewById<Button>(R.id.tabEmojiTravel)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("travel", view) }
+        view.findViewById<Button>(R.id.tabEmojiActivities)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("activities", view) }
+        view.findViewById<Button>(R.id.tabEmojiObjects)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("objects", view) }
+        view.findViewById<Button>(R.id.tabEmojiSymbols)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("symbols", view) }
+        view.findViewById<Button>(R.id.tabEmojiFlags)?.setOnClickListener { v -> triggerKeyHaptic(v); loadEmojiCategory("flags", view) }
 
         // 6. Punctuation Keys (, and .)
-        val commaListener = View.OnClickListener {
+        val commaListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
             currentInputConnection?.commitText(",", 1)
             currentTypingWord.setLength(0)
             hideSuggestions()
@@ -862,7 +950,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         view.findViewById<Button>(R.id.btnComma)?.setOnClickListener(commaListener)
         view.findViewById<Button>(R.id.btnCommaNum)?.setOnClickListener(commaListener)
 
-        val periodListener = View.OnClickListener {
+        val periodListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
             currentInputConnection?.commitText(".", 1)
             currentTypingWord.setLength(0)
             hideSuggestions()
@@ -871,9 +960,28 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         view.findViewById<Button>(R.id.btnPeriod)?.setOnClickListener(periodListener)
         view.findViewById<Button>(R.id.btnPeriodNum)?.setOnClickListener(periodListener)
 
-        // 7. Spacebar Keys
-        val spaceListener = View.OnClickListener {
-            currentInputConnection?.commitText(" ", 1)
+        // 7. Spacebar Keys with Double-Tap Shortcut
+        var lastSpaceTapTime = 0L
+        val spaceListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
+            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+            val doubleSpaceEnabled = prefs.getBoolean("double_space_period", true)
+            val now = System.currentTimeMillis()
+            val ic = currentInputConnection
+            if (doubleSpaceEnabled && (now - lastSpaceTapTime < 450L) && ic != null) {
+                val before = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+                if (before.endsWith(" ") && !before.endsWith(". ")) {
+                    ic.deleteSurroundingText(1, 0)
+                    ic.commitText(". ", 1)
+                    lastSpaceTapTime = 0L
+                    currentTypingWord.setLength(0)
+                    hideSuggestions()
+                    checkAutoCapitalization()
+                    return@OnClickListener
+                }
+            }
+            lastSpaceTapTime = now
+            ic?.commitText(" ", 1)
             currentTypingWord.setLength(0)
             hideSuggestions()
             checkAutoCapitalization()
@@ -912,7 +1020,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
 
         // 9. Enter Keys
-        val enterListener = View.OnClickListener {
+        val enterListener = View.OnClickListener { btnView ->
+            triggerKeyHaptic(btnView)
             currentTypingWord.setLength(0)
             hideSuggestions()
             val ic = currentInputConnection
@@ -1276,8 +1385,21 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val permission = Manifest.permission.RECORD_AUDIO
         val res = ContextCompat.checkSelfPermission(this, permission)
         if (res != PackageManager.PERMISSION_GRANTED) {
-            Log.e("ButterflyIME", "Microphone permission denied")
-            Toast.makeText(this, "Microphone permission required for voice recording", Toast.LENGTH_LONG).show()
+            Log.w("ButterflyIME", "Microphone permission denied. Directing user to SettingsActivity.")
+            Toast.makeText(
+                this,
+                "Microphone permission required for voice recording. Tap to grant in Settings.",
+                Toast.LENGTH_LONG
+            ).show()
+            try {
+                val intent = Intent(this, SettingsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra("request_mic_permission", true)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Failed to launch SettingsActivity: ${e.message}", e)
+            }
             return false
         }
         return true
@@ -1577,26 +1699,287 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     }
 
     private fun handleSearchButtonClick() {
-        try {
-            val ic = currentInputConnection
-            val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
-            val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
-            val currentInputText = if (selectedText.isNotBlank()) selectedText else beforeCursor
-            val query = currentInputText.trim()
+        if (!::layoutSearchPanel.isInitialized) return
 
-            val url = if (query.isNotEmpty()) {
-                "https://duckduckgo.com/?q=" + Uri.encode(query)
-            } else {
-                "https://duckduckgo.com/"
-            }
+        val ic = currentInputConnection
+        val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
+        val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+        val currentInputText = if (selectedText.isNotBlank()) selectedText else beforeCursor
+        val query = currentInputText.trim()
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (query.isEmpty()) {
+            Toast.makeText(this, "Type or speak a search query first", Toast.LENGTH_SHORT).show()
+            tvSearchPanelTitle.text = "🔍 Web Search"
+            tvSearchStatus.text = "⚠️ Type or speak a search query first, then tap Search."
+            tvSearchStatus.setTextColor(android.graphics.Color.parseColor("#B45309"))
+            tvSearchStatus.visibility = View.VISIBLE
+            layoutSearchResultsContainer.removeAllViews()
+            layoutVoiceResult.visibility = View.GONE
+            layoutSnippetsPanel.visibility = View.GONE
+            layoutSearchPanel.visibility = View.VISIBLE
+            return
+        }
+
+        layoutVoiceResult.visibility = View.GONE
+        layoutSnippetsPanel.visibility = View.GONE
+        layoutSearchPanel.visibility = View.VISIBLE
+
+        tvSearchPanelTitle.text = "🔍 Web Search: $query"
+        tvSearchStatus.text = "Searching..."
+        tvSearchStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
+        tvSearchStatus.visibility = View.VISIBLE
+        layoutSearchResultsContainer.removeAllViews()
+
+        if (isWebSearchLoading) return
+        isWebSearchLoading = true
+
+        serviceScope.launch {
+            try {
+                val result = networkService.searchWeb(query)
+                isWebSearchLoading = false
+
+                if (!result.success) {
+                    tvSearchStatus.visibility = View.VISIBLE
+                    tvSearchStatus.text = "⚠️ Search unavailable. Check your backend connection."
+                    tvSearchStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
+                    return@launch
+                }
+
+                val searchItems = result.results
+                if (searchItems.isEmpty()) {
+                    tvSearchStatus.visibility = View.VISIBLE
+                    tvSearchStatus.text = "No search results found for \"$query\"."
+                    tvSearchStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
+                    return@launch
+                }
+
+                tvSearchStatus.visibility = View.GONE
+                layoutSearchResultsContainer.removeAllViews()
+
+                val palette = getThemePalette(currentThemeKey)
+                val itemBgRes = if (palette.isDark) R.drawable.bg_lang_pill_dark else R.drawable.bg_lang_pill
+                val titleColor = if (palette.isDark) android.graphics.Color.parseColor("#38BDF8") else android.graphics.Color.parseColor("#1D4ED8")
+                val snippetColor = if (palette.isDark) android.graphics.Color.parseColor("#CBD5E1") else android.graphics.Color.parseColor("#334155")
+
+                for (item in searchItems) {
+                    val card = LinearLayout(this@ButterflyInputMethodService).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setBackgroundResource(itemBgRes)
+                        setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6))
+                        val params = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(5))
+                        }
+                        layoutParams = params
+                    }
+
+                    val titleTv = TextView(this@ButterflyInputMethodService).apply {
+                        text = item.title
+                        setTextColor(titleColor)
+                        textSize = 12f
+                        setTypeface(typeface, Typeface.BOLD)
+                        maxLines = 1
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }
+
+                    val snippetTv = TextView(this@ButterflyInputMethodService).apply {
+                        text = item.snippet
+                        setTextColor(snippetColor)
+                        textSize = 10.5f
+                        maxLines = 2
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            topMargin = dpToPx(1)
+                            bottomMargin = dpToPx(4)
+                        }
+                    }
+
+                    val btnRow = LinearLayout(this@ButterflyInputMethodService).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            dpToPx(26)
+                        )
+                    }
+
+                    val btnOpen = Button(this@ButterflyInputMethodService).apply {
+                        text = "🌐 Open"
+                        isAllCaps = false
+                        textSize = 10f
+                        setTextColor(android.graphics.Color.WHITE)
+                        setTypeface(typeface, Typeface.BOLD)
+                        setBackgroundResource(R.drawable.bg_quick_toolbar_pill)
+                        backgroundTintList = ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+                        setPadding(dpToPx(8), 0, dpToPx(8), 0)
+                        minHeight = 0
+                        minWidth = 0
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT
+                        ).apply {
+                            rightMargin = dpToPx(6)
+                        }
+                        setOnClickListener {
+                            try {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(item.url)).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                startActivity(browserIntent)
+                            } catch (e: Exception) {
+                                Toast.makeText(this@ButterflyInputMethodService, "Unable to open link", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+
+                    val btnInsert = Button(this@ButterflyInputMethodService).apply {
+                        text = "✓ Insert"
+                        isAllCaps = false
+                        textSize = 10f
+                        setTextColor(android.graphics.Color.WHITE)
+                        setTypeface(typeface, Typeface.BOLD)
+                        setBackgroundResource(R.drawable.bg_keycap_enter_blue)
+                        setPadding(dpToPx(8), 0, dpToPx(8), 0)
+                        minHeight = 0
+                        minWidth = 0
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT
+                        )
+                        setOnClickListener {
+                            val activeIc = currentInputConnection
+                            if (activeIc != null) {
+                                val insertText = if (item.snippet.isNotBlank()) {
+                                    "${item.title}: ${item.snippet} (${item.url}) "
+                                } else {
+                                    "${item.title} - ${item.url} "
+                                }
+                                activeIc.commitText(insertText, 1)
+                                Toast.makeText(this@ButterflyInputMethodService, "✓ Inserted search result", Toast.LENGTH_SHORT).show()
+                            }
+                            layoutSearchPanel.visibility = View.GONE
+                        }
+                    }
+
+                    btnRow.addView(btnOpen)
+                    btnRow.addView(btnInsert)
+
+                    card.addView(titleTv)
+                    card.addView(snippetTv)
+                    card.addView(btnRow)
+
+                    layoutSearchResultsContainer.addView(card)
+                }
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Search execution error: ${e.message}", e)
+                isWebSearchLoading = false
+                tvSearchStatus.visibility = View.VISIBLE
+                tvSearchStatus.text = "⚠️ Search unavailable. Check your backend connection."
+                tvSearchStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
             }
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e("ButterflyIME", "Search button error: ${e.message}", e)
-            Toast.makeText(this, "Unable to open browser", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun handleSnippetsButtonClick() {
+        if (!::layoutSnippetsPanel.isInitialized) return
+
+        layoutSearchPanel.visibility = View.GONE
+        layoutVoiceResult.visibility = View.GONE
+
+        layoutSnippetsPanel.visibility = View.VISIBLE
+        tvSnippetsStatus.visibility = View.VISIBLE
+        tvSnippetsStatus.text = "Loading snippets..."
+        tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
+        layoutSnippetsContainer.removeAllViews()
+
+        if (isSnippetsLoading) return
+        isSnippetsLoading = true
+
+        serviceScope.launch {
+            try {
+                val result = networkService.getSnippets()
+                isSnippetsLoading = false
+
+                if (!result.success) {
+                    tvSnippetsStatus.visibility = View.VISIBLE
+                    tvSnippetsStatus.text = "⚠️ Unable to load snippets. Check your backend connection."
+                    tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
+                    return@launch
+                }
+
+                val snippets = result.snippets
+                if (snippets.isEmpty()) {
+                    tvSnippetsStatus.visibility = View.VISIBLE
+                    tvSnippetsStatus.text = "No snippets found. Add snippets in Butterfly AI backend or Settings."
+                    tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
+                    return@launch
+                }
+
+                tvSnippetsStatus.visibility = View.GONE
+                layoutSnippetsContainer.removeAllViews()
+
+                val palette = getThemePalette(currentThemeKey)
+                val itemBgRes = if (palette.isDark) R.drawable.bg_lang_pill_dark else R.drawable.bg_lang_pill
+                val itemTextColor = if (palette.isDark) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#0F172A")
+                val itemSubtextColor = if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B")
+
+                for (snippet in snippets) {
+                    val itemView = LinearLayout(this@ButterflyInputMethodService).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setBackgroundResource(itemBgRes)
+                        setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6))
+                        val params = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(4))
+                        }
+                        layoutParams = params
+                        isClickable = true
+                        isFocusable = true
+                    }
+
+                    val titleView = TextView(this@ButterflyInputMethodService).apply {
+                        text = snippet.name
+                        setTextColor(itemTextColor)
+                        textSize = 12f
+                        setTypeface(typeface, Typeface.BOLD)
+                    }
+
+                    val previewView = TextView(this@ButterflyInputMethodService).apply {
+                        text = snippet.text
+                        setTextColor(itemSubtextColor)
+                        textSize = 10.5f
+                        maxLines = 2
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }
+
+                    itemView.addView(titleView)
+                    itemView.addView(previewView)
+
+                    itemView.setOnClickListener {
+                        val ic = currentInputConnection
+                        if (ic != null) {
+                            ic.commitText(snippet.text, 1)
+                            Toast.makeText(this@ButterflyInputMethodService, "✓ Inserted: ${snippet.name}", Toast.LENGTH_SHORT).show()
+                        }
+                        layoutSnippetsPanel.visibility = View.GONE
+                    }
+
+                    layoutSnippetsContainer.addView(itemView)
+                }
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Snippets load error: ${e.message}", e)
+                isSnippetsLoading = false
+                tvSnippetsStatus.visibility = View.VISIBLE
+                tvSnippetsStatus.text = "⚠️ Unable to load snippets. Check your backend connection."
+                tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
+            }
         }
     }
 
@@ -2051,8 +2434,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         (spinnerSource?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
         (spinnerTarget?.selectedView as? TextView)?.setTextColor(spinnerTextColor)
 
-        // 4. Action Toolbar Buttons (⌨, Snippets, Switch IME, Gear)
-        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnSwitchIme, R.id.btnCycleTheme)
+        // 4. Action Toolbar Buttons (⌨, Snippets, History, Switch IME, Gear)
+        val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnSnippets, R.id.btnHistory, R.id.btnSwitchIme, R.id.btnCycleTheme)
         for (id in toolbarIds) {
             val btn = rootRootView.findViewById<Button>(id)
             if (btn != null) {
@@ -2106,6 +2489,24 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         resBtn.setTextColor(palette.ctrlKeyText)
                     }
                 }
+            }
+        }
+
+        val layoutSearchPanel = rootRootView.findViewById<View>(R.id.layoutSearchPanel)
+        if (layoutSearchPanel != null) {
+            if (palette.isDark) {
+                layoutSearchPanel.setBackgroundColor(palette.cardBg)
+            } else {
+                layoutSearchPanel.setBackgroundColor(android.graphics.Color.parseColor("#F1F5F9"))
+            }
+        }
+
+        val layoutSnippetsPanel = rootRootView.findViewById<View>(R.id.layoutSnippetsPanel)
+        if (layoutSnippetsPanel != null) {
+            if (palette.isDark) {
+                layoutSnippetsPanel.setBackgroundColor(palette.cardBg)
+            } else {
+                layoutSnippetsPanel.setBackgroundColor(android.graphics.Color.parseColor("#F1F5F9"))
             }
         }
 

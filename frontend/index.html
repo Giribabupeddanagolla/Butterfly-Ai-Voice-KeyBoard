@@ -48,6 +48,11 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=3200">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3200">
     <link rel="manifest" href="manifest.json?v=3200">
+    <meta name="theme-color" content="#00D2FF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Butterfly AI">
 
     <link rel="stylesheet" href="style.css?v=4210.0">
     <script>
@@ -1531,6 +1536,14 @@
                     </div>
                     <p class="setting-subtext">Optional: add your OpenAI Key for Whisper STT & GPT-4o answers</p>
                     <input type="password" id="apiKeyInput" class="vk-input" placeholder="sk-...">
+                </div>
+
+                <div class="setting-item setting-item-col" id="adminTokenRow">
+                    <div class="setting-col-header">
+                        <label><i data-lucide="shield-check"></i> Admin Secret Token</label>
+                    </div>
+                    <p class="setting-subtext">Required only if ADMIN_SECRET_KEY is configured on the backend server</p>
+                    <input type="password" id="adminTokenInput" class="vk-input" placeholder="Admin authorization token">
                 </div>
 
                 <div class="setting-item setting-item-col">

@@ -175,6 +175,99 @@
                 android:paddingHorizontal="12dp" />
         </LinearLayout>
 
+        <!-- CARD 2B: KEYBOARD TYPING PREFERENCES -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_ai"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡ Typing &amp; Feedback Preferences"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Haptic Vibration Toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Vibration on Keypress"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tactile haptic feedback when typing"
+                        android:textColor="#94A3B8"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchHapticFeedback"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <!-- Double-Tap Space for Period Toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Double-tap Space for Period"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Inserts a period and space ('. ')"
+                        android:textColor="#94A3B8"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchDoubleSpacePeriod"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+        </LinearLayout>
+
         <!-- CARD 3: KEYBOARD ACTIVATION STEPS -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -231,6 +324,162 @@
                 android:background="@drawable/bg_quick_toolbar_pill"
                 android:backgroundTint="#059669"
                 android:gravity="start|center_vertical"
+                android:paddingHorizontal="16dp" />
+        </LinearLayout>
+
+        <!-- CARD 4: MICROPHONE PERMISSION SECTION -->
+        <LinearLayout
+            android:id="@+id/cardMicPermission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_voice"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎙️ Microphone Permission"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Required for voice recording, speech-to-text, and live translation."
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Dynamic Microphone Permission Status -->
+            <TextView
+                android:id="@+id/tvMicStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="● Checking microphone status..."
+                android:textColor="#F59E0B"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnGrantMicPermission"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:text="Grant Mic Permission"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_keycap_enter_blue"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnOpenAppSettings"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:text="Open Settings"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_quick_toolbar_pill"
+                    android:backgroundTint="#334155"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- CARD 5: HISTORY & CONVERSATIONS SECTION -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_search"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📜 Voice &amp; Translation History"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="View, copy, and manage your voice recordings, translations, and conversations."
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/btnOpenHistory"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:text="Open Conversation History ➔"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13.5sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:backgroundTint="#2563EB"
+                android:paddingHorizontal="16dp" />
+        </LinearLayout>
+
+        <!-- CARD 6: ABOUT & SYSTEM INFO -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_ai"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ℹ️ About Butterfly AI Keyboard"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvAppVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Version 1.0.0 (Build 1) • Multilingual Voice AI IME"
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnCheckUpdates"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="Check for Latest Releases ➔"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:backgroundTint="#334155"
                 android:paddingHorizontal="16dp" />
         </LinearLayout>
 

@@ -28,6 +28,13 @@
             </intent-filter>
         </activity>
 
+        <!-- History & Conversation Activity -->
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:label="Conversation History"
+            android:theme="@style/Theme.ButterflyAI" />
+
         <!-- Android Input Method Service (IME) -->
         <service
             android:name=".ButterflyInputMethodService"
