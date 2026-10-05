@@ -436,6 +436,34 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvSnippetsStatus = inputView.findViewById(R.id.tvSnippetsStatus)
         layoutSnippetsContainer = inputView.findViewById(R.id.layoutSnippetsContainer)
 
+        val btnManageSnippetsInSettings = inputView.findViewById<Button>(R.id.btnManageSnippetsInSettings)
+        btnManageSnippetsInSettings?.setOnClickListener {
+            try {
+                val intent = Intent(this, SettingsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra("open_snippets", true)
+                }
+                startActivity(intent)
+                layoutSnippetsPanel.visibility = View.GONE
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Open Settings for snippets error: ${e.message}")
+            }
+        }
+
+        val btnRestoreDefaultSnippets = inputView.findViewById<Button>(R.id.btnRestoreDefaultSnippets)
+        btnRestoreDefaultSnippets?.setOnClickListener {
+            serviceScope.launch {
+                btnRestoreDefaultSnippets.visibility = View.GONE
+                tvSnippetsStatus.visibility = View.VISIBLE
+                tvSnippetsStatus.text = "Restoring default snippets..."
+                val res = networkService.resetSnippets()
+                val snippets = if (res.success && res.snippets.isNotEmpty()) res.snippets else StarterSnippets.list
+                saveSnippetsToPrefsIME(snippets)
+                renderSnippetsInKeyboard(snippets)
+                Toast.makeText(this@ButterflyInputMethodService, "✓ Starter snippets loaded!", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         btnCloseSearchPanel.setOnClickListener {
             layoutSearchPanel.visibility = View.GONE
         }
@@ -1609,13 +1637,20 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                             tvTranslatedText.visibility = View.GONE
                         }
 
+                        // Check if spoken text matches a snippet voice trigger shortcut
+                        val matchedSnippet = findSnippetByVoiceTrigger(lastSpokenText)
+                        if (matchedSnippet != null) {
+                            lastFinalText = matchedSnippet.text
+                            Toast.makeText(this@ButterflyInputMethodService, "🎙️ Voice Trigger: ${matchedSnippet.name}", Toast.LENGTH_SHORT).show()
+                        }
+
                         // 1. Commit text into active input connection immediately
                         val ic = currentInputConnection
                         if (ic != null) {
                             val committed = ic.commitText(lastFinalText, 1)
                             lastCommittedText = lastFinalText
                             Log.d("ButterflyIME", "Text committed: $lastFinalText (success: $committed)")
-                            tvInsertedNotice.text = "✓ Inserted into app: \"$lastFinalText\""
+                            tvInsertedNotice.text = if (matchedSnippet != null) "✓ Voice Snippet [${matchedSnippet.name}]: \"$lastFinalText\"" else "✓ Inserted into app: \"$lastFinalText\""
                             tvInsertedNotice.visibility = View.VISIBLE
                         } else {
                             Log.w("ButterflyIME", "InputConnection is null")
@@ -1625,6 +1660,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
                         // 2. Transition to RESULT state (Keyboard remains open)
                         setKeyboardState(KeyboardState.RESULT)
+                        notifyHistoryUpdated()
 
                     } else {
                         val errMsg = result.error ?: "No speech detected"
@@ -1643,6 +1679,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         } else {
             Toast.makeText(this, "Empty speech recording", Toast.LENGTH_SHORT).show()
             setKeyboardState(KeyboardState.IDLE)
+        }
+    }
+
+    private fun notifyHistoryUpdated() {
+        try {
+            val intent = Intent("com.butterflyai.keyboard.ACTION_HISTORY_UPDATED").apply {
+                setPackage(packageName)
+            }
+            sendBroadcast(intent)
+            Log.d("ButterflyIME", "Broadcast ACTION_HISTORY_UPDATED")
+        } catch (e: Exception) {
+            Log.w("ButterflyIME", "Failed to broadcast history update: ${e.message}")
         }
     }
 
@@ -1885,6 +1933,40 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
+    private fun loadCachedSnippetsIME(): List<SnippetItem> {
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        val json = prefs.getString("cached_snippets_json", null)
+        if (!json.isNullOrEmpty()) {
+            try {
+                val listType = object : com.google.gson.reflect.TypeToken<List<SnippetItem>>() {}.type
+                val list: List<SnippetItem> = com.google.gson.Gson().fromJson(json, listType) ?: emptyList()
+                if (list.isNotEmpty()) return list
+            } catch (e: Exception) {
+                Log.e("ButterflyIME", "Cached snippets parse error: ${e.message}")
+            }
+        }
+        return StarterSnippets.list
+    }
+
+    private fun saveSnippetsToPrefsIME(list: List<SnippetItem>) {
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("cached_snippets_json", com.google.gson.Gson().toJson(list)).apply()
+    }
+
+    private fun findSnippetByVoiceTrigger(input: String): SnippetItem? {
+        val cleanInput = input.trim().lowercase()
+        if (cleanInput.isEmpty()) return null
+        val snippets = loadCachedSnippetsIME()
+        return snippets.firstOrNull { snippet ->
+            val trigger = snippet.voice_trigger?.trim()?.lowercase()
+            if (!trigger.isNullOrEmpty()) {
+                cleanInput == trigger || cleanInput.contains(trigger)
+            } else {
+                false
+            }
+        }
+    }
+
     private fun handleSnippetsButtonClick() {
         if (!::layoutSnippetsPanel.isInitialized) return
 
@@ -1892,10 +1974,10 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         layoutVoiceResult.visibility = View.GONE
 
         layoutSnippetsPanel.visibility = View.VISIBLE
-        tvSnippetsStatus.visibility = View.VISIBLE
-        tvSnippetsStatus.text = "Loading snippets..."
-        tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
-        layoutSnippetsContainer.removeAllViews()
+
+        // 1. Immediately render cached/starter snippets so the user sees results instantly
+        val cached = loadCachedSnippetsIME()
+        renderSnippetsInKeyboard(cached)
 
         if (isSnippetsLoading) return
         isSnippetsLoading = true
@@ -1905,81 +1987,113 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 val result = networkService.getSnippets()
                 isSnippetsLoading = false
 
-                if (!result.success) {
-                    tvSnippetsStatus.visibility = View.VISIBLE
-                    tvSnippetsStatus.text = "⚠️ Unable to load snippets. Check your backend connection."
-                    tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
-                    return@launch
-                }
-
-                val snippets = result.snippets
-                if (snippets.isEmpty()) {
-                    tvSnippetsStatus.visibility = View.VISIBLE
-                    tvSnippetsStatus.text = "No snippets found. Add snippets in Butterfly AI backend or Settings."
-                    tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
-                    return@launch
-                }
-
-                tvSnippetsStatus.visibility = View.GONE
-                layoutSnippetsContainer.removeAllViews()
-
-                val palette = getThemePalette(currentThemeKey)
-                val itemBgRes = if (palette.isDark) R.drawable.bg_lang_pill_dark else R.drawable.bg_lang_pill
-                val itemTextColor = if (palette.isDark) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#0F172A")
-                val itemSubtextColor = if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B")
-
-                for (snippet in snippets) {
-                    val itemView = LinearLayout(this@ButterflyInputMethodService).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setBackgroundResource(itemBgRes)
-                        setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6))
-                        val params = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, 0, 0, dpToPx(4))
-                        }
-                        layoutParams = params
-                        isClickable = true
-                        isFocusable = true
+                if (result.success) {
+                    if (result.snippets.isNotEmpty()) {
+                        saveSnippetsToPrefsIME(result.snippets)
+                        renderSnippetsInKeyboard(result.snippets)
+                    } else {
+                        // Empty on server: seed defaults automatically
+                        val resetRes = networkService.resetSnippets()
+                        val seeded = if (resetRes.success && resetRes.snippets.isNotEmpty()) resetRes.snippets else StarterSnippets.list
+                        saveSnippetsToPrefsIME(seeded)
+                        renderSnippetsInKeyboard(seeded)
                     }
-
-                    val titleView = TextView(this@ButterflyInputMethodService).apply {
-                        text = snippet.name
-                        setTextColor(itemTextColor)
-                        textSize = 12f
-                        setTypeface(typeface, Typeface.BOLD)
-                    }
-
-                    val previewView = TextView(this@ButterflyInputMethodService).apply {
-                        text = snippet.text
-                        setTextColor(itemSubtextColor)
-                        textSize = 10.5f
-                        maxLines = 2
-                        ellipsize = android.text.TextUtils.TruncateAt.END
-                    }
-
-                    itemView.addView(titleView)
-                    itemView.addView(previewView)
-
-                    itemView.setOnClickListener {
-                        val ic = currentInputConnection
-                        if (ic != null) {
-                            ic.commitText(snippet.text, 1)
-                            Toast.makeText(this@ButterflyInputMethodService, "✓ Inserted: ${snippet.name}", Toast.LENGTH_SHORT).show()
-                        }
-                        layoutSnippetsPanel.visibility = View.GONE
-                    }
-
-                    layoutSnippetsContainer.addView(itemView)
+                } else {
+                    // Backend offline/unreachable: cached snippets are already visible
+                    Log.w("ButterflyIME", "Backend getSnippets returned: ${result.error}")
                 }
             } catch (e: Exception) {
                 Log.e("ButterflyIME", "Snippets load error: ${e.message}", e)
                 isSnippetsLoading = false
-                tvSnippetsStatus.visibility = View.VISIBLE
-                tvSnippetsStatus.text = "⚠️ Unable to load snippets. Check your backend connection."
-                tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#DC2626"))
             }
+        }
+    }
+
+    private fun renderSnippetsInKeyboard(snippets: List<SnippetItem>) {
+        if (!::layoutSnippetsContainer.isInitialized) return
+        layoutSnippetsContainer.removeAllViews()
+
+        val btnRestoreDefaultSnippets = currentRootView?.findViewById<Button>(R.id.btnRestoreDefaultSnippets)
+
+        if (snippets.isEmpty()) {
+            tvSnippetsStatus.visibility = View.VISIBLE
+            tvSnippetsStatus.text = "No snippets found. Tap below to load templates:"
+            tvSnippetsStatus.setTextColor(android.graphics.Color.parseColor("#475569"))
+            btnRestoreDefaultSnippets?.visibility = View.VISIBLE
+            return
+        }
+
+        tvSnippetsStatus.visibility = View.GONE
+        btnRestoreDefaultSnippets?.visibility = View.GONE
+
+        val palette = getThemePalette(currentThemeKey)
+        val itemBgRes = if (palette.isDark) R.drawable.bg_lang_pill_dark else R.drawable.bg_lang_pill
+        val itemTextColor = if (palette.isDark) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#0F172A")
+        val itemSubtextColor = if (palette.isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B")
+
+        for (snippet in snippets) {
+            val itemView = LinearLayout(this@ButterflyInputMethodService).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundResource(itemBgRes)
+                setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6))
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 0, 0, dpToPx(4))
+                }
+                layoutParams = params
+                isClickable = true
+                isFocusable = true
+            }
+
+            val topRow = LinearLayout(this@ButterflyInputMethodService).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
+
+            val titleView = TextView(this@ButterflyInputMethodService).apply {
+                text = snippet.name
+                setTextColor(itemTextColor)
+                textSize = 12f
+                setTypeface(typeface, Typeface.BOLD)
+                val p = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = p
+            }
+            topRow.addView(titleView)
+
+            if (!snippet.voice_trigger.isNullOrBlank()) {
+                val triggerView = TextView(this@ButterflyInputMethodService).apply {
+                    text = "🎙️ \"${snippet.voice_trigger}\""
+                    setTextColor(if (palette.isDark) android.graphics.Color.parseColor("#38BDF8") else android.graphics.Color.parseColor("#0284C7"))
+                    textSize = 9.5f
+                    setPadding(dpToPx(4), dpToPx(1), dpToPx(4), dpToPx(1))
+                }
+                topRow.addView(triggerView)
+            }
+
+            itemView.addView(topRow)
+
+            val previewView = TextView(this@ButterflyInputMethodService).apply {
+                text = snippet.text
+                setTextColor(itemSubtextColor)
+                textSize = 10.5f
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            itemView.addView(previewView)
+
+            itemView.setOnClickListener {
+                val ic = currentInputConnection
+                if (ic != null) {
+                    ic.commitText(snippet.text, 1)
+                    Toast.makeText(this@ButterflyInputMethodService, "✓ Inserted: ${snippet.name}", Toast.LENGTH_SHORT).show()
+                }
+                layoutSnippetsPanel.visibility = View.GONE
+            }
+
+            layoutSnippetsContainer.addView(itemView)
         }
     }
 
@@ -2038,6 +2152,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     lastFinalText = res.answer
                     tvInsertedNotice.text = "✓ AI Response Ready"
                     tvInsertedNotice.visibility = View.VISIBLE
+                    notifyHistoryUpdated()
                 } else {
                     val rawError = res.error ?: ""
                     val errorMsg = when {

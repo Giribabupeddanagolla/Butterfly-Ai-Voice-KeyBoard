@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/settingsScrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0F172A"
@@ -439,6 +440,161 @@
                 android:background="@drawable/bg_quick_toolbar_pill"
                 android:backgroundTint="#2563EB"
                 android:paddingHorizontal="16dp" />
+        </LinearLayout>
+
+        <!-- CARD 6: CUSTOM SNIPPETS & VOICE SHORTCUTS SECTION -->
+        <LinearLayout
+            android:id="@+id/cardSnippetsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_voice"
+            android:backgroundTint="#1E293B"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📝 Custom Snippets &amp; Quick Text"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add templates and voice triggers to insert instantly with the 📝 keyboard button."
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- New Snippet Inputs -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Snippet Name"
+                android:textColor="#94A3B8"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/etSnippetName"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="e.g. My Email, Work Address, Quick Greeting"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:background="@drawable/bg_search_bar"
+                android:backgroundTint="#0F172A"
+                android:paddingHorizontal="12dp"
+                android:inputType="textCapWords"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Snippet Content (Text to Insert)"
+                android:textColor="#94A3B8"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/etSnippetText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="54dp"
+                android:hint="Type or paste the full text template here..."
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:background="@drawable/bg_search_bar"
+                android:backgroundTint="#0F172A"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:inputType="textMultiLine"
+                android:gravity="top|start"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Voice Shortcut Trigger (Optional)"
+                android:textColor="#94A3B8"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/etSnippetTrigger"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="e.g. 'my email' or 'greeting'"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:background="@drawable/bg_search_bar"
+                android:backgroundTint="#0F172A"
+                android:paddingHorizontal="12dp"
+                android:inputType="text"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Buttons: Add Snippet & Reset Defaults -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="14dp">
+
+                <Button
+                    android:id="@+id/btnAddSnippet"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:text="+ Add Snippet"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_quick_toolbar_pill"
+                    android:backgroundTint="#2563EB"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btnResetSnippets"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="↺ Defaults"
+                    android:textAllCaps="false"
+                    android:textColor="#CBD5E1"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_quick_toolbar_pill"
+                    android:backgroundTint="#334155"
+                    android:paddingHorizontal="14dp" />
+            </LinearLayout>
+
+            <!-- Status Notice -->
+            <TextView
+                android:id="@+id/tvSettingsSnippetsStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading snippets..."
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Dynamic Snippets List -->
+            <LinearLayout
+                android:id="@+id/layoutSettingsSnippetsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
         </LinearLayout>
 
         <!-- CARD 6: ABOUT & SYSTEM INFO -->

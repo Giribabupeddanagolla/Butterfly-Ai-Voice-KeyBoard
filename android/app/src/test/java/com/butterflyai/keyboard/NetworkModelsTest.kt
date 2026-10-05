@@ -223,4 +223,11 @@ class NetworkModelsTest {
         val matchNotFound = findSnippetByTrigger("what is the weather today?", snippets)
         assertNull(matchNotFound)
     }
+
+    @Test
+    fun testStarterSnippets() {
+        assertTrue(StarterSnippets.list.isNotEmpty())
+        assertEquals(6, StarterSnippets.list.size)
+        assertTrue(StarterSnippets.list.any { it.name == "Work Email" })
+    }
 }

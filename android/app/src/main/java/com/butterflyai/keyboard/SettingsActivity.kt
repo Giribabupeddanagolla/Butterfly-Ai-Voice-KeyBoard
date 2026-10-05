@@ -17,6 +17,13 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.graphics.Typeface
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -27,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private val activityScope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var networkService: NetworkService
+    private val gson = Gson()
 
     private lateinit var etServerUrl: EditText
     private lateinit var btnSaveUrl: Button
@@ -41,6 +49,17 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnGrantMicPermission: Button
     private lateinit var btnOpenAppSettings: Button
     private lateinit var btnOpenHistory: Button
+
+    // Snippets Manager Views
+    private lateinit var cardSnippetsSection: View
+    private lateinit var etSnippetName: EditText
+    private lateinit var etSnippetText: EditText
+    private lateinit var etSnippetTrigger: EditText
+    private lateinit var btnAddSnippet: Button
+    private lateinit var btnResetSnippets: Button
+    private lateinit var tvSettingsSnippetsStatus: TextView
+    private lateinit var layoutSettingsSnippetsList: LinearLayout
+    private var currentSnippetsList: MutableList<SnippetItem> = mutableListOf()
 
     private val requestMicPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -242,6 +261,25 @@ class SettingsActivity : AppCompatActivity() {
             imm.showInputMethodPicker()
         }
 
+        // Setup Custom Snippets Manager
+        cardSnippetsSection = findViewById(R.id.cardSnippetsSection)
+        etSnippetName = findViewById(R.id.etSnippetName)
+        etSnippetText = findViewById(R.id.etSnippetText)
+        etSnippetTrigger = findViewById(R.id.etSnippetTrigger)
+        btnAddSnippet = findViewById(R.id.btnAddSnippet)
+        btnResetSnippets = findViewById(R.id.btnResetSnippets)
+        tvSettingsSnippetsStatus = findViewById(R.id.tvSettingsSnippetsStatus)
+        layoutSettingsSnippetsList = findViewById(R.id.layoutSettingsSnippetsList)
+
+        setupSnippetsManager()
+
+        if (intent.getBooleanExtra("open_snippets", false)) {
+            val scrollView = findViewById<ScrollView>(R.id.settingsScrollView)
+            cardSnippetsSection.post {
+                scrollView?.smoothScrollTo(0, cardSnippetsSection.top)
+            }
+        }
+
         checkImeStatus()
         checkMicPermissionStatus()
     }
@@ -250,6 +288,235 @@ class SettingsActivity : AppCompatActivity() {
         super.onResume()
         checkImeStatus()
         checkMicPermissionStatus()
+        loadCachedSnippets()
+        fetchSnippetsFromBackend()
+    }
+
+    private fun setupSnippetsManager() {
+        loadCachedSnippets()
+        fetchSnippetsFromBackend()
+
+        btnAddSnippet.setOnClickListener {
+            val name = etSnippetName.text.toString().trim()
+            val text = etSnippetText.text.toString().trim()
+            val trigger = etSnippetTrigger.text.toString().trim().ifBlank { null }
+
+            if (name.isEmpty() || text.isEmpty()) {
+                android.widget.Toast.makeText(this, "Please provide both Snippet Name and Content.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            btnAddSnippet.isEnabled = false
+            btnAddSnippet.text = "Saving..."
+
+            activityScope.launch {
+                val success = networkService.createSnippet(name, text, trigger)
+                if (success) {
+                    etSnippetName.setText("")
+                    etSnippetText.setText("")
+                    etSnippetTrigger.setText("")
+                    android.widget.Toast.makeText(this@SettingsActivity, "✓ Snippet '$name' added to Butterfly AI!", android.widget.Toast.LENGTH_SHORT).show()
+                    fetchSnippetsFromBackend()
+                } else {
+                    // Offline or server not reached: persist locally so keyboard can use it immediately
+                    val newId = (currentSnippetsList.maxOfOrNull { it.id } ?: 0) + 1
+                    val localSnippet = SnippetItem(id = newId, name = name, text = text, voice_trigger = trigger)
+                    currentSnippetsList.add(0, localSnippet)
+                    saveSnippetsToCache(currentSnippetsList)
+                    renderSnippetsUI(currentSnippetsList)
+                    etSnippetName.setText("")
+                    etSnippetText.setText("")
+                    etSnippetTrigger.setText("")
+                    android.widget.Toast.makeText(this@SettingsActivity, "✓ Saved locally to Keyboard! (Server offline)", android.widget.Toast.LENGTH_LONG).show()
+                }
+                btnAddSnippet.isEnabled = true
+                btnAddSnippet.text = "+ Add Snippet"
+            }
+        }
+
+        btnResetSnippets.setOnClickListener {
+            btnResetSnippets.isEnabled = false
+            btnResetSnippets.text = "↺ Resetting..."
+            activityScope.launch {
+                val result = networkService.resetSnippets()
+                if (result.success && result.snippets.isNotEmpty()) {
+                    currentSnippetsList = result.snippets.toMutableList()
+                    saveSnippetsToCache(currentSnippetsList)
+                    renderSnippetsUI(currentSnippetsList)
+                    android.widget.Toast.makeText(this@SettingsActivity, "✓ Restored default starter snippets!", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    currentSnippetsList = StarterSnippets.list.toMutableList()
+                    saveSnippetsToCache(currentSnippetsList)
+                    renderSnippetsUI(currentSnippetsList)
+                    android.widget.Toast.makeText(this@SettingsActivity, "✓ Restored standard starter snippets", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                btnResetSnippets.isEnabled = true
+                btnResetSnippets.text = "↺ Defaults"
+            }
+        }
+    }
+
+    private fun loadCachedSnippets() {
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        val json = prefs.getString("cached_snippets_json", null)
+        if (!json.isNullOrEmpty()) {
+            try {
+                val listType = object : TypeToken<List<SnippetItem>>() {}.type
+                val cached: List<SnippetItem> = gson.fromJson(json, listType) ?: emptyList()
+                if (cached.isNotEmpty()) {
+                    currentSnippetsList = cached.toMutableList()
+                    renderSnippetsUI(currentSnippetsList)
+                    return
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsActivity", "Error loading cached snippets: ${e.message}")
+            }
+        }
+        currentSnippetsList = StarterSnippets.list.toMutableList()
+        renderSnippetsUI(currentSnippetsList)
+    }
+
+    private fun saveSnippetsToCache(list: List<SnippetItem>) {
+        val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("cached_snippets_json", gson.toJson(list)).apply()
+    }
+
+    private fun fetchSnippetsFromBackend() {
+        tvSettingsSnippetsStatus.visibility = View.VISIBLE
+        tvSettingsSnippetsStatus.text = "Syncing with Butterfly AI cloud..."
+        activityScope.launch {
+            val result = networkService.getSnippets()
+            if (result.success) {
+                if (result.snippets.isNotEmpty()) {
+                    currentSnippetsList = result.snippets.toMutableList()
+                    saveSnippetsToCache(currentSnippetsList)
+                    renderSnippetsUI(currentSnippetsList)
+                } else {
+                    // Empty backend: seed default snippets
+                    val resetRes = networkService.resetSnippets()
+                    if (resetRes.success && resetRes.snippets.isNotEmpty()) {
+                        currentSnippetsList = resetRes.snippets.toMutableList()
+                        saveSnippetsToCache(currentSnippetsList)
+                        renderSnippetsUI(currentSnippetsList)
+                    } else {
+                        renderSnippetsUI(currentSnippetsList)
+                    }
+                }
+            } else {
+                tvSettingsSnippetsStatus.text = "Offline Mode: Showing ${currentSnippetsList.size} cached snippets"
+            }
+        }
+    }
+
+    private fun renderSnippetsUI(snippets: List<SnippetItem>) {
+        layoutSettingsSnippetsList.removeAllViews()
+
+        if (snippets.isEmpty()) {
+            tvSettingsSnippetsStatus.text = "No snippets found. Tap '↺ Defaults' or add one above."
+            tvSettingsSnippetsStatus.visibility = View.VISIBLE
+            return
+        }
+
+        tvSettingsSnippetsStatus.text = "Showing ${snippets.size} custom snippets (Tap to copy):"
+        tvSettingsSnippetsStatus.visibility = View.VISIBLE
+
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+
+        for (snippet in snippets) {
+            val itemCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = ContextCompat.getDrawable(this@SettingsActivity, R.drawable.bg_search_bar)?.constantState?.newDrawable()?.mutate()
+                backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#0F172A"))
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(0, 0, 0, dp(8))
+                }
+                layoutParams = lp
+                isClickable = true
+                isFocusable = true
+            }
+
+            // Top Header: Name + Trigger Pill + Delete Button
+            val headerRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
+
+            val titleView = TextView(this).apply {
+                text = snippet.name
+                setTextColor(android.graphics.Color.WHITE)
+                textSize = 13.5f
+                setTypeface(typeface, Typeface.BOLD)
+                val p = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = p
+            }
+            headerRow.addView(titleView)
+
+            if (!snippet.voice_trigger.isNullOrBlank()) {
+                val triggerPill = TextView(this).apply {
+                    text = "🎙️ \"${snippet.voice_trigger}\""
+                    setTextColor(android.graphics.Color.parseColor("#38BDF8"))
+                    textSize = 10.5f
+                    setBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+                    setPadding(dp(7), dp(2), dp(7), dp(2))
+                    val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                        setMargins(dp(4), 0, dp(8), 0)
+                    }
+                    layoutParams = p
+                }
+                headerRow.addView(triggerPill)
+            }
+
+            val deleteBtn = Button(this).apply {
+                text = "✕ Delete"
+                setTextColor(android.graphics.Color.parseColor("#EF4444"))
+                textSize = 10.5f
+                setTypeface(typeface, Typeface.BOLD)
+                setBackgroundResource(R.drawable.bg_quick_toolbar_pill)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1E293B"))
+                setPadding(dp(8), dp(0), dp(8), dp(0))
+                minHeight = dp(28)
+                minWidth = dp(40)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(28))
+            }
+
+            deleteBtn.setOnClickListener {
+                activityScope.launch {
+                    networkService.deleteSnippet(snippet.id)
+                    currentSnippetsList.removeAll { it.id == snippet.id }
+                    saveSnippetsToCache(currentSnippetsList)
+                    renderSnippetsUI(currentSnippetsList)
+                    android.widget.Toast.makeText(this@SettingsActivity, "Snippet deleted", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            headerRow.addView(deleteBtn)
+            itemCard.addView(headerRow)
+
+            // Content preview
+            val contentView = TextView(this).apply {
+                text = snippet.text
+                setTextColor(android.graphics.Color.parseColor("#CBD5E1"))
+                textSize = 12f
+                maxLines = 3
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(0, dp(4), 0, 0)
+                }
+                layoutParams = p
+            }
+            itemCard.addView(contentView)
+
+            itemCard.setOnClickListener {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText(snippet.name, snippet.text)
+                clipboard.setPrimaryClip(clip)
+                android.widget.Toast.makeText(this, "✓ Copied \"${snippet.name}\" to clipboard!", android.widget.Toast.LENGTH_SHORT).show()
+            }
+
+            layoutSettingsSnippetsList.addView(itemCard)
+        }
     }
 
     private fun checkMicPermissionStatus() {

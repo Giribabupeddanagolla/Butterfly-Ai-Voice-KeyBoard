@@ -186,6 +186,12 @@ def test_snippets_crud(client):
     assert res.status_code == 200
     assert res.json()["success"] is True
 
+    # 5. Reset to defaults
+    res = client.post("/api/snippets/reset")
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+    assert len(res.json()["snippets"]) >= 5
+
 # 8. History / Conversations Endpoints
 def test_conversations_endpoint(client):
     res = client.get("/conversations")

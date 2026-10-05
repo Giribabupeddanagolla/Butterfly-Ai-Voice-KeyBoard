@@ -854,7 +854,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (modalBody) modalBody.scrollTop = 0;
                 if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
                 if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
-                if (settingsModal) settingsModal.classList.add('active');
+                if (settingsModal) {
+                    settingsModal.style.display = 'flex';
+                    settingsModal.classList.add('active');
+                }
                 settingsBtn.classList.add('active');
                 checkOpenAIStatus();
             });
@@ -862,7 +865,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (closeSettingsBtn) {
             closeSettingsBtn.addEventListener('click', () => {
-                if (settingsModal) settingsModal.classList.remove('active');
+                if (settingsModal) {
+                    settingsModal.style.display = 'none';
+                    settingsModal.classList.remove('active');
+                }
                 if (settingsBtn) settingsBtn.classList.remove('active');
             });
         }
@@ -870,6 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settingsModal) {
             settingsModal.addEventListener('click', (e) => {
                 if (e.target === settingsModal) {
+                    settingsModal.style.display = 'none';
                     settingsModal.classList.remove('active');
                     if (settingsBtn) settingsBtn.classList.remove('active');
                 }
@@ -878,10 +885,350 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && settingsModal && settingsModal.classList.contains('active')) {
+                settingsModal.style.display = 'none';
                 settingsModal.classList.remove('active');
                 if (settingsBtn) settingsBtn.classList.remove('active');
             }
         });
+
+        // ==========================================================================
+        // CUSTOM SNIPPETS CONTROLLER & UI
+        // ==========================================================================
+        const snippetsModal = document.getElementById('snippetsModal');
+        const closeSnippetsBtn = document.getElementById('closeSnippetsBtn');
+        const navSnippetsBtn = document.getElementById('navSnippetsBtn');
+        const mobileSnippetsLink = document.getElementById('mobileSnippetsLink');
+        const mobileSettingsLink = document.getElementById('mobileSettingsLink');
+        const imeSnippetsBtn = document.getElementById('imeSnippetsBtn');
+        const openSnippetsFromSettingsBtn = document.getElementById('openSnippetsFromSettingsBtn');
+        const snippetsContainer = document.getElementById('snippetsContainer');
+        const snippetTitleInput = document.getElementById('snippetTitleInput');
+        const snippetContentInput = document.getElementById('snippetContentInput');
+        const snippetTriggerInput = document.getElementById('snippetTriggerInput');
+        const saveSnippetBtn = document.getElementById('saveSnippetBtn');
+        const resetSnippetsBtn = document.getElementById('resetSnippetsBtn');
+        const snippetsCountLabel = document.getElementById('snippetsCountLabel');
+
+        let localSnippetsCache = [];
+
+        function escapeSnippetHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function openSnippetsModal() {
+            if (!snippetsModal) return;
+            snippetsModal.style.display = 'flex';
+            snippetsModal.classList.add('active');
+            if (navSnippetsBtn) navSnippetsBtn.classList.add('active');
+            await loadSnippets();
+        }
+
+        function closeSnippetsModal() {
+            if (!snippetsModal) return;
+            snippetsModal.style.display = 'none';
+            snippetsModal.classList.remove('active');
+            if (navSnippetsBtn) navSnippetsBtn.classList.remove('active');
+        }
+
+        async function loadSnippets() {
+            if (!snippetsContainer) return;
+            snippetsContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);"><span style="font-size: 0.9rem;">Loading snippets...</span></div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/snippets`);
+                if (res.ok) {
+                    const data = await res.json();
+                    localSnippetsCache = data.snippets || [];
+                    renderSnippetsList(localSnippetsCache);
+                } else {
+                    renderSnippetsList(localSnippetsCache);
+                }
+            } catch (err) {
+                console.warn('Failed to fetch snippets from backend:', err);
+                renderSnippetsList(localSnippetsCache);
+            }
+        }
+
+        function renderSnippetsList(snippets) {
+            if (!snippetsContainer) return;
+            if (snippetsCountLabel) {
+                snippetsCountLabel.textContent = `Snippets (${snippets.length})`;
+            }
+
+            if (!snippets || snippets.length === 0) {
+                snippetsContainer.innerHTML = `
+                    <div class="snippets-empty-state">
+                        <i data-lucide="bookmark-x"></i>
+                        <p style="margin: 0; font-weight: 600;">No snippets found</p>
+                        <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted);">Add your first snippet above or click "Restore Defaults".</p>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            snippetsContainer.innerHTML = '';
+            snippets.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'snippet-item-card';
+
+                const triggerHtml = s.voice_trigger
+                    ? `<span class="snippet-tag-trigger"><i data-lucide="mic" style="width: 12px; height: 12px;"></i> "${escapeSnippetHtml(s.voice_trigger)}"</span>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="snippet-item-top">
+                        <span class="snippet-item-title">${escapeSnippetHtml(s.title || 'Untitled Snippet')}</span>
+                        ${triggerHtml}
+                    </div>
+                    <div class="snippet-item-text">${escapeSnippetHtml(s.content || '')}</div>
+                    <div class="snippet-item-actions">
+                        <button type="button" class="btn-snippet-action insert-btn" title="Insert into active input">
+                            <i data-lucide="corner-down-left" style="width: 13px; height: 13px;"></i> Insert
+                        </button>
+                        <button type="button" class="btn-snippet-action copy-btn" title="Copy text to clipboard">
+                            <i data-lucide="copy" style="width: 13px; height: 13px;"></i> Copy
+                        </button>
+                        <button type="button" class="btn-snippet-action delete-btn" title="Delete snippet">
+                            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i> Delete
+                        </button>
+                    </div>
+                `;
+
+                // Wire action buttons
+                const insertBtn = card.querySelector('.insert-btn');
+                const copyBtn = card.querySelector('.copy-btn');
+                const deleteBtn = card.querySelector('.delete-btn');
+
+                if (insertBtn) {
+                    insertBtn.addEventListener('click', () => {
+                        const text = s.content || '';
+                        const mainInput = document.getElementById('mainSearchInput');
+                        const targetInput = (typeof TextInsertionService !== 'undefined' && TextInsertionService.getActiveInput)
+                            ? TextInsertionService.getActiveInput()
+                            : mainInput;
+                        if (targetInput) {
+                            if (typeof TextInsertionService !== 'undefined' && TextInsertionService.insertText) {
+                                TextInsertionService.insertText(text, targetInput);
+                            } else {
+                                targetInput.value = (targetInput.value || '') + text;
+                                targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                        closeSnippetsModal();
+                    });
+                }
+
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', async () => {
+                        try {
+                            await navigator.clipboard.writeText(s.content || '');
+                            copyBtn.innerHTML = '<i data-lucide="check" style="width: 13px; height: 13px;"></i> Copied!';
+                            if (window.lucide) lucide.createIcons();
+                            setTimeout(() => {
+                                copyBtn.innerHTML = '<i data-lucide="copy" style="width: 13px; height: 13px;"></i> Copy';
+                                if (window.lucide) lucide.createIcons();
+                            }, 1500);
+                        } catch (e) {
+                            console.warn('Clipboard write failed:', e);
+                        }
+                    });
+                }
+
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', async () => {
+                        if (confirm(`Delete snippet "${s.title}"?`)) {
+                            await deleteSnippet(s.id);
+                        }
+                    });
+                }
+
+                snippetsContainer.appendChild(card);
+            });
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function createSnippet() {
+            const title = (snippetTitleInput ? snippetTitleInput.value : '').trim();
+            const content = (snippetContentInput ? snippetContentInput.value : '').trim();
+            const voice_trigger = (snippetTriggerInput ? snippetTriggerInput.value : '').trim();
+
+            if (!title) {
+                alert('Please enter a snippet title');
+                if (snippetTitleInput) snippetTitleInput.focus();
+                return;
+            }
+            if (!content) {
+                alert('Please enter snippet text content');
+                if (snippetContentInput) snippetContentInput.focus();
+                return;
+            }
+
+            if (saveSnippetBtn) {
+                saveSnippetBtn.disabled = true;
+                saveSnippetBtn.innerHTML = '<span style="font-size: 0.85rem;">Adding...</span>';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/snippets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        voice_trigger: voice_trigger
+                    })
+                });
+
+                if (res.ok) {
+                    if (snippetTitleInput) snippetTitleInput.value = '';
+                    if (snippetContentInput) snippetContentInput.value = '';
+                    if (snippetTriggerInput) snippetTriggerInput.value = '';
+                    await loadSnippets();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.detail || 'Failed to create snippet');
+                }
+            } catch (err) {
+                console.error('Error creating snippet:', err);
+                alert('Network error while saving snippet');
+            } finally {
+                if (saveSnippetBtn) {
+                    saveSnippetBtn.disabled = false;
+                    saveSnippetBtn.innerHTML = '<i data-lucide="plus"></i> Add';
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        }
+
+        async function deleteSnippet(snippetId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/snippets/${snippetId}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    await loadSnippets();
+                } else {
+                    alert('Failed to delete snippet');
+                }
+            } catch (err) {
+                console.error('Error deleting snippet:', err);
+            }
+        }
+
+        async function resetSnippets() {
+            if (!confirm('Reset to default starter snippets? This will restore standard greetings, emails, and templates.')) {
+                return;
+            }
+
+            if (resetSnippetsBtn) {
+                resetSnippetsBtn.disabled = true;
+                resetSnippetsBtn.innerHTML = '<span style="font-size: 0.8rem;">Resetting...</span>';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/snippets/reset`, {
+                    method: 'POST'
+                });
+                if (res.ok) {
+                    await loadSnippets();
+                } else {
+                    alert('Failed to reset snippets');
+                }
+            } catch (err) {
+                console.error('Error resetting snippets:', err);
+            } finally {
+                if (resetSnippetsBtn) {
+                    resetSnippetsBtn.disabled = false;
+                    resetSnippetsBtn.innerHTML = '<i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i> Restore Defaults';
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        }
+
+        if (navSnippetsBtn) {
+            navSnippetsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openSnippetsModal();
+            });
+        }
+
+        if (mobileSnippetsLink) {
+            mobileSnippetsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer) drawer.classList.remove('open');
+                openSnippetsModal();
+            });
+        }
+
+        if (mobileSettingsLink) {
+            mobileSettingsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer) drawer.classList.remove('open');
+                if (settingsBtn) settingsBtn.click();
+            });
+        }
+
+        if (imeSnippetsBtn) {
+            imeSnippetsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openSnippetsModal();
+            });
+        }
+
+        if (openSnippetsFromSettingsBtn) {
+            openSnippetsFromSettingsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (settingsModal) {
+                    settingsModal.style.display = 'none';
+                    settingsModal.classList.remove('active');
+                }
+                openSnippetsModal();
+            });
+        }
+
+        if (closeSnippetsBtn) {
+            closeSnippetsBtn.addEventListener('click', () => {
+                closeSnippetsModal();
+            });
+        }
+
+        if (snippetsModal) {
+            snippetsModal.addEventListener('click', (e) => {
+                if (e.target === snippetsModal) {
+                    closeSnippetsModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && snippetsModal && snippetsModal.classList.contains('active')) {
+                closeSnippetsModal();
+            }
+        });
+
+        if (saveSnippetBtn) {
+            saveSnippetBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                createSnippet();
+            });
+        }
+
+        if (resetSnippetsBtn) {
+            resetSnippetsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                resetSnippets();
+            });
+        }
 
         const testVoiceBtn = document.getElementById('testVoiceBtn');
         if (testVoiceBtn) {

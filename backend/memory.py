@@ -4,6 +4,97 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from config import config
 
+DEFAULT_STARTER_SNIPPETS = [
+    {
+        "name": "Quick Greeting",
+        "text": "Hello! Hope you are having a wonderful day.",
+        "voice_trigger": "greeting"
+    },
+    {
+        "name": "Work Email",
+        "text": "contact@butterfly.ai",
+        "voice_trigger": "my email"
+    },
+    {
+        "name": "Phone Number",
+        "text": "+1 (555) 019-2834",
+        "voice_trigger": "my phone"
+    },
+    {
+        "name": "Meeting Follow-up",
+        "text": "Thanks for your time today! Looking forward to our next steps.",
+        "voice_trigger": "meeting follow up"
+    },
+    {
+        "name": "Be Right Back",
+        "text": "I am currently away from my desk, but I will get back to you shortly.",
+        "voice_trigger": "be right back"
+    },
+    {
+        "name": "Thank You",
+        "text": "Thank you so much for your assistance! Greatly appreciate your help.",
+        "voice_trigger": "thank you"
+    }
+]
+
+# Indian Standard Time (UTC+05:30)
+IST_TIMEZONE = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+
+def get_utc_now_iso() -> str:
+    """Return timezone-aware ISO-8601 UTC timestamp."""
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def parse_to_utc_datetime(ts_str: Optional[str]) -> datetime.datetime:
+    """Safely parse any SQLite, naive or ISO timestamp into a timezone-aware UTC datetime."""
+    if not ts_str:
+        return datetime.datetime.now(datetime.timezone.utc)
+    ts_clean = str(ts_str).strip().replace(" ", "T")
+    try:
+        if ts_clean.endswith("Z"):
+            dt = datetime.datetime.fromisoformat(ts_clean[:-1] + "+00:00")
+        elif "+" in ts_clean or ("-" in ts_clean[10:]):
+            dt = datetime.datetime.fromisoformat(ts_clean)
+        else:
+            # Naive timestamp from SQLite or server: treat as UTC
+            dt = datetime.datetime.fromisoformat(ts_clean).replace(tzinfo=datetime.timezone.utc)
+        return dt.astimezone(datetime.timezone.utc)
+    except Exception:
+        return datetime.datetime.now(datetime.timezone.utc)
+
+def format_relative_time(dt_utc: datetime.datetime) -> str:
+    """Format elapsed time in human-friendly real-time format."""
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    diff = now_utc - dt_utc
+    total_seconds = int(diff.total_seconds())
+    if total_seconds < 0:
+        total_seconds = 0
+    if total_seconds < 45:
+        return "Just now"
+    minutes = total_seconds // 60
+    if minutes < 60:
+        return f"{minutes}m ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours}h ago"
+    days = hours // 24
+    if days == 1:
+        return "Yesterday"
+    if days < 7:
+        return f"{days}d ago"
+    return dt_utc.astimezone(IST_TIMEZONE).strftime("%b %d")
+
+def format_indian_time(dt_utc: datetime.datetime) -> str:
+    """Convert UTC datetime to Indian Standard Time (IST, UTC+05:30) formatted string."""
+    dt_ist = dt_utc.astimezone(IST_TIMEZONE)
+    now_ist = datetime.datetime.now(IST_TIMEZONE)
+    time_str = dt_ist.strftime("%I:%M %p").lstrip("0")
+    if dt_ist.date() == now_ist.date():
+        return f"Today, {time_str}"
+    elif dt_ist.date() == (now_ist.date() - datetime.timedelta(days=1)):
+        return f"Yesterday, {time_str}"
+    else:
+        return dt_ist.strftime(f"%b %d, {time_str}")
+
 class MemoryManager:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or config.DATABASE_PATH
@@ -91,6 +182,17 @@ class MemoryManager:
             """)
             conn.commit()
 
+            # Seed default starter snippets if empty
+            cursor.execute("SELECT COUNT(*) FROM snippets")
+            if cursor.fetchone()[0] == 0:
+                now = get_utc_now_iso()
+                for snip in DEFAULT_STARTER_SNIPPETS:
+                    cursor.execute(
+                        "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
+                        (snip["name"], snip["text"], snip["voice_trigger"].strip().lower(), now)
+                    )
+                conn.commit()
+
     def get_or_create_session(self, session_id: str, title: Optional[str] = None) -> Dict[str, Any]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -101,8 +203,8 @@ class MemoryManager:
                 return dict(session)
             
             # Create new session
-            default_title = title or f"Conversation {datetime.datetime.now().strftime('%b %d, %H:%M')}"
-            now = datetime.datetime.now().isoformat()
+            default_title = title or f"Conversation {datetime.datetime.now(IST_TIMEZONE).strftime('%b %d, %H:%M')}"
+            now = get_utc_now_iso()
             cursor.execute(
                 "INSERT INTO sessions (session_id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
                 (session_id, default_title, now, now)
@@ -124,7 +226,7 @@ class MemoryManager:
         input_type: str = "text"
     ) -> Dict[str, Any]:
         self.get_or_create_session(session_id)
-        now = datetime.datetime.now().isoformat()
+        now = get_utc_now_iso()
         
         orig = original_text if original_text is not None else content
         src_lang = source_language or language or "auto"
@@ -190,7 +292,17 @@ class MemoryManager:
                 (session_id, limit)
             )
             rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+            results = []
+            for row in rows:
+                d = dict(row)
+                raw_created = d.get("created_at")
+                dt_utc = parse_to_utc_datetime(raw_created)
+                d["created_at"] = dt_utc.isoformat()
+                d["created_at_ist"] = format_indian_time(dt_utc)
+                d["time_ago"] = format_relative_time(dt_utc)
+                d["timestamp_ms"] = int(dt_utc.timestamp() * 1000)
+                results.append(d)
+            return results
 
     def get_all_sessions(self, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
@@ -228,6 +340,19 @@ class MemoryManager:
                 d["word_count"] = words
                 d["character_count"] = chars
                 d["duration"] = f"{max(2, words * 1.2):.0f}s"
+
+                raw_created = d.get("created_at")
+                dt_utc = parse_to_utc_datetime(raw_created)
+                d["created_at"] = dt_utc.isoformat()
+                d["created_at_ist"] = format_indian_time(dt_utc)
+                d["time_ago"] = format_relative_time(dt_utc)
+                d["timestamp_ms"] = int(dt_utc.timestamp() * 1000)
+
+                raw_updated = d.get("updated_at")
+                dt_updated_utc = parse_to_utc_datetime(raw_updated)
+                d["updated_at"] = dt_updated_utc.isoformat()
+                d["updated_at_ist"] = format_indian_time(dt_updated_utc)
+
                 results.append(d)
             return results
 
@@ -242,7 +367,7 @@ class MemoryManager:
     def update_session_title(self, session_id: str, title: str) -> bool:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            now = datetime.datetime.now().isoformat()
+            now = get_utc_now_iso()
             cursor.execute(
                 "UPDATE sessions SET title = ?, updated_at = ? WHERE session_id = ?",
                 (title, now, session_id)
@@ -251,16 +376,37 @@ class MemoryManager:
             return cursor.rowcount > 0
 
     # --- SNIPPETS CRUD METHODS ---
+    def seed_default_snippets(self, force: bool = False) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM snippets")
+            count = cursor.fetchone()[0]
+            if count == 0 or force:
+                if force:
+                    cursor.execute("DELETE FROM snippets")
+                now = get_utc_now_iso()
+                for snip in DEFAULT_STARTER_SNIPPETS:
+                    cursor.execute(
+                        "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
+                        (snip["name"], snip["text"], snip["voice_trigger"].strip().lower(), now)
+                    )
+                conn.commit()
+            cursor.execute("SELECT * FROM snippets ORDER BY id DESC")
+            return [dict(r) for r in cursor.fetchall()]
+
     def get_all_snippets(self) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM snippets ORDER BY id DESC")
-            return [dict(r) for r in cursor.fetchall()]
+            rows = [dict(r) for r in cursor.fetchall()]
+            if not rows:
+                return self.seed_default_snippets(force=False)
+            return rows
 
     def create_snippet(self, name: str, text: str, voice_trigger: Optional[str] = None) -> Dict[str, Any]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            now = datetime.datetime.now().isoformat()
+            now = get_utc_now_iso()
             trigger = (voice_trigger or name).strip().lower()
             cursor.execute(
                 "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",

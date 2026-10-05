@@ -1039,6 +1039,11 @@ def delete_snippet_endpoint(snippet_id: int):
     deleted = memory_manager.delete_snippet(snippet_id)
     return {"success": deleted, "message": "Snippet deleted" if deleted else "Snippet not found"}
 
+@app.post("/api/snippets/reset")
+def reset_snippets_endpoint():
+    snippets = memory_manager.seed_default_snippets(force=True)
+    return {"success": True, "snippets": snippets, "message": "Default snippets restored"}
+
 @app.get("/api/search")
 @app.get("/search")
 @limiter.limit("20/minute")

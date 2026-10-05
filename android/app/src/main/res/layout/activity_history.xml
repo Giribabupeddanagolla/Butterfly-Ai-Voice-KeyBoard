@@ -47,7 +47,7 @@
                 android:id="@+id/tvHistorySubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Voice recordings &amp; translations"
+                android:text="Voice recordings &amp; translations • Real-time (IST)"
                 android:textColor="#94A3B8"
                 android:textSize="12sp" />
         </LinearLayout>
