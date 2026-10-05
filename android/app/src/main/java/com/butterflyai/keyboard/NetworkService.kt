@@ -29,6 +29,8 @@ data class PolishResult(
 data class AskResult(
     val success: Boolean,
     val answer: String = "",
+    val source_url: String? = null,
+    val source_title: String? = null,
     val error: String? = null
 )
 
@@ -413,7 +415,17 @@ class NetworkService(private val context: Context) {
                 if (response.isSuccessful && jsonObj != null) {
                     if (jsonObj.has("success") && jsonObj.get("success").asBoolean) {
                         val answer = jsonObj.get("answer")?.asString ?: ""
-                        return@withContext AskResult(true, answer = answer)
+                        val sourceUrl = if (jsonObj.has("source_url") && !jsonObj.get("source_url").isJsonNull) {
+                            jsonObj.get("source_url").asString
+                        } else if (jsonObj.has("website_url") && !jsonObj.get("website_url").isJsonNull) {
+                            jsonObj.get("website_url").asString
+                        } else null
+
+                        val sourceTitle = if (jsonObj.has("source_title") && !jsonObj.get("source_title").isJsonNull) {
+                            jsonObj.get("source_title").asString
+                        } else null
+
+                        return@withContext AskResult(true, answer = answer, source_url = sourceUrl, source_title = sourceTitle)
                     }
                 }
                 return@withContext AskResult(false, error = errStr ?: "Ask AI failed (HTTP ${response.code})")

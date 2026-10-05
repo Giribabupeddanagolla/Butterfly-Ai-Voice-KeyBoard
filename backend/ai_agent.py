@@ -79,11 +79,15 @@ class AIAgent:
 
         # Resolve target language
         target_lang = target_language or language
-        if target_lang and target_lang != "auto":
-            lang_code = normalize_language_code(target_lang)
+        detected = detect_language_from_text(clean_message) or "en"
+        if not target_lang or target_lang == "auto":
+            lang_code = detected
+        elif target_lang == "en" and detected != "en":
+            # If user asks a question in a non-English language (e.g. Telugu, Hindi, etc.),
+            # match the language the question was asked in!
+            lang_code = detected
         else:
-            detected = detect_language_from_text(clean_message)
-            lang_code = detected if detected else "en"
+            lang_code = normalize_language_code(target_lang)
         lang_name = get_language_name(lang_code)
 
         # 3. Load conversation history
@@ -144,7 +148,15 @@ class AIAgent:
                     logger.warning(f"Fallback handler error: {fb_err}")
             
             if not answer:
-                answer = get_mock_response(lang_code, clean_message)
+                base_prompt = f"Here is information regarding your question: '{clean_message}'. Explore additional details and resources online."
+                if lang_code != "en":
+                    try:
+                        trans_base = translate_text(base_prompt, target_language=lang_code, source_language="en")
+                        answer = trans_base.strip() if (trans_base and trans_base.strip()) else base_prompt
+                    except Exception:
+                        answer = base_prompt
+                else:
+                    answer = base_prompt
             model = "butterfly-ai-fallback"
 
         # 7. Multilingual verification: ensure the final answer is translated into the target language

@@ -562,43 +562,87 @@ def text_to_speech_endpoint(request: Request, body: VoiceSpeakRequest):
 TECH_KNOWLEDGE = {
     "java": {
         "en": "Java is a high-level, class-based, object-oriented programming language designed to have as few implementation dependencies as possible. It is intended to let application developers write once, run anywhere (WORA), meaning that compiled Java code can run on all platforms supporting Java (via the Java Virtual Machine) without needing to recompile.",
-        "te": "జావా (Java) అనేది ఒక ప్రముఖమైన హై-లేవెల్, ఆబ్జెక్ట్-ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్. దీనిని 'Write Once, Run Anywhere' (WORA) అనే సూత్రంతో ఎక్కడైనా రన్ అయ్యేలా తయారుచేశారు."
+        "te": "జావా (Java) అనేది ఒక ప్రముఖమైన హై-లేవెల్, ఆబ్జెక్ట్-ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్. దీనిని 'Write Once, Run Anywhere' (WORA) అనే సూత్రంతో ఎక్కడైనా రన్ అయ్యేలా తయారుచేశారు.",
+        "url": "https://en.wikipedia.org/wiki/Java_(programming_language)",
+        "title": "Java Programming Language - Wikipedia"
     },
     "python": {
         "en": "Python is a high-level, interpreted, general-purpose programming language known for its clear syntax and high code readability. It is widely used in Artificial Intelligence, Machine Learning, Data Science, Web Development, Automation, and Scripting.",
-        "te": "పైథాన్ (Python) అనేది సరళమైన శైలి కలిగిన ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్. ఇది AI, డేటా సైన్స్, వెబ్ డెవలప్‌మెంట్ మరియు ఆటోమేషన్ లో విస్తృతంగా ఉపయోగించబడుతుంది."
+        "te": "పైథాన్ (Python) అనేది సరళమైన శైలి కలిగిన ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్. ఇది AI, డేటా సైన్స్, వెబ్ డెవలప్‌మెంట్ మరియు ఆటోమేషన్ లో విస్తృతంగా ఉపయోగించబడుతుంది.",
+        "url": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "title": "Python Programming Language - Wikipedia"
     },
     "javascript": {
         "en": "JavaScript (JS) is a high-level, lightweight, interpreted programming language that powers dynamic and interactive user interfaces on web pages as well as server-side applications via Node.js.",
-        "te": "జావాస్క్రిప్ట్ (JavaScript) అనేది వెబ్ పేజీలలో డైనమిక్ మరియు ఇంటరాక్టివ్ ఫీచర్లను అందించే ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్."
+        "te": "జావాస్క్రిప్ట్ (JavaScript) అనేది వెబ్ పేజీలలో డైనమిక్ మరియు ఇంటరాక్టివ్ ఫీచర్లను అందించే ప్రముఖమైన ప్రోగ్రామింగ్ లాంగ్వేజ్.",
+        "url": "https://en.wikipedia.org/wiki/JavaScript",
+        "title": "JavaScript - Wikipedia"
+    },
+    "devops": {
+        "en": "DevOps is a set of practices that combines software development (Dev) and IT operations (Ops) to shorten the development life cycle and provide continuous delivery with high software quality.",
+        "te": "DevOps అనేది సాఫ్ట్‌వేర్ అభివృద్ధి (Dev) మరియు సమాచార సాంకేతిక కార్యకలాపాలు (Ops) కలిపే ఒక ఆధునిక సాంకేతిక విధానం. ఇది సాఫ్ట్‌వేర్ అభివృద్ధిని, టెస్టింగ్‌ను ఆటోమేట్ చేసి నాణ్యతతో కూడిన డెలివరీని వేగవంతం చేస్తుంది.",
+        "url": "https://en.wikipedia.org/wiki/DevOps",
+        "title": "DevOps - Wikipedia"
+    },
+    "cloud computing": {
+        "en": "Cloud computing is the on-demand availability of computer system resources, especially data storage and computing power, without direct active management by the user.",
+        "te": "క్లౌడ్ కంప్యూటింగ్ (Cloud Computing) అనేది ఇంటర్నెట్ ద్వారా కంప్యూటర్ వనరులు, డేటా స్టోరేజ్ మరియు సర్వర్‌లను రిమోట్‌గా అందించే ఆధునిక సాంకేతికత.",
+        "url": "https://en.wikipedia.org/wiki/Cloud_computing",
+        "title": "Cloud Computing - Wikipedia"
+    },
+    "docker": {
+        "en": "Docker is an open platform for developing, shipping, and running applications inside lightweight, portable containers.",
+        "te": "డాకర్ (Docker) అనేది అప్లికేషన్లను తేలికపాటి కంటైనర్ల రూపంలో ప్యాక్ చేసి, ఏ ఆపరేటింగ్ సిస్టమ్‌లోనైనా స్థిరంగా రన్ చేయడానికి ఉపయోగపడే ప్లాట్‌ఫామ్.",
+        "url": "https://en.wikipedia.org/wiki/Docker_(software)",
+        "title": "Docker - Wikipedia"
+    },
+    "kubernetes": {
+        "en": "Kubernetes is an open-source container orchestration system for automating software deployment, scaling, and management.",
+        "te": "కుబెర్నెటిస్ (Kubernetes) అనేది కంటైనరైజ్డ్ అప్లికేషన్ల విస్తరణ, స్కేలింగ్ మరియు ఆటోమేషన్ నిర్వహణకు ఉపయోగపడే ప్రముఖ ఓపెన్ సోర్స్ సిస్టమ్.",
+        "url": "https://en.wikipedia.org/wiki/Kubernetes",
+        "title": "Kubernetes - Wikipedia"
     },
     "html": {
         "en": "HTML (HyperText Markup Language) is the standard markup language used to structure content and elements on web pages across the World Wide Web.",
-        "te": "HTML (HyperText Markup Language) అనేది వెబ్ పేజీల ఆకృతిని (structure) డిజైన్ చేయడానికి ఉపయోగించే మార్కప్ లాంగ్వేజ్."
+        "te": "HTML (HyperText Markup Language) అనేది వెబ్ పేజీల ఆకృతిని (structure) డిజైన్ చేయడానికి ఉపయోగించే మార్కప్ లాంగ్వేజ్.",
+        "url": "https://en.wikipedia.org/wiki/HTML",
+        "title": "HTML - Wikipedia"
     },
     "css": {
         "en": "CSS (Cascading Style Sheets) is a stylesheet language used to format the visual design, colors, layout, and presentation of HTML documents.",
-        "te": "CSS (Cascading Style Sheets) అనేది వెబ్ పేజీల డిజైన్, రంగులు మరియు లేఅవుట్ శైలిని అలకరించే స్టైల్‌షీట్ లాంగ్వేజ్."
+        "te": "CSS (Cascading Style Sheets) అనేది వెబ్ పేజీల డిజైన్, రంగులు మరియు లేఅవుట్ శైలిని అలకరించే స్టైల్‌షీట్ లాంగ్వేజ్.",
+        "url": "https://en.wikipedia.org/wiki/CSS",
+        "title": "CSS - Wikipedia"
     },
     "c++": {
         "en": "C++ is a high-performance general-purpose programming language created by Bjarne Stroustrup as an extension of C. It supports procedural, object-oriented, and generic programming.",
-        "te": "C++ అనేది సి (C) భాష ఆధారంగా రూపొందించబడిన ఆబ్జెక్ట్ ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్."
+        "te": "C++ అనేది సి (C) భాష ఆధారంగా రూపొందించబడిన ఆబ్జెక్ట్ ఓరియెంటెడ్ ప్రోగ్రామింగ్ లాంగ్వేజ్.",
+        "url": "https://en.wikipedia.org/wiki/C%2B%2B",
+        "title": "C++ - Wikipedia"
     },
     "sql": {
         "en": "SQL (Structured Query Language) is the standard domain-specific language used for storing, updating, manipulating, and querying data in relational database management systems.",
-        "te": "SQL అనేది డేటాబేస్ లోని డేటాను స్టోర్ చేయడానికి మరియు క్వెరీ చేయడానికి ఉపయోగించే స్టాండర్డ్ లాంగ్వేజ్."
+        "te": "SQL అనేది డేటాబేస్ లోని డేటాను స్టోర్ చేయడానికి మరియు క్వెరీ చేయడానికి ఉపయోగించే స్టాండర్డ్ లాంగ్వేజ్.",
+        "url": "https://en.wikipedia.org/wiki/SQL",
+        "title": "SQL - Wikipedia"
     },
     "react": {
         "en": "React is an open-source front-end JavaScript library maintained by Meta for building dynamic, component-based user interfaces.",
-        "te": "React అనేది డైనమిక్ వెబ్ యూజర్ ఇంటర్‌ఫేస్‌లు తయారు చేయడానికి మేటా (Meta) అందించిన ప్రముఖ జావస్క్రిప్ట్ లైబ్రరీ."
+        "te": "React అనేది డైనమిక్ వెబ్ యూజర్ ఇంటర్‌ఫేస్‌లు తయారు చేయడానికి మేటా (Meta) అందించిన ప్రముఖ జావస్క్రిప్ట్ లైబ్రరీ.",
+        "url": "https://en.wikipedia.org/wiki/React_(software)",
+        "title": "React (JavaScript library) - Wikipedia"
     },
     "ai": {
         "en": "Artificial Intelligence (AI) refers to computer systems and software capable of performing complex tasks that typically require human intelligence, such as visual perception, speech recognition, reasoning, learning, and decision-making.",
-        "te": "కృత్రిమ మేధస్సు (AI) అనేది మానవ ఆలోచనా శక్తి, సమస్య పరిష్కారం మరియు అభ్యాస సామర్థ్యాన్ని కంప్యూటర్ల ద్వారా అనుకరించే సాంకేతికత."
+        "te": "కృత్రిమ మేధస్సు (AI) అనేది మానవ ఆలోచనా శక్తి, సమస్య పరిష్కారం మరియు అభ్యాస సామర్థ్యాన్ని కంప్యూటర్ల ద్వారా అనుకరించే సాంకేతికత.",
+        "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+        "title": "Artificial Intelligence - Wikipedia"
     },
     "machine learning": {
         "en": "Machine Learning (ML) is a branch of artificial intelligence focused on building algorithms that enable computers to learn patterns from data and improve their performance without explicit programming.",
-        "te": "మెషిన్ లెర్నింగ్ (ML) అనేది AI లో భాగం. ఇది డేటా నుండి నమూనాలను నేర్చుకుని కంప్యూటర్లు తానంతట తానే అంచనా వేసేలా చేస్తుంది."
+        "te": "మెషిన్ లెర్నింగ్ (ML) అనేది AI లో భాగం. ఇది డేటా నుండి నమూనాలను నేర్చుకుని కంప్యూటర్లు తానంతట తానే అంచనా వేసేలా చేస్తుంది.",
+        "url": "https://en.wikipedia.org/wiki/Machine_learning",
+        "title": "Machine Learning - Wikipedia"
     }
 }
 
@@ -619,19 +663,23 @@ def is_bad_abstract(prompt: str, abstract: str) -> bool:
         
     return False
 
-def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en", source_language: Optional[str] = "auto") -> str:
-    """Retrieve intelligent answer via tech knowledge, Wikipedia, or DuckDuckGo and translate to target language."""
+def get_intelligent_fallback_details(prompt: str, language: Optional[str] = "en", source_language: Optional[str] = "auto") -> dict:
+    """Retrieve intelligent answer via tech knowledge, Wikipedia, or DuckDuckGo and translate to target language, returning answer, source_url, source_title."""
     p_lower = prompt.lower().strip()
     
-    # 1. Resolve target language and source language
+    # 1. Resolve prompt language and target language
+    detected_prompt_lang = detect_language_from_text(prompt) or "en"
+    
     target_lang = normalize_language_code(language) if (language and language != "auto") else None
     if not target_lang:
-        detected_prompt_lang = detect_language_from_text(prompt)
-        target_lang = detected_prompt_lang if detected_prompt_lang else "en"
+        target_lang = detected_prompt_lang
+    elif target_lang == "en" and detected_prompt_lang != "en":
+        # Question was asked in non-English (e.g. Telugu), match question language!
+        target_lang = detected_prompt_lang
 
     src_lang = normalize_language_code(source_language) if (source_language and source_language != "auto") else None
     if not src_lang:
-        src_lang = detect_language_from_text(prompt) or "auto"
+        src_lang = detected_prompt_lang
 
     # 2. If prompt is not English, translate to English for high-quality information search
     english_prompt = prompt
@@ -644,53 +692,58 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
             logger.debug(f"Prompt translation to English failed: {tr_err}")
     ep_lower = english_prompt.lower().strip()
 
+    default_google_url = f"https://www.google.com/search?q={urllib.parse.quote(prompt)}"
+    default_title = f"Web Search: {prompt}"
+
     # 3. Greetings & bot identity
-    if any(w in p_lower or w in ep_lower for w in ["hi", "hii", "hello", "hey", "hii guys", "namaste", "namaskaram"]):
-        base_greeting = "Hello! I am Butterfly AI, your intelligent voice and text assistant. How can I help you today?"
+    is_greeting = False
+    if len(p_lower.split()) <= 4:
+        greeting_pattern = r'\b(hi|hii|hello|hey|namaste|namaskaram)\b'
+        if re.search(greeting_pattern, p_lower) or re.search(greeting_pattern, ep_lower):
+            is_greeting = True
+
+    if is_greeting:
+        base_greeting = "Hello! I am Butterfly AI, your intelligent multilingual voice and text assistant. How can I help you today?"
+        ans = base_greeting
         if target_lang != "en":
             try:
-                translated_g = translate_text(base_greeting, target_language=target_lang, source_language="en")
-                if translated_g and translated_g.strip():
-                    return translated_g.strip()
-            except Exception:
-                pass
-        return base_greeting
+                tg = translate_text(base_greeting, target_language=target_lang, source_language="en")
+                if tg and tg.strip(): ans = tg.strip()
+            except Exception: pass
+        return {"answer": ans, "source_url": default_google_url, "source_title": "Butterfly AI Assistant"}
 
     if "how are you" in p_lower or "how are you" in ep_lower:
         base_resp = "I'm doing great, thank you for asking! How can I assist you with Butterfly AI today?"
+        ans = base_resp
         if target_lang != "en":
             try:
-                translated_resp = translate_text(base_resp, target_language=target_lang, source_language="en")
-                if translated_resp and translated_resp.strip():
-                    return translated_resp.strip()
-            except Exception:
-                pass
-        return base_resp
+                tr = translate_text(base_resp, target_language=target_lang, source_language="en")
+                if tr and tr.strip(): ans = tr.strip()
+            except Exception: pass
+        return {"answer": ans, "source_url": default_google_url, "source_title": "Butterfly AI Assistant"}
 
     if any(w in p_lower or w in ep_lower for w in ["who are you", "what are you"]):
         base_resp = "I am Butterfly AI, an intelligent multilingual voice & text assistant designed to transcribe, translate, search, and answer your questions."
+        ans = base_resp
         if target_lang != "en":
             try:
-                translated_resp = translate_text(base_resp, target_language=target_lang, source_language="en")
-                if translated_resp and translated_resp.strip():
-                    return translated_resp.strip()
-            except Exception:
-                pass
-        return base_resp
+                tr = translate_text(base_resp, target_language=target_lang, source_language="en")
+                if tr and tr.strip(): ans = tr.strip()
+            except Exception: pass
+        return {"answer": ans, "source_url": default_google_url, "source_title": "Butterfly AI Assistant"}
 
     # 4. Check predefined tech knowledge base
     for tech_name, tech_dict in TECH_KNOWLEDGE.items():
         if re.search(r'\b' + re.escape(tech_name) + r'\b', p_lower) or re.search(r'\b' + re.escape(tech_name) + r'\b', ep_lower):
-            if target_lang in tech_dict:
-                return tech_dict[target_lang]
-            if target_lang != "en":
+            raw_ans = tech_dict.get(target_lang) or tech_dict.get("en")
+            if target_lang != "en" and target_lang not in tech_dict:
                 try:
-                    translated_entry = translate_text(tech_dict["en"], target_language=target_lang, source_language="en")
-                    if translated_entry and translated_entry.strip():
-                        return translated_entry.strip()
-                except Exception as tr_err:
-                    logger.debug(f"Tech knowledge translation failed: {tr_err}")
-            return tech_dict["en"]
+                    tr = translate_text(tech_dict["en"], target_language=target_lang, source_language="en")
+                    if tr and tr.strip(): raw_ans = tr.strip()
+                except Exception: pass
+            s_url = tech_dict.get("url") or default_google_url
+            s_title = tech_dict.get("title") or f"{tech_name.title()} - Overview"
+            return {"answer": raw_ans, "source_url": s_url, "source_title": s_title}
 
     # 5. Extract clean search topic from English prompt
     clean_topic = re.sub(
@@ -717,8 +770,12 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
         query_title = "React (JavaScript library)"
     elif "node" in topic_query and "network" not in topic_query:
         query_title = "Node.js"
+    elif "devops" in topic_query:
+        query_title = "DevOps"
 
     raw_answer = None
+    source_url = None
+    source_title = None
 
     # Try Wikipedia page summary for disambiguated query_title
     try:
@@ -729,6 +786,8 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
             extract = wdata.get("extract")
             if extract and not is_bad_abstract(topic_query, extract):
                 raw_answer = extract
+                source_url = wdata.get("content_urls", {}).get("desktop", {}).get("page") or f"https://en.wikipedia.org/wiki/{urllib.parse.quote(query_title)}"
+                source_title = f"{wdata.get('title') or query_title} - Wikipedia"
     except Exception as w_err:
         logger.debug(f"Wikipedia summary error for '{query_title}': {w_err}")
 
@@ -742,6 +801,8 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
                 extract = wdata.get("extract")
                 if extract and not is_bad_abstract(topic_query, extract):
                     raw_answer = extract
+                    source_url = wdata.get("content_urls", {}).get("desktop", {}).get("page") or f"https://en.wikipedia.org/wiki/{urllib.parse.quote(topic_query)}"
+                    source_title = f"{wdata.get('title') or topic_query} - Wikipedia"
         except Exception:
             pass
 
@@ -754,6 +815,7 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
                 s_data = json.loads(s_res.read().decode('utf-8'))
                 if s_data and len(s_data) > 1 and s_data[1]:
                     found_title = s_data[1][0]
+                    found_url = s_data[3][0] if len(s_data) > 3 and s_data[3] else f"https://en.wikipedia.org/wiki/{urllib.parse.quote(found_title)}"
                     w_sum_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(found_title)}"
                     w_sum_req = urllib.request.Request(w_sum_url, headers={'User-Agent': 'Mozilla/5.0'})
                     with urllib.request.urlopen(w_sum_req, timeout=3) as w_sum_res:
@@ -761,52 +823,86 @@ def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en",
                         ext = w_sum_data.get("extract")
                         if ext and not is_bad_abstract(topic_query, ext):
                             raw_answer = ext
+                            source_url = found_url
+                            source_title = f"{found_title} - Wikipedia"
         except Exception:
             pass
 
-    # If raw_answer found from Wikipedia, translate it to target_lang
-    if raw_answer:
-        if target_lang != "en":
-            try:
-                translated_res = translate_text(raw_answer, target_language=target_lang, source_language="en")
-                if translated_res and translated_res.strip():
-                    return translated_res.strip()
-            except Exception as tr_err:
-                logger.warning(f"Error translating Wikipedia answer to {target_lang}: {tr_err}")
-        return raw_answer
+    # Try DuckDuckGo instant answer
+    if not raw_answer:
+        try:
+            ddg_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(english_prompt)}&format=json&no_html=1"
+            req = urllib.request.Request(ddg_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                abstract = data.get("AbstractText", "")
+                if abstract and not is_bad_abstract(english_prompt, abstract):
+                    raw_answer = abstract
+                    source_url = data.get("AbstractURL") or f"https://duckduckgo.com/?q={urllib.parse.quote(english_prompt)}"
+                    source_title = data.get("Heading") or f"{topic_query.title()} - Web Search"
+                elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
+                    for topic in data.get("RelatedTopics"):
+                        if isinstance(topic, dict) and topic.get("Text"):
+                            txt = topic.get("Text")
+                            if not is_bad_abstract(english_prompt, txt):
+                                raw_answer = txt
+                                source_url = topic.get("FirstURL") or f"https://duckduckgo.com/?q={urllib.parse.quote(english_prompt)}"
+                                source_title = f"{topic_query.title()} - Web Search"
+                                break
+        except Exception as ddg_err:
+            logger.debug(f"DuckDuckGo error: {ddg_err}")
 
-    # Fallback to DuckDuckGo instant answer
-    try:
-        ddg_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(english_prompt)}&format=json&no_html=1"
-        req = urllib.request.Request(ddg_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            abstract = data.get("AbstractText", "")
-            if abstract and not is_bad_abstract(english_prompt, abstract):
-                raw_answer = abstract
-            elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
-                for topic in data.get("RelatedTopics"):
-                    if isinstance(topic, dict) and topic.get("Text"):
-                        txt = topic.get("Text")
-                        if not is_bad_abstract(english_prompt, txt):
-                            raw_answer = txt
-                            break
-    except Exception as ddg_err:
-        logger.debug(f"DuckDuckGo error: {ddg_err}")
+    # Try DuckDuckGo HTML Search for live snippets and direct links if still empty
+    if not raw_answer:
+        try:
+            url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(english_prompt)}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req, timeout=4) as response:
+                html = response.read().decode('utf-8', errors='ignore')
+                matches = re.findall(r'<a class="result__url" href="([^"]+)".*?>(.*?)</a>.*?<a class="result__snippet".*?>(.*?)</a>', html, re.DOTALL)
+                if matches:
+                    u, t, s = matches[0]
+                    clean_t = re.sub(r'<[^>]+>', '', t).strip()
+                    clean_s = re.sub(r'<[^>]+>', '', s).strip()
+                    if clean_s and not is_bad_abstract(english_prompt, clean_s):
+                        raw_answer = clean_s
+                        dest_url = u.strip()
+                        if dest_url.startswith("//"):
+                            dest_url = "https:" + dest_url
+                        elif not dest_url.startswith("http"):
+                            dest_url = "https://" + dest_url
+                        source_url = dest_url
+                        source_title = clean_t or f"{topic_query.title()} - Web Search"
+        except Exception as html_err:
+            logger.debug(f"DuckDuckGo HTML error: {html_err}")
 
-    if raw_answer:
-        if target_lang != "en":
-            try:
-                translated_res = translate_text(raw_answer, target_language=target_lang, source_language="en")
-                if translated_res and translated_res.strip():
-                    return translated_res.strip()
-            except Exception as tr_err:
-                logger.warning(f"Error translating DuckDuckGo answer to {target_lang}: {tr_err}")
-        return raw_answer
+    # Fallback to direct informative synthesis if still no answer
+    if not raw_answer:
+        base_synth = f"Regarding '{english_prompt}': You can explore detailed articles, guides, and tutorials on this topic via the related website link below."
+        raw_answer = base_synth
+        source_url = default_google_url
+        source_title = default_title
 
-    # Ultimate fallback in target language
-    mock = get_mock_response(target_lang, prompt)
-    return mock
+    # Translate raw_answer to target_lang
+    final_answer = raw_answer
+    if target_lang != "en":
+        try:
+            translated_res = translate_text(raw_answer, target_language=target_lang, source_language="en")
+            if translated_res and translated_res.strip():
+                final_answer = translated_res.strip()
+        except Exception as tr_err:
+            logger.warning(f"Error translating answer to {target_lang}: {tr_err}")
+
+    return {
+        "answer": final_answer,
+        "source_url": source_url or default_google_url,
+        "source_title": source_title or default_title
+    }
+
+def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en", source_language: Optional[str] = "auto") -> str:
+    """Retrieve intelligent answer via tech knowledge, Wikipedia, or DuckDuckGo and translate to target language."""
+    details = get_intelligent_fallback_details(prompt, language=language, source_language=source_language)
+    return details.get("answer", "")
 
 @app.post("/chat")
 @app.post("/api/chat")
@@ -875,17 +971,25 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
         )
 
     # Determine requested target language
+    detected_prompt_lang = detect_language_from_text(prompt) or "en"
     req_target = body.target_language or body.language
-    if req_target and req_target.lower() != "auto":
-        target_lang = normalize_language_code(req_target)
+
+    if not req_target or req_target.lower() == "auto":
+        target_lang = detected_prompt_lang
+    elif detected_prompt_lang != "en" and req_target.lower() == "en":
+        # Question was asked in non-English (e.g. Telugu), match question language!
+        target_lang = detected_prompt_lang
     else:
-        target_lang = detect_language_from_text(prompt) or "en"
+        target_lang = normalize_language_code(req_target)
 
     req_source = body.source_language or "auto"
 
+    fb_details = get_intelligent_fallback_details(prompt, language=target_lang, source_language=req_source)
+
     def search_fallback_fn(user_text: str, lang_code: str) -> Optional[str]:
         eff_target = lang_code if (lang_code and lang_code != "auto") else target_lang
-        return get_intelligent_fallback_answer(user_text, language=eff_target, source_language=req_source)
+        details = get_intelligent_fallback_details(user_text, language=eff_target, source_language=req_source)
+        return details.get("answer")
 
     try:
         result = ai_agent.handle_chat_request(
@@ -896,6 +1000,9 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             source_language=req_source,
             fallback_handler=search_fallback_fn
         )
+        s_url = result.get("source_url") or fb_details.get("source_url") or f"https://www.google.com/search?q={urllib.parse.quote(prompt)}"
+        s_title = result.get("source_title") or fb_details.get("source_title") or f"Website: {prompt}"
+
         return {
             "success": True,
             "session_id": result["session_id"],
@@ -903,7 +1010,10 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             "answer": result["answer"],
             "model": result.get("model", config.AI_MODEL),
             "language": result.get("language_code", target_lang),
-            "target_language": target_lang
+            "target_language": target_lang,
+            "source_url": s_url,
+            "source_title": s_title,
+            "website_url": s_url
         }
     except ValueError as ve:
         return JSONResponse(
@@ -912,8 +1022,10 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
         )
     except Exception as e:
         logger.error(f"Error in ai_assistant_endpoint: {e}", exc_info=True)
-        fallback_ans = search_fallback_fn(prompt, target_lang) or "Butterfly AI was unable to process your request."
+        fallback_ans = fb_details.get("answer") or "Butterfly AI was unable to process your request."
         s_id = body.session_id or f"session_{uuid.uuid4().hex[:8]}"
+        s_url = fb_details.get("source_url") or f"https://www.google.com/search?q={urllib.parse.quote(prompt)}"
+        s_title = fb_details.get("source_title") or f"Website: {prompt}"
         return {
             "success": True,
             "session_id": s_id,
@@ -921,7 +1033,10 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             "answer": fallback_ans,
             "model": "butterfly-ai-assistant",
             "language": target_lang,
-            "target_language": target_lang
+            "target_language": target_lang,
+            "source_url": s_url,
+            "source_title": s_title,
+            "website_url": s_url
         }
 
 

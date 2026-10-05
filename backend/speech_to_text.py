@@ -34,6 +34,13 @@ def detect_language_from_text(text: str) -> str:
     if any('\u4e00' <= char <= '\u9fff' for char in text): return "zh" # Chinese
     if any('\u0400' <= char <= '\u04ff' for char in text): return "ru" # Cyrillic (Russian)
     
+    # Romanized phonetic keywords detection for Tanglish and Hinglish
+    tokens = set(re.findall(r'\b[a-zA-Z]+\b', text.lower()))
+    telugu_tokens = {"ante", "enti", "emiti", "ela", "unnavu", "unnaru", "cheppu", "cheppandi", "ekkada", "epudu", "enduku", "kavali", "kavale", "chesuko", "chudandi", "bagunnara", "cheyali", "ravali", "telusu"}
+    hindi_tokens = {"kya", "kaise", "kaha", "kyon", "kyu", "batao", "bataiye", "chahiye", "hoga", "hota", "karo", "kijiye", "karna", "samjhao"}
+    if tokens.intersection(telugu_tokens): return "te"
+    if tokens.intersection(hindi_tokens): return "hi"
+    
     return "en"
 
 def apply_smart_punctuation(text: str, language: str = "en") -> str:

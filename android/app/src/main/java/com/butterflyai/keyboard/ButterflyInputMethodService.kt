@@ -84,6 +84,11 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnCopyText: Button
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
+    private var btnOpenWeb: Button? = null
+    private var layoutWebLink: LinearLayout? = null
+    private var tvWebLinkTitle: TextView? = null
+    private var currentAiSourceUrl: String? = null
+    private var currentAiQuestion: String = ""
 
     private var isAiAnswerLoading = false
 
@@ -408,6 +413,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         btnCopyText = inputView.findViewById(R.id.btnCopyText)
         btnSpeakText = inputView.findViewById(R.id.btnSpeakText)
         btnDismissResult = inputView.findViewById(R.id.btnDismissResult)
+        btnOpenWeb = inputView.findViewById(R.id.btnOpenWeb)
+        layoutWebLink = inputView.findViewById(R.id.layoutWebLink)
+        tvWebLinkTitle = inputView.findViewById(R.id.tvWebLinkTitle)
 
         btnToggleKeyboard = inputView.findViewById(R.id.btnToggleKeyboard)
         keyboardKeysLayout = inputView.findViewById(R.id.keyboardKeysLayout)
@@ -657,6 +665,14 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         btnDismissResult.setOnClickListener {
             setKeyboardState(KeyboardState.IDLE)
+        }
+
+        btnOpenWeb?.setOnClickListener {
+            openRelatedWebsite()
+        }
+
+        layoutWebLink?.setOnClickListener {
+            openRelatedWebsite()
         }
 
         // Toggle QWERTY Grid
@@ -1871,6 +1887,59 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
+    private fun openRelatedWebsite(fallbackQuery: String = "") {
+        val q = when {
+            fallbackQuery.isNotBlank() -> fallbackQuery
+            currentAiQuestion.isNotBlank() -> currentAiQuestion
+            lastOriginalText.isNotBlank() -> lastOriginalText
+            else -> lastFinalText
+        }.trim()
+
+        val targetUrl = when {
+            !currentAiSourceUrl.isNullOrBlank() -> currentAiSourceUrl!!
+            q.isNotBlank() -> "https://www.google.com/search?q=" + java.net.URLEncoder.encode(q, "UTF-8")
+            else -> "https://www.google.com"
+        }
+
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("ButterflyIME", "Failed to open URL $targetUrl: ${e.message}", e)
+            Toast.makeText(this, "Could not open browser", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun detectScriptLanguage(text: String): String {
+        for (ch in text) {
+            val code = ch.code
+            when (code) {
+                in 0x0C00..0x0C7F -> return "te" // Telugu
+                in 0x0900..0x097F -> return "hi" // Hindi / Devanagari
+                in 0x0B80..0x0BFF -> return "ta" // Tamil
+                in 0x0C80..0x0CFF -> return "kn" // Kannada
+                in 0x0D00..0x0D7F -> return "ml" // Malayalam
+                in 0x0980..0x09FF -> return "bn" // Bengali
+                in 0x0A80..0x0AFF -> return "gu" // Gujarati
+                in 0x0A00..0x0A7F -> return "pa" // Punjabi
+                in 0x0B00..0x0B7F -> return "or" // Odia
+                in 0x0600..0x06FF -> return "ur" // Urdu
+            }
+        }
+        val lower = text.lowercase()
+        val teluguWords = setOf("ante", "enti", "cheppu", "ela", "yela", "emiti", "emti", "yenti", "chesuko", "avtundi", "undi", "kavali", "gurinchi", "cheppandi", "telugu")
+        if (lower.split("\\s+".toRegex()).any { it in teluguWords }) {
+            return "te"
+        }
+        val hindiWords = setOf("kya", "kaise", "batao", "bataiye", "hoga", "hota", "hai", "nahi", "kyun", "kare", "karna", "samjhao")
+        if (lower.split("\\s+".toRegex()).any { it in hindiWords }) {
+            return "hi"
+        }
+        return "en"
+    }
+
     private fun handleAiAnswerButtonClick() {
         if (isAiAnswerLoading) {
             return
@@ -1880,7 +1949,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
         val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
         val currentInputText = if (selectedText.isNotBlank()) selectedText else beforeCursor
-        val question = currentInputText.trim()
+        val question = currentInputText.trim().ifEmpty {
+            if (lastOriginalText.isNotBlank()) lastOriginalText else if (lastSpokenText.isNotBlank()) lastSpokenText else ""
+        }.trim()
 
         if (question.isEmpty()) {
             Toast.makeText(this, "Enter a question first.", Toast.LENGTH_SHORT).show()
@@ -1906,9 +1977,29 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvOriginalText.text = question
         tvOriginalText.visibility = View.VISIBLE
 
-        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
-        val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "en"
-        val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
+        currentAiQuestion = question
+        currentAiSourceUrl = null
+        layoutWebLink?.visibility = View.GONE
+
+        val selectedSrcCode = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+        val selectedTgtCode = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "en"
+
+        val detectedLang = detectScriptLanguage(question)
+        val effectiveSrcLang = if (selectedSrcCode != "auto") selectedSrcCode else detectedLang
+
+        // Determine effective target language:
+        // When spinnerTargetLang is left at default "en" or "auto", but the question is in Telugu/Hindi/etc.,
+        // we answer in that question's language so the user gets answers in the exact language asked!
+        val effectiveTgtLang = when {
+            selectedTgtCode != "en" && selectedTgtCode != "auto" -> selectedTgtCode
+            detectedLang != "en" -> detectedLang
+            effectiveSrcLang != "auto" && effectiveSrcLang != "en" -> effectiveSrcLang
+            else -> selectedTgtCode
+        }
+
+        val targetLangName = languages.firstOrNull { it.first == effectiveTgtLang }?.second
+            ?: languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second
+            ?: "Target Language"
 
         lblTranslationHeader.text = "AI Answer ($targetLangName):"
         lblTranslationHeader.visibility = View.VISIBLE
@@ -1921,11 +2012,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         serviceScope.launch {
             try {
-                val res = networkService.askAI(question, sourceLanguage = srcLang, targetLanguage = tgtLang)
+                val res = networkService.askAI(question, sourceLanguage = effectiveSrcLang, targetLanguage = effectiveTgtLang)
 
                 if (res.success && res.answer.isNotBlank()) {
                     tvTranslatedText.text = res.answer
                     lastFinalText = res.answer
+                    currentAiQuestion = question
+                    currentAiSourceUrl = res.source_url ?: ("https://www.google.com/search?q=" + java.net.URLEncoder.encode(question, "UTF-8"))
+
+                    val siteTitle = res.source_title?.takeIf { it.isNotBlank() } ?: "Search Web: $question"
+                    tvWebLinkTitle?.text = siteTitle
+                    layoutWebLink?.visibility = View.VISIBLE
+
                     tvInsertedNotice.text = "✓ AI Response Ready ($targetLangName)"
                     tvInsertedNotice.visibility = View.VISIBLE
                     notifyHistoryUpdated()
@@ -2396,6 +2494,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             val btnCopyText = rootRootView.findViewById<Button>(R.id.btnCopyText)
             val btnSpeakText = rootRootView.findViewById<Button>(R.id.btnSpeakText)
             val btnDismissResult = rootRootView.findViewById<Button>(R.id.btnDismissResult)
+            val btnOpenWeb = rootRootView.findViewById<Button>(R.id.btnOpenWeb)
+            val layoutWebLink = rootRootView.findViewById<View>(R.id.layoutWebLink)
+            val tvWebLinkTitle = rootRootView.findViewById<TextView>(R.id.tvWebLinkTitle)
 
             for (resBtn in listOf(btnCopyText, btnSpeakText, btnDismissResult)) {
                 if (resBtn != null) {
@@ -2409,6 +2510,26 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     } else {
                         resBtn.setTextColor(palette.ctrlKeyText)
                     }
+                }
+            }
+
+            if (btnOpenWeb != null) {
+                if (themeKey != "sky") {
+                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.primary)
+                    btnOpenWeb.setTextColor(if (palette.isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                } else {
+                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+                    btnOpenWeb.setTextColor(android.graphics.Color.WHITE)
+                }
+            }
+
+            if (layoutWebLink != null) {
+                if (palette.isDark) {
+                    layoutWebLink.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+                    tvWebLinkTitle?.setTextColor(if (themeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.parseColor("#60A5FA"))
+                } else {
+                    layoutWebLink.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EFF6FF"))
+                    tvWebLinkTitle?.setTextColor(android.graphics.Color.parseColor("#1D4ED8"))
                 }
             }
         }

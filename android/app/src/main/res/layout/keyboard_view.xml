@@ -580,6 +580,29 @@
                 android:layout_marginEnd="3dp" />
 
             <Button
+                android:id="@+id/btnOpenWeb"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="🌐 WEB"
+                android:textColor="#FFFFFF"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_quick_toolbar_pill"
+                android:backgroundTint="#2563EB"
+                android:padding="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:stateListAnimator="@null"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:layout_marginEnd="3dp" />
+
+            <Button
                 android:id="@+id/btnSpeakText"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -676,6 +699,49 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:layout_marginTop="2dp" />
+
+        <!-- Related Website / Search Direct Link Pill -->
+        <LinearLayout
+            android:id="@+id/layoutWebLink"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_quick_toolbar_pill"
+            android:backgroundTint="#EFF6FF"
+            android:paddingHorizontal="8dp"
+            android:layout_marginTop="3dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌐"
+                android:textSize="11sp"
+                android:layout_marginEnd="5dp" />
+
+            <TextView
+                android:id="@+id/tvWebLinkTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Open Website"
+                android:textColor="#1D4ED8"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Open ↗"
+                android:textColor="#2563EB"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- WEB SEARCH IN-KEYBOARD RESULTS PANEL -->
