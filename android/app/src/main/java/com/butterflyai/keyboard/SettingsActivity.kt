@@ -133,7 +133,6 @@ class SettingsActivity : AppCompatActivity() {
         // Typing & Feedback Preferences
         val switchHaptic = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchHapticFeedback)
         val switchDoubleSpace = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchDoubleSpacePeriod)
-        val btnCheckUpdates = findViewById<Button>(R.id.btnCheckUpdates)
 
         switchHaptic?.isChecked = prefs.getBoolean("haptic_feedback", true)
         switchHaptic?.setOnCheckedChangeListener { _, isChecked ->
@@ -143,15 +142,6 @@ class SettingsActivity : AppCompatActivity() {
         switchDoubleSpace?.isChecked = prefs.getBoolean("double_space_period", true)
         switchDoubleSpace?.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("double_space_period", isChecked).apply()
-        }
-
-        btnCheckUpdates?.setOnClickListener {
-            try {
-                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Giribabupeddanagolla/Butterfly-Ai-Voice-KeyBoard/releases"))
-                startActivity(browserIntent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Could not open releases link", Toast.LENGTH_SHORT).show()
-            }
         }
 
         // Auto-launch permission dialog if opened specifically from the keyboard for mic permission
