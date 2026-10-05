@@ -2515,7 +2515,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
             if (btnOpenWeb != null) {
                 if (themeKey != "sky") {
-                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.primary)
+                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
                     btnOpenWeb.setTextColor(if (palette.isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
                 } else {
                     btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
