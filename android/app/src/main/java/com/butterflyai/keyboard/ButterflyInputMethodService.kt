@@ -103,7 +103,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private val currentTypingWord = StringBuilder()
     private lateinit var spinnerSourceLang: Spinner
     private lateinit var spinnerTargetLang: Spinner
-    private lateinit var btnCycleTheme: Button
+    private lateinit var btnCycleTheme: ImageButton
     private var btnStatusOnline: View? = null
     private var tvOnlineStatus: TextView? = null
 
@@ -2589,10 +2589,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
         updateLetterCase(rootRootView)
 
-        val btnThemeView = rootRootView.findViewById<Button>(R.id.btnCycleTheme)
-        if (btnThemeView != null) {
-            btnThemeView.text = "⚙"
-        }
+
 
         if (::btnTapToSpeak.isInitialized && currentState == KeyboardState.IDLE) {
             btnTapToSpeak.setBackgroundColor(palette.accentColor)
