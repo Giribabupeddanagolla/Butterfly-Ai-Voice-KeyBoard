@@ -847,20 +847,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Settings Modal Handlers
         const confirmSettingsBtn = document.getElementById('confirmSettingsBtn');
 
+        function openSettingsModal() {
+            syncSettingsUI();
+            const modalBody = settingsModal ? settingsModal.querySelector('.modal-body') : null;
+            if (modalBody) modalBody.scrollTop = 0;
+            if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
+            if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
+            if (settingsModal) {
+                settingsModal.style.display = 'flex';
+                settingsModal.classList.add('active');
+            }
+            if (settingsBtn) settingsBtn.classList.add('active');
+            checkOpenAIStatus();
+        }
+
         if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
-                syncSettingsUI();
-                const modalBody = settingsModal ? settingsModal.querySelector('.modal-body') : null;
-                if (modalBody) modalBody.scrollTop = 0;
-                if (saveSettingsBtn) saveSettingsBtn.style.display = 'inline-flex';
-                if (confirmSettingsBtn) confirmSettingsBtn.style.display = 'none';
-                if (settingsModal) {
-                    settingsModal.style.display = 'flex';
-                    settingsModal.classList.add('active');
-                }
-                settingsBtn.classList.add('active');
-                checkOpenAIStatus();
-            });
+            settingsBtn.addEventListener('click', openSettingsModal);
         }
 
         if (closeSettingsBtn) {
@@ -897,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const drawer = document.getElementById('mobileNavDrawer');
                 if (drawer) drawer.classList.remove('open');
-                if (settingsBtn) settingsBtn.click();
+                openSettingsModal();
             });
         }
 
