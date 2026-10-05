@@ -4,39 +4,6 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from config import config
 
-DEFAULT_STARTER_SNIPPETS = [
-    {
-        "name": "Quick Greeting",
-        "text": "Hello! Hope you are having a wonderful day.",
-        "voice_trigger": "greeting"
-    },
-    {
-        "name": "Work Email",
-        "text": "contact@butterfly.ai",
-        "voice_trigger": "my email"
-    },
-    {
-        "name": "Phone Number",
-        "text": "+1 (555) 019-2834",
-        "voice_trigger": "my phone"
-    },
-    {
-        "name": "Meeting Follow-up",
-        "text": "Thanks for your time today! Looking forward to our next steps.",
-        "voice_trigger": "meeting follow up"
-    },
-    {
-        "name": "Be Right Back",
-        "text": "I am currently away from my desk, but I will get back to you shortly.",
-        "voice_trigger": "be right back"
-    },
-    {
-        "name": "Thank You",
-        "text": "Thank you so much for your assistance! Greatly appreciate your help.",
-        "voice_trigger": "thank you"
-    }
-]
-
 # Indian Standard Time (UTC+05:30)
 IST_TIMEZONE = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
 
@@ -169,29 +136,6 @@ class MemoryManager:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages (session_id)
             """)
-
-            # Snippets table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS snippets (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    text TEXT NOT NULL,
-                    voice_trigger TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-
-            # Seed default starter snippets if empty
-            cursor.execute("SELECT COUNT(*) FROM snippets")
-            if cursor.fetchone()[0] == 0:
-                now = get_utc_now_iso()
-                for snip in DEFAULT_STARTER_SNIPPETS:
-                    cursor.execute(
-                        "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
-                        (snip["name"], snip["text"], snip["voice_trigger"].strip().lower(), now)
-                    )
-                conn.commit()
 
     def get_or_create_session(self, session_id: str, title: Optional[str] = None) -> Dict[str, Any]:
         with self.get_connection() as conn:
@@ -372,54 +316,6 @@ class MemoryManager:
                 "UPDATE sessions SET title = ?, updated_at = ? WHERE session_id = ?",
                 (title, now, session_id)
             )
-            conn.commit()
-            return cursor.rowcount > 0
-
-    # --- SNIPPETS CRUD METHODS ---
-    def seed_default_snippets(self, force: bool = False) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM snippets")
-            count = cursor.fetchone()[0]
-            if count == 0 or force:
-                if force:
-                    cursor.execute("DELETE FROM snippets")
-                now = get_utc_now_iso()
-                for snip in DEFAULT_STARTER_SNIPPETS:
-                    cursor.execute(
-                        "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
-                        (snip["name"], snip["text"], snip["voice_trigger"].strip().lower(), now)
-                    )
-                conn.commit()
-            cursor.execute("SELECT * FROM snippets ORDER BY id DESC")
-            return [dict(r) for r in cursor.fetchall()]
-
-    def get_all_snippets(self) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM snippets ORDER BY id DESC")
-            rows = [dict(r) for r in cursor.fetchall()]
-            if not rows:
-                return self.seed_default_snippets(force=False)
-            return rows
-
-    def create_snippet(self, name: str, text: str, voice_trigger: Optional[str] = None) -> Dict[str, Any]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            now = get_utc_now_iso()
-            trigger = (voice_trigger or name).strip().lower()
-            cursor.execute(
-                "INSERT INTO snippets (name, text, voice_trigger, created_at) VALUES (?, ?, ?, ?)",
-                (name.strip(), text.strip(), trigger, now)
-            )
-            snippet_id = cursor.lastrowid
-            conn.commit()
-            return {"id": snippet_id, "name": name.strip(), "text": text.strip(), "voice_trigger": trigger, "created_at": now}
-
-    def delete_snippet(self, snippet_id: int) -> bool:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM snippets WHERE id = ?", (snippet_id,))
             conn.commit()
             return cursor.rowcount > 0
 

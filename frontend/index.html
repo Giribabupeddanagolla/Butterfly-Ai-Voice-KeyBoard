@@ -131,9 +131,6 @@
 
             <!-- Right: Actions & CTA -->
             <div class="nav-actions-right">
-                <button type="button" class="btn-nav-icon" id="navSnippetsBtn" title="Custom Snippets" aria-label="Custom Snippets">
-                    <i data-lucide="bookmark"></i>
-                </button>
                 <button type="button" class="btn-nav-icon" id="settingsBtn" title="Keyboard Settings" aria-label="Keyboard Settings">
                     <i data-lucide="sliders"></i>
                 </button>
@@ -161,7 +158,6 @@
                 <a href="#showcase" class="mobile-nav-link">Showcase</a>
                 <a href="#liveKeyboard" class="mobile-nav-link">Live Workspace</a>
                 <a href="#faq" class="mobile-nav-link">FAQ</a>
-                <a href="#snippets" class="mobile-nav-link" id="mobileSnippetsLink">Custom Snippets</a>
                 <a href="#settings" class="mobile-nav-link" id="mobileSettingsLink">Keyboard Settings</a>
                 <div class="mobile-drawer-cta-wrap">
                     <a href="#download" class="btn-portfolite-primary full-width" id="mobileCtaBtn">
@@ -1152,9 +1148,6 @@
                                     <button type="button" class="ime-btn btn-ai-ask" id="imeAiAskBtn">
                                         <i data-lucide="bot"></i> AI Ask
                                     </button>
-                                    <button type="button" class="ime-btn btn-snippets" id="imeSnippetsBtn" title="Insert or Manage Snippets">
-                                        <i data-lucide="bookmark"></i> Snippets
-                                    </button>
                                 </div>
 
                                 <!-- ROW 3: Control Buttons -->
@@ -1477,7 +1470,7 @@
     </footer>
 
     <!-- ==========================================================================
-         PRESERVED MODALS (Settings, Voice, Audio Upload, Snippets)
+         PRESERVED MODALS (Settings, Voice, Audio Upload)
          ========================================================================== -->
     <!-- Settings Modal -->
     <div class="modal-backdrop" id="settingsModal" style="display: none;">
@@ -1539,16 +1532,6 @@
                         <p>Ctrl + Shift + Space for desktop typing</p>
                     </div>
                     <input type="checkbox" id="hotkeyToggle" class="toggle-checkbox" checked>
-                </div>
-
-                <div class="setting-item setting-item-row">
-                    <div class="setting-info">
-                        <label><i data-lucide="bookmark"></i> Custom Voice Snippets</label>
-                        <p>Manage shortcuts & voice triggers for fast typing</p>
-                    </div>
-                    <button type="button" class="btn-test-voice-sm" id="openSnippetsFromSettingsBtn">
-                        <i data-lucide="external-link"></i> <span>Manage</span>
-                    </button>
                 </div>
 
                 <div class="setting-item setting-item-col">
@@ -1615,55 +1598,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-editorial-secondary" id="cancelAudioUploadBtn">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Snippets Modal -->
-    <div class="modal-backdrop" id="snippetsModal" style="display: none;">
-        <div class="modal-card snippets-modal-card">
-            <div class="modal-header">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="snippets-modal-icon-badge">
-                        <i data-lucide="bookmark"></i>
-                    </div>
-                    <div>
-                        <h3 style="margin: 0; font-size: 1.2rem;">Custom Snippets</h3>
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">Manage keyboard templates & voice triggers</p>
-                    </div>
-                </div>
-                <button type="button" class="btn-icon" id="closeSnippetsBtn" title="Close"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
-                <!-- Add Snippet Form -->
-                <div class="snippet-add-card">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.92rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                        <i data-lucide="plus-circle" style="width: 16px; height: 16px; color: var(--accent-blue);"></i> Add New Snippet
-                    </h4>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <input type="text" id="snippetTitleInput" class="vk-input" placeholder="Title (e.g., Work Email, Thank You)">
-                        <textarea id="snippetContentInput" class="vk-input" rows="2" placeholder="Text to insert (e.g., user@company.com)"></textarea>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="snippetTriggerInput" class="vk-input" style="flex: 1;" placeholder="Voice Trigger (e.g., my work email)">
-                            <button type="button" class="btn-editorial-primary" id="saveSnippetBtn" style="padding: 8px 16px; font-size: 0.88rem; white-space: nowrap;">
-                                <i data-lucide="plus"></i> Add
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Toolbar / Actions Row -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 18px 0 10px;">
-                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;" id="snippetsCountLabel">Snippets</span>
-                    <button type="button" class="btn-text-action" id="resetSnippetsBtn" title="Restore default starter snippets" style="font-size: 0.8rem; color: var(--accent-blue); display: inline-flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer;">
-                        <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i> Restore Defaults
-                    </button>
-                </div>
-
-                <!-- Snippets List Container -->
-                <div id="snippetsContainer" class="snippets-grid-container">
-                    <!-- Dynamic snippets rendered here -->
-                </div>
             </div>
         </div>
     </div>

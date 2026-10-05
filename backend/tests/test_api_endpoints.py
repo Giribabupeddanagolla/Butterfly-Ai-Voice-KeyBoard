@@ -162,37 +162,7 @@ def test_search_query(client):
     assert data["success"] is True
     assert len(data["results"]) > 0
 
-# 7. Snippets CRUD Endpoints
-def test_snippets_crud(client):
-    # 1. Initially empty or existing
-    res = client.get("/api/snippets")
-    assert res.status_code == 200
-    initial_count = len(res.json()["snippets"])
-
-    # 2. Create snippet
-    res = client.post("/api/snippets", json={"name": "Greeting", "text": "Hello there!", "voice_trigger": "say hi"})
-    assert res.status_code == 200
-    created = res.json()["snippet"]
-    assert created["name"] == "Greeting"
-    snip_id = created["id"]
-
-    # 3. Read snippets
-    res = client.get("/api/snippets")
-    assert res.status_code == 200
-    assert len(res.json()["snippets"]) == initial_count + 1
-
-    # 4. Delete snippet
-    res = client.delete(f"/api/snippets/{snip_id}")
-    assert res.status_code == 200
-    assert res.json()["success"] is True
-
-    # 5. Reset to defaults
-    res = client.post("/api/snippets/reset")
-    assert res.status_code == 200
-    assert res.json()["success"] is True
-    assert len(res.json()["snippets"]) >= 5
-
-# 8. History / Conversations Endpoints
+# 7. History / Conversations Endpoints
 def test_conversations_endpoint(client):
     res = client.get("/conversations")
     assert res.status_code == 200

@@ -37,31 +37,6 @@ data class ConnectionTestResult(
     val message: String
 )
 
-data class SnippetItem(
-    val id: Int = 0,
-    val name: String = "",
-    val text: String = "",
-    val voice_trigger: String? = null,
-    val created_at: String? = null
-)
-
-data class SnippetsResult(
-    val success: Boolean,
-    val snippets: List<SnippetItem> = emptyList(),
-    val error: String? = null
-)
-
-object StarterSnippets {
-    val list: List<SnippetItem> = listOf(
-        SnippetItem(id = 1, name = "Quick Greeting", text = "Hello! Hope you are having a wonderful day.", voice_trigger = "greeting"),
-        SnippetItem(id = 2, name = "Work Email", text = "contact@butterfly.ai", voice_trigger = "my email"),
-        SnippetItem(id = 3, name = "Phone Number", text = "+1 (555) 019-2834", voice_trigger = "my phone"),
-        SnippetItem(id = 4, name = "Meeting Follow-up", text = "Thanks for your time today! Looking forward to our next steps.", voice_trigger = "meeting follow up"),
-        SnippetItem(id = 5, name = "Be Right Back", text = "I am currently away from my desk, but I will get back to you shortly.", voice_trigger = "be right back"),
-        SnippetItem(id = 6, name = "Thank You", text = "Thank you so much for your assistance! Greatly appreciate your help.", voice_trigger = "thank you")
-    )
-}
-
 data class SearchItem(
     val title: String = "",
     val url: String = "",
@@ -439,103 +414,6 @@ class NetworkService(private val context: Context) {
         } catch (e: Exception) {
             Log.e("NetworkService", "Ask AI error: ${e.message}", e)
             return@withContext AskResult(false, error = e.localizedMessage ?: "Ask AI connection failed")
-        }
-    }
-
-    suspend fun getSnippets(): SnippetsResult = withContext(Dispatchers.IO) {
-        val baseUrl = getBaseUrl()
-        try {
-            val request = Request.Builder()
-                .url("$baseUrl/api/snippets")
-                .get()
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                val bodyString = response.body?.string() ?: ""
-                if (!response.isSuccessful) {
-                    return@withContext SnippetsResult(false, error = "HTTP ${response.code}")
-                }
-                val jsonObj = gson.fromJson(bodyString, JsonObject::class.java)
-                if (jsonObj != null && jsonObj.has("snippets") && jsonObj.get("snippets").isJsonArray) {
-                    val listType = object : com.google.gson.reflect.TypeToken<List<SnippetItem>>() {}.type
-                    val snippets: List<SnippetItem> = gson.fromJson(jsonObj.get("snippets"), listType) ?: emptyList()
-                    return@withContext SnippetsResult(true, snippets = snippets)
-                }
-                return@withContext SnippetsResult(true, snippets = emptyList())
-            }
-        } catch (e: Exception) {
-            Log.e("NetworkService", "Get snippets error: ${e.message}", e)
-            return@withContext SnippetsResult(false, error = e.localizedMessage ?: "Unable to load snippets")
-        }
-    }
-
-    suspend fun createSnippet(name: String, text: String, voiceTrigger: String? = null): Boolean = withContext(Dispatchers.IO) {
-        val baseUrl = getBaseUrl()
-        try {
-            val jsonBody = JsonObject().apply {
-                addProperty("name", name)
-                addProperty("text", text)
-                if (voiceTrigger != null) {
-                    addProperty("voice_trigger", voiceTrigger)
-                }
-            }
-            val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody.toString())
-            val request = Request.Builder()
-                .url("$baseUrl/api/snippets")
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                return@withContext response.isSuccessful
-            }
-        } catch (e: Exception) {
-            Log.e("NetworkService", "Create snippet error: ${e.message}", e)
-            return@withContext false
-        }
-    }
-
-    suspend fun deleteSnippet(snippetId: Int): Boolean = withContext(Dispatchers.IO) {
-        val baseUrl = getBaseUrl()
-        try {
-            val request = Request.Builder()
-                .url("$baseUrl/api/snippets/$snippetId")
-                .delete()
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                return@withContext response.isSuccessful
-            }
-        } catch (e: Exception) {
-            Log.e("NetworkService", "Delete snippet error: ${e.message}", e)
-            return@withContext false
-        }
-    }
-
-    suspend fun resetSnippets(): SnippetsResult = withContext(Dispatchers.IO) {
-        val baseUrl = getBaseUrl()
-        try {
-            val emptyBody = RequestBody.create("application/json".toMediaTypeOrNull(), "{}")
-            val request = Request.Builder()
-                .url("$baseUrl/api/snippets/reset")
-                .post(emptyBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                val bodyString = response.body?.string() ?: ""
-                if (!response.isSuccessful) {
-                    return@withContext SnippetsResult(false, error = "HTTP ${response.code}")
-                }
-                val jsonObj = gson.fromJson(bodyString, JsonObject::class.java)
-                if (jsonObj != null && jsonObj.has("snippets") && jsonObj.get("snippets").isJsonArray) {
-                    val listType = object : com.google.gson.reflect.TypeToken<List<SnippetItem>>() {}.type
-                    val snippets: List<SnippetItem> = gson.fromJson(jsonObj.get("snippets"), listType) ?: emptyList()
-                    return@withContext SnippetsResult(true, snippets = snippets)
-                }
-                return@withContext SnippetsResult(true, snippets = emptyList())
-            }
-        } catch (e: Exception) {
-            Log.e("NetworkService", "Reset snippets error: ${e.message}", e)
-            return@withContext SnippetsResult(false, error = e.localizedMessage ?: "Unable to reset snippets")
         }
     }
 

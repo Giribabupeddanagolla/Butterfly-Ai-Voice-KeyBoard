@@ -180,12 +180,6 @@ class AskRequest(BaseModel):
 class PolishRequest(BaseModel):
     text: str
     language: Optional[str] = "auto"
-
-class SnippetRequest(BaseModel):
-    name: str
-    text: str
-    voice_trigger: Optional[str] = None
-
 class APIKeyRequest(BaseModel):
     api_key: str
     admin_token: Optional[str] = None
@@ -1017,32 +1011,6 @@ def export_conversation_session(session_id: str, format: Optional[str] = Query("
             media_type="text/plain",
             headers={"Content-Disposition": f'attachment; filename="conversation_{session_id}.txt"'}
         )
-
-@app.get("/api/snippets")
-def get_snippets():
-    snippets = memory_manager.get_all_snippets()
-    return {"success": True, "snippets": snippets}
-
-@app.post("/api/snippets")
-def create_snippet_endpoint(request: SnippetRequest):
-    if not request.name or not request.text:
-        raise HTTPException(status_code=400, detail="Name and text are required for snippets")
-    snippet = memory_manager.create_snippet(
-        name=request.name,
-        text=request.text,
-        voice_trigger=request.voice_trigger
-    )
-    return {"success": True, "snippet": snippet}
-
-@app.delete("/api/snippets/{snippet_id}")
-def delete_snippet_endpoint(snippet_id: int):
-    deleted = memory_manager.delete_snippet(snippet_id)
-    return {"success": deleted, "message": "Snippet deleted" if deleted else "Snippet not found"}
-
-@app.post("/api/snippets/reset")
-def reset_snippets_endpoint():
-    snippets = memory_manager.seed_default_snippets(force=True)
-    return {"success": True, "snippets": snippets, "message": "Default snippets restored"}
 
 @app.get("/api/search")
 @app.get("/search")

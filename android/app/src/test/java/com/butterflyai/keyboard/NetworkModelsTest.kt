@@ -73,39 +73,6 @@ class NetworkModelsTest {
         assertNull(parsed.error)
     }
 
-    @Test
-    fun testSnippetsResultParsing() {
-        val json = """
-            {
-                "success": true,
-                "snippets": [
-                    {
-                        "id": 1,
-                        "name": "Email",
-                        "text": "contact@example.com",
-                        "voice_trigger": "my email",
-                        "created_at": "2026-10-01T12:00:00"
-                    },
-                    {
-                        "id": 2,
-                        "name": "Address",
-                        "text": "123 Butterfly Lane",
-                        "voice_trigger": "my address",
-                        "created_at": "2026-10-01T12:05:00"
-                    }
-                ],
-                "error": null
-            }
-        """.trimIndent()
-
-        val parsed = gson.fromJson(json, SnippetsResult::class.java)
-        assertTrue(parsed.success)
-        assertEquals(2, parsed.snippets.size)
-        assertEquals("Email", parsed.snippets[0].name)
-        assertEquals("contact@example.com", parsed.snippets[0].text)
-        assertEquals("my email", parsed.snippets[0].voice_trigger)
-        assertEquals("Address", parsed.snippets[1].name)
-    }
 
     @Test
     fun testSearchResultParsing() {
@@ -196,38 +163,4 @@ class NetworkModelsTest {
         assertEquals("assistant", detailResult.messages[1].role)
     }
 
-    @Test
-    fun testSnippetVoiceTriggerMatchingLogic() {
-        val snippets = listOf(
-            SnippetItem(id = 1, name = "My Email", text = "developer@butterfly.ai", voice_trigger = "send email"),
-            SnippetItem(id = 2, name = "My Phone", text = "+1-555-0199", voice_trigger = "my phone number"),
-            SnippetItem(id = 3, name = "Greeting", text = "Hello, thanks for reaching out!", voice_trigger = "say greeting")
-        )
-
-        fun findSnippetByTrigger(input: String, list: List<SnippetItem>): SnippetItem? {
-            val normalized = input.trim().lowercase()
-            return list.firstOrNull { snippet ->
-                val trigger = snippet.voice_trigger?.trim()?.lowercase()
-                !trigger.isNullOrEmpty() && (normalized == trigger || normalized.contains(trigger))
-            }
-        }
-
-        val match1 = findSnippetByTrigger("send email", snippets)
-        assertNotNull(match1)
-        assertEquals("developer@butterfly.ai", match1?.text)
-
-        val match2 = findSnippetByTrigger("please say greeting right now", snippets)
-        assertNotNull(match2)
-        assertEquals("Hello, thanks for reaching out!", match2?.text)
-
-        val matchNotFound = findSnippetByTrigger("what is the weather today?", snippets)
-        assertNull(matchNotFound)
-    }
-
-    @Test
-    fun testStarterSnippets() {
-        assertTrue(StarterSnippets.list.isNotEmpty())
-        assertEquals(6, StarterSnippets.list.size)
-        assertTrue(StarterSnippets.list.any { it.name == "Work Email" })
-    }
 }
