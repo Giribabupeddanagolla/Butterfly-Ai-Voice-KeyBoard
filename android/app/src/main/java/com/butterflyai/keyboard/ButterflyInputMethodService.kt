@@ -2334,6 +2334,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     btn.backgroundTintList = null
                 }
                 btn.setTextColor(palette.ctrlKeyText)
+                val iconTint = if (themeKey == "sky") android.graphics.Color.parseColor("#1D4ED8") else palette.ctrlKeyText
+                btn.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(iconTint)
             }
         }
 
