@@ -372,13 +372,20 @@ class NetworkService(private val context: Context) {
         }
     }
 
-    suspend fun askAI(prompt: String, language: String = "auto"): AskResult = withContext(Dispatchers.IO) {
+    suspend fun askAI(
+        prompt: String,
+        sourceLanguage: String = "auto",
+        targetLanguage: String = "auto"
+    ): AskResult = withContext(Dispatchers.IO) {
         val baseUrl = getBaseUrl()
         try {
             val jsonBody = JsonObject().apply {
                 addProperty("message", prompt)
                 addProperty("text", prompt)
-                addProperty("language", language)
+                addProperty("prompt", prompt)
+                addProperty("source_language", sourceLanguage)
+                addProperty("target_language", targetLanguage)
+                addProperty("language", targetLanguage)
             }
             val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody.toString())
             val request = Request.Builder()

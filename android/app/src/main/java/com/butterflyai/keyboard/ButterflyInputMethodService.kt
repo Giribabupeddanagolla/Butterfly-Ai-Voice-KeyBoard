@@ -1906,25 +1906,27 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvOriginalText.text = question
         tvOriginalText.visibility = View.VISIBLE
 
-        lblTranslationHeader.text = "AI Answer:"
+        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
+        val tgtLang = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "en"
+        val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
+
+        lblTranslationHeader.text = "AI Answer ($targetLangName):"
         lblTranslationHeader.visibility = View.VISIBLE
-        tvTranslatedText.text = "Thinking..."
+        tvTranslatedText.text = "Thinking in $targetLangName..."
         tvTranslatedText.visibility = View.VISIBLE
 
         tvInsertedNotice.visibility = View.GONE
         layoutVoiceResult.visibility = View.VISIBLE
         setKeyboardState(KeyboardState.RESULT)
 
-        val srcLang = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
-
         serviceScope.launch {
             try {
-                val res = networkService.askAI(question, srcLang)
+                val res = networkService.askAI(question, sourceLanguage = srcLang, targetLanguage = tgtLang)
 
                 if (res.success && res.answer.isNotBlank()) {
                     tvTranslatedText.text = res.answer
                     lastFinalText = res.answer
-                    tvInsertedNotice.text = "✓ AI Response Ready"
+                    tvInsertedNotice.text = "✓ AI Response Ready ($targetLangName)"
                     tvInsertedNotice.visibility = View.VISIBLE
                     notifyHistoryUpdated()
                 } else {
@@ -1968,6 +1970,31 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         val targetLangName = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.second ?: "Target Language"
 
         retranslateJob?.cancel()
+
+        // If currently viewing an AI Answer, re-translate the AI Answer to the newly selected target language
+        if (::lblTranslationHeader.isInitialized && lblTranslationHeader.visibility == View.VISIBLE && lblTranslationHeader.text.contains("AI Answer") && !isAiAnswerLoading) {
+            val currentAnswer = lastFinalText.ifBlank { tvTranslatedText.text?.toString() ?: "" }
+            if (currentAnswer.isNotBlank()) {
+                lblTranslationHeader.text = "AI Answer ($targetLangName):"
+                tvInsertedNotice.text = "🔄 Translating AI answer to $targetLangName..."
+                tvInsertedNotice.visibility = View.VISIBLE
+                retranslateJob = serviceScope.launch {
+                    try {
+                        val reqTarget = if (tgtLang == "auto" || tgtLang.isBlank()) "te" else tgtLang
+                        val retranslated = networkService.translateTextDirect(currentAnswer, "auto", reqTarget)
+                        if (!retranslated.isNullOrBlank()) {
+                            tvTranslatedText.text = retranslated
+                            lastFinalText = retranslated
+                            tvInsertedNotice.text = "✓ AI Response in $targetLangName"
+                            tvInsertedNotice.visibility = View.VISIBLE
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ButterflyIME", "Retranslate AI answer error: ${e.message}")
+                    }
+                }
+                return
+            }
+        }
 
         if (!isTranslateOn) {
             val textToRestore = if (lastSpokenText.isNotBlank()) lastSpokenText else lastOriginalText

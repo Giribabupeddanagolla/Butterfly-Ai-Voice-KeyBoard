@@ -41,6 +41,7 @@ class AIAgent:
         session_id: Optional[str] = None,
         language: Optional[str] = None,
         source_language: Optional[str] = None,
+        target_language: Optional[str] = None,
         fallback_handler: Optional[Callable[[str, str], Optional[str]]] = None
     ) -> Dict[str, Any]:
         """
@@ -48,11 +49,12 @@ class AIAgent:
         1. Validate request
         2. Resolve session_id
         3. Load conversation history
-        4. Load PROJECT_CONTEXT
+        4. Load PROJECT_CONTEXT with multilingual target instruction
         5. Build AI messages
-        6. Call OpenAI service
-        7. Save conversation to memory
-        8. Return response
+        6. Call OpenAI service or fallback handler
+        7. Ensure answer is in target language
+        8. Save conversation to memory
+        9. Return response
         """
         # 1. Validate request
         if not message or not message.strip():
@@ -75,11 +77,13 @@ class AIAgent:
             logger.error(f"Failed to access session in database: {e}")
             raise RuntimeError("Database error while initializing session.")
 
-        # Resolve language
-        if language and language != "auto":
-            lang_code = normalize_language_code(language)
+        # Resolve target language
+        target_lang = target_language or language
+        if target_lang and target_lang != "auto":
+            lang_code = normalize_language_code(target_lang)
         else:
-            lang_code = detect_language_from_text(clean_message)
+            detected = detect_language_from_text(clean_message)
+            lang_code = detected if detected else "en"
         lang_name = get_language_name(lang_code)
 
         # 3. Load conversation history
@@ -89,9 +93,17 @@ class AIAgent:
             logger.error(f"Failed to load conversation history: {e}")
             raise RuntimeError("Database error while loading conversation history.")
 
-        # 4 & 5. Build AI messages with PROJECT_CONTEXT as system instruction
+        # 4 & 5. Build AI messages with PROJECT_CONTEXT and explicit multilingual instruction
+        system_instruction = PROJECT_CONTEXT.strip()
+        if lang_code and lang_code != "auto":
+            system_instruction += (
+                f"\n\nCRITICAL MULTILINGUAL REQUIREMENT: You MUST formulate your entire response in {lang_name} ({lang_code}). "
+                f"All explanations, answers, and statements MUST be translated and written fluently in {lang_name}. "
+                f"Do NOT answer in English unless {lang_name} is English."
+            )
+
         ai_messages: List[Dict[str, str]] = [
-            {"role": "system", "content": PROJECT_CONTEXT.strip()}
+            {"role": "system", "content": system_instruction}
         ]
         for prev in history_messages:
             r = prev.get("role")
@@ -135,7 +147,18 @@ class AIAgent:
                 answer = get_mock_response(lang_code, clean_message)
             model = "butterfly-ai-fallback"
 
-        # 7. Save conversation to memory (only after response is successfully produced)
+        # 7. Multilingual verification: ensure the final answer is translated into the target language
+        if answer and lang_code != "en" and lang_code != "auto":
+            detected_ans_lang = detect_language_from_text(answer)
+            if detected_ans_lang != lang_code:
+                try:
+                    translated_ans = translate_text(answer, target_language=lang_code, source_language="auto")
+                    if translated_ans and translated_ans.strip():
+                        answer = translated_ans.strip()
+                except Exception as tr_err:
+                    logger.warning(f"Error ensuring final answer translation to {lang_code}: {tr_err}")
+
+        # 8. Save conversation to memory (only after response is successfully produced)
         try:
             memory_manager.save_message(
                 session_id=resolved_session_id,
@@ -143,7 +166,7 @@ class AIAgent:
                 content=clean_message,
                 language=lang_code,
                 original_text=clean_message,
-                source_language=lang_code,
+                source_language=source_language or "auto",
                 translation_language=lang_code,
                 text_language=lang_code,
                 translated_text=clean_message,
@@ -155,7 +178,7 @@ class AIAgent:
                 content=answer,
                 language=lang_code,
                 original_text=clean_message,
-                source_language=lang_code,
+                source_language=source_language or "auto",
                 translation_language=lang_code,
                 text_language=lang_code,
                 translated_text=answer,
@@ -172,6 +195,7 @@ class AIAgent:
             "answer": answer,
             "language": lang_name,
             "language_code": lang_code,
+            "target_language": lang_code,
             "model": model
         }
 

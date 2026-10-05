@@ -2423,6 +2423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         message: query,
                         text: query,
                         source_language: srcLang,
+                        target_language: targetLang,
                         language: targetLang
                     })
                 });

@@ -32,6 +32,7 @@ from config import config
 from memory import memory_manager
 from ai_agent import ai_agent, get_mock_response
 from speech_to_text import stt_service, detect_language_from_text, translate_text
+from languages import get_language_name, normalize_language_code
 from text_to_speech import tts_service
 from services.openai_service import openai_service
 from services.whisper_service import whisper_service
@@ -135,6 +136,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     message: str
     language: Optional[str] = None
+    source_language: Optional[str] = "auto"
+    target_language: Optional[str] = None
 
 class ChatResponse(BaseModel):
     session_id: str
@@ -166,16 +169,18 @@ class AssistantRequest(BaseModel):
     prompt: Optional[str] = None
     message: Optional[str] = None
     text: Optional[str] = None
-    language: Optional[str] = "en"
+    language: Optional[str] = None
     source_language: Optional[str] = "auto"
+    target_language: Optional[str] = None
 
 class AskRequest(BaseModel):
     session_id: Optional[str] = None
     prompt: Optional[str] = None
     message: Optional[str] = None
     text: Optional[str] = None
-    language: Optional[str] = "en"
+    language: Optional[str] = None
     source_language: Optional[str] = "auto"
+    target_language: Optional[str] = None
 
 class PolishRequest(BaseModel):
     text: str
@@ -614,70 +619,194 @@ def is_bad_abstract(prompt: str, abstract: str) -> bool:
         
     return False
 
-def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en") -> str:
+def get_intelligent_fallback_answer(prompt: str, language: Optional[str] = "en", source_language: Optional[str] = "auto") -> str:
+    """Retrieve intelligent answer via tech knowledge, Wikipedia, or DuckDuckGo and translate to target language."""
     p_lower = prompt.lower().strip()
-    is_telugu = any(ord(c) >= 0x0C00 and ord(c) <= 0x0C7F for c in prompt) or (language and language.startswith("te"))
-    lang_key = "te" if is_telugu else "en"
+    
+    # 1. Resolve target language and source language
+    target_lang = normalize_language_code(language) if (language and language != "auto") else None
+    if not target_lang:
+        detected_prompt_lang = detect_language_from_text(prompt)
+        target_lang = detected_prompt_lang if detected_prompt_lang else "en"
 
-    # 1. Greetings & bot identity
-    if any(w in p_lower for w in ["hi", "hii", "hello", "hey", "hii guys", "namaste", "namaskaram"]):
-        if is_telugu or any(c in prompt for c in ["హాయ్", "నమస్కారం", "ఏంటి"]):
-            return "నమస్కారం! నేను బటర్‌ఫ్లై AI సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?"
-        return "Hello! I am Butterfly AI, your intelligent voice and text assistant. How can I help you today?"
+    src_lang = normalize_language_code(source_language) if (source_language and source_language != "auto") else None
+    if not src_lang:
+        src_lang = detect_language_from_text(prompt) or "auto"
 
-    if "how are you" in p_lower:
-        return "I'm doing great, thank you for asking! How can I assist you with Butterfly AI today?"
+    # 2. If prompt is not English, translate to English for high-quality information search
+    english_prompt = prompt
+    if src_lang != "en" and src_lang != "auto":
+        try:
+            ep = translate_text(prompt, target_language="en", source_language=src_lang)
+            if ep and ep.strip():
+                english_prompt = ep.strip()
+        except Exception as tr_err:
+            logger.debug(f"Prompt translation to English failed: {tr_err}")
+    ep_lower = english_prompt.lower().strip()
 
-    if "who are you" in p_lower or "what are you" in p_lower:
-        return "I am Butterfly AI, an intelligent multilingual voice & text assistant designed to transcribe, translate, search, and answer your questions."
+    # 3. Greetings & bot identity
+    if any(w in p_lower or w in ep_lower for w in ["hi", "hii", "hello", "hey", "hii guys", "namaste", "namaskaram"]):
+        base_greeting = "Hello! I am Butterfly AI, your intelligent voice and text assistant. How can I help you today?"
+        if target_lang != "en":
+            try:
+                translated_g = translate_text(base_greeting, target_language=target_lang, source_language="en")
+                if translated_g and translated_g.strip():
+                    return translated_g.strip()
+            except Exception:
+                pass
+        return base_greeting
 
-    # 2. Check predefined tech knowledge base first
+    if "how are you" in p_lower or "how are you" in ep_lower:
+        base_resp = "I'm doing great, thank you for asking! How can I assist you with Butterfly AI today?"
+        if target_lang != "en":
+            try:
+                translated_resp = translate_text(base_resp, target_language=target_lang, source_language="en")
+                if translated_resp and translated_resp.strip():
+                    return translated_resp.strip()
+            except Exception:
+                pass
+        return base_resp
+
+    if any(w in p_lower or w in ep_lower for w in ["who are you", "what are you"]):
+        base_resp = "I am Butterfly AI, an intelligent multilingual voice & text assistant designed to transcribe, translate, search, and answer your questions."
+        if target_lang != "en":
+            try:
+                translated_resp = translate_text(base_resp, target_language=target_lang, source_language="en")
+                if translated_resp and translated_resp.strip():
+                    return translated_resp.strip()
+            except Exception:
+                pass
+        return base_resp
+
+    # 4. Check predefined tech knowledge base
     for tech_name, tech_dict in TECH_KNOWLEDGE.items():
-        if re.search(r'\b' + re.escape(tech_name) + r'\b', p_lower):
-            return tech_dict.get(lang_key, tech_dict["en"])
+        if re.search(r'\b' + re.escape(tech_name) + r'\b', p_lower) or re.search(r'\b' + re.escape(tech_name) + r'\b', ep_lower):
+            if target_lang in tech_dict:
+                return tech_dict[target_lang]
+            if target_lang != "en":
+                try:
+                    translated_entry = translate_text(tech_dict["en"], target_language=target_lang, source_language="en")
+                    if translated_entry and translated_entry.strip():
+                        return translated_entry.strip()
+                except Exception as tr_err:
+                    logger.debug(f"Tech knowledge translation failed: {tr_err}")
+            return tech_dict["en"]
 
-    # 3. Disambiguated Wikipedia lookup
-    query_title = prompt.strip()
-    if "java" in p_lower and "island" not in p_lower:
+    # 5. Extract clean search topic from English prompt
+    clean_topic = re.sub(
+        r'^(what is|what are|who is|who are|who was|tell me about|explain|describe|what do you mean by|define|meaning of)\s+',
+        '',
+        ep_lower,
+        flags=re.IGNORECASE
+    ).strip(' ?.!').strip()
+    topic_query = clean_topic if clean_topic else english_prompt.strip(' ?.!').strip()
+
+    # Disambiguated Wikipedia query titles
+    query_title = topic_query
+    if "java" in topic_query and "island" not in topic_query:
         query_title = "Java (programming language)"
-    elif "python" in p_lower and "snake" not in p_lower and "reptile" not in p_lower:
+    elif "python" in topic_query and "snake" not in topic_query and "reptile" not in topic_query:
         query_title = "Python (programming language)"
-    elif "ruby" in p_lower and "gem" not in p_lower and "stone" not in p_lower:
+    elif "ruby" in topic_query and "gem" not in topic_query and "stone" not in topic_query:
         query_title = "Ruby (programming language)"
-    elif "rust" in p_lower and "metal" not in p_lower and "iron" not in p_lower:
+    elif "rust" in topic_query and "metal" not in topic_query and "iron" not in topic_query:
         query_title = "Rust (programming language)"
-    elif "swift" in p_lower and "bird" not in p_lower:
+    elif "swift" in topic_query and "bird" not in topic_query:
         query_title = "Swift (programming language)"
-    elif "react" in p_lower and "chemical" not in p_lower:
+    elif "react" in topic_query and "chemical" not in topic_query:
         query_title = "React (JavaScript library)"
-    elif "node" in p_lower and "network" not in p_lower:
+    elif "node" in topic_query and "network" not in topic_query:
         query_title = "Node.js"
 
+    raw_answer = None
+
+    # Try Wikipedia page summary for disambiguated query_title
     try:
         wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(query_title)}"
         req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=4) as response:
             wdata = json.loads(response.read().decode('utf-8'))
             extract = wdata.get("extract")
-            if extract and not is_bad_abstract(prompt, extract):
-                return extract
+            if extract and not is_bad_abstract(topic_query, extract):
+                raw_answer = extract
     except Exception as w_err:
-        logger.warning(f"Wikipedia summary error for '{query_title}': {w_err}")
+        logger.debug(f"Wikipedia summary error for '{query_title}': {w_err}")
 
-    # Fallback to direct prompt Wikipedia query if disambiguated title failed
-    if query_title != prompt.strip():
+    # Fallback to direct prompt / topic query if disambiguated title failed
+    if not raw_answer and query_title != topic_query:
         try:
-            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(prompt.strip())}"
+            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(topic_query)}"
             req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=3) as response:
                 wdata = json.loads(response.read().decode('utf-8'))
                 extract = wdata.get("extract")
-                if extract and not is_bad_abstract(prompt, extract):
-                    return extract
+                if extract and not is_bad_abstract(topic_query, extract):
+                    raw_answer = extract
         except Exception:
             pass
 
-    return get_mock_response(lang_key, prompt)
+    # Try Wikipedia opensearch to find closest title if still no answer
+    if not raw_answer:
+        try:
+            search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={urllib.parse.quote(topic_query)}&limit=1&namespace=0&format=json"
+            s_req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(s_req, timeout=3) as s_res:
+                s_data = json.loads(s_res.read().decode('utf-8'))
+                if s_data and len(s_data) > 1 and s_data[1]:
+                    found_title = s_data[1][0]
+                    w_sum_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(found_title)}"
+                    w_sum_req = urllib.request.Request(w_sum_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(w_sum_req, timeout=3) as w_sum_res:
+                        w_sum_data = json.loads(w_sum_res.read().decode('utf-8'))
+                        ext = w_sum_data.get("extract")
+                        if ext and not is_bad_abstract(topic_query, ext):
+                            raw_answer = ext
+        except Exception:
+            pass
+
+    # If raw_answer found from Wikipedia, translate it to target_lang
+    if raw_answer:
+        if target_lang != "en":
+            try:
+                translated_res = translate_text(raw_answer, target_language=target_lang, source_language="en")
+                if translated_res and translated_res.strip():
+                    return translated_res.strip()
+            except Exception as tr_err:
+                logger.warning(f"Error translating Wikipedia answer to {target_lang}: {tr_err}")
+        return raw_answer
+
+    # Fallback to DuckDuckGo instant answer
+    try:
+        ddg_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(english_prompt)}&format=json&no_html=1"
+        req = urllib.request.Request(ddg_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=3) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            abstract = data.get("AbstractText", "")
+            if abstract and not is_bad_abstract(english_prompt, abstract):
+                raw_answer = abstract
+            elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
+                for topic in data.get("RelatedTopics"):
+                    if isinstance(topic, dict) and topic.get("Text"):
+                        txt = topic.get("Text")
+                        if not is_bad_abstract(english_prompt, txt):
+                            raw_answer = txt
+                            break
+    except Exception as ddg_err:
+        logger.debug(f"DuckDuckGo error: {ddg_err}")
+
+    if raw_answer:
+        if target_lang != "en":
+            try:
+                translated_res = translate_text(raw_answer, target_language=target_lang, source_language="en")
+                if translated_res and translated_res.strip():
+                    return translated_res.strip()
+            except Exception as tr_err:
+                logger.warning(f"Error translating DuckDuckGo answer to {target_lang}: {tr_err}")
+        return raw_answer
+
+    # Ultimate fallback in target language
+    mock = get_mock_response(target_lang, prompt)
+    return mock
 
 @app.post("/chat")
 @app.post("/api/chat")
@@ -694,11 +823,22 @@ def chat_endpoint(request: Request, body: ChatRequest) -> ChatResponse:
             detail="Invalid session_id: cannot be empty whitespace."
         )
 
+    # Determine requested target language
+    req_target = body.target_language or body.language
+    if req_target and req_target.lower() != "auto":
+        target_lang = normalize_language_code(req_target)
+    else:
+        target_lang = detect_language_from_text(body.message) or "en"
+
+    req_source = body.source_language or "auto"
+
     try:
         result = ai_agent.handle_chat_request(
             message=body.message,
             session_id=body.session_id,
-            language=body.language
+            language=target_lang,
+            target_language=target_lang,
+            source_language=req_source
         )
         return ChatResponse(
             session_id=result["session_id"],
@@ -734,35 +874,26 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             content={"success": False, "error": "Question cannot be empty."}
         )
 
-    def search_fallback_fn(user_text: str, lang_code: str) -> Optional[str]:
-        ddg_answer = ""
-        try:
-            url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(user_text)}&format=json&no_html=1"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                abstract = data.get("AbstractText", "")
-                if abstract and not is_bad_abstract(user_text, abstract):
-                    ddg_answer = abstract
-                elif data.get("RelatedTopics") and isinstance(data.get("RelatedTopics"), list):
-                    for topic in data.get("RelatedTopics"):
-                        if isinstance(topic, dict) and topic.get("Text"):
-                            txt = topic.get("Text")
-                            if not is_bad_abstract(user_text, txt):
-                                ddg_answer = txt
-                                break
-        except Exception as ddg_err:
-            logger.warning(f"DuckDuckGo instant answer error: {ddg_err}")
+    # Determine requested target language
+    req_target = body.target_language or body.language
+    if req_target and req_target.lower() != "auto":
+        target_lang = normalize_language_code(req_target)
+    else:
+        target_lang = detect_language_from_text(prompt) or "en"
 
-        if not ddg_answer:
-            ddg_answer = get_intelligent_fallback_answer(user_text, language=lang_code)
-        return ddg_answer
+    req_source = body.source_language or "auto"
+
+    def search_fallback_fn(user_text: str, lang_code: str) -> Optional[str]:
+        eff_target = lang_code if (lang_code and lang_code != "auto") else target_lang
+        return get_intelligent_fallback_answer(user_text, language=eff_target, source_language=req_source)
 
     try:
         result = ai_agent.handle_chat_request(
             message=prompt,
             session_id=body.session_id,
-            language=body.language,
+            language=target_lang,
+            target_language=target_lang,
+            source_language=req_source,
             fallback_handler=search_fallback_fn
         )
         return {
@@ -771,7 +902,8 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             "question": prompt,
             "answer": result["answer"],
             "model": result.get("model", config.AI_MODEL),
-            "language": result.get("language_code", body.language or "auto")
+            "language": result.get("language_code", target_lang),
+            "target_language": target_lang
         }
     except ValueError as ve:
         return JSONResponse(
@@ -780,7 +912,7 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
         )
     except Exception as e:
         logger.error(f"Error in ai_assistant_endpoint: {e}", exc_info=True)
-        fallback_ans = search_fallback_fn(prompt, body.language or "en") or "Butterfly AI was unable to process your request."
+        fallback_ans = search_fallback_fn(prompt, target_lang) or "Butterfly AI was unable to process your request."
         s_id = body.session_id or f"session_{uuid.uuid4().hex[:8]}"
         return {
             "success": True,
@@ -788,7 +920,8 @@ def ai_assistant_endpoint(request: Request, body: AskRequest):
             "question": prompt,
             "answer": fallback_ans,
             "model": "butterfly-ai-assistant",
-            "language": body.language or "auto"
+            "language": target_lang,
+            "target_language": target_lang
         }
 
 

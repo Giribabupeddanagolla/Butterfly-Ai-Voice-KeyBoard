@@ -362,11 +362,18 @@
                 android:text="1. Enable Keyboard in Android Settings ➔"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="13.5sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:ellipsize="none"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="13sp"
+                app:autoSizeStepGranularity="0.5sp"
                 android:background="@drawable/bg_keycap_enter_blue"
                 android:gravity="start|center_vertical"
-                android:paddingHorizontal="16dp"
+                android:paddingHorizontal="14dp"
                 android:layout_marginBottom="10dp" />
 
             <Button
@@ -376,12 +383,19 @@
                 android:text="2. Select Butterfly AI as Active Keyboard ➔"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="13.5sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:ellipsize="none"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="13sp"
+                app:autoSizeStepGranularity="0.5sp"
                 android:background="@drawable/bg_quick_toolbar_pill"
                 android:backgroundTint="#059669"
                 android:gravity="start|center_vertical"
-                android:paddingHorizontal="16dp" />
+                android:paddingHorizontal="14dp" />
         </LinearLayout>
 
         <!-- CARD 4: MICROPHONE PERMISSION SECTION -->
@@ -521,6 +535,12 @@
                 android:textColor="#FFFFFF"
                 android:textSize="13.5sp"
                 android:textStyle="bold"
+                android:maxLines="1"
+                android:singleLine="true"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="13.5sp"
+                app:autoSizeStepGranularity="0.5sp"
                 android:background="@drawable/bg_quick_toolbar_pill"
                 android:backgroundTint="#2563EB"
                 android:drawableStart="@drawable/ic_history_clock_white"
