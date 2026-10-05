@@ -72,22 +72,15 @@
         </LinearLayout>
 
         <!-- History Quick Button -->
-        <Button
+        <ImageButton
             android:id="@+id/btnHistory"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            android:text=""
-            android:drawableTop="@drawable/ic_history_clock_toolbar"
-            android:drawableTint="#1D4ED8"
-            android:gravity="center"
             android:background="@drawable/bg_quick_toolbar_pill"
-            android:padding="0dp"
+            android:src="@drawable/ic_history_clock_toolbar"
+            android:scaleType="centerInside"
+            android:padding="5dp"
+            android:contentDescription="History"
             android:layout_marginEnd="4dp" />
 
         <!-- Theme / Settings Gear Button -->

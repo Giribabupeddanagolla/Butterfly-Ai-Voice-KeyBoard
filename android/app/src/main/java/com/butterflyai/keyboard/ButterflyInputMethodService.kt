@@ -2326,16 +2326,19 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         // 4. Action Toolbar Buttons (⌨, History, Switch IME, Gear)
         val toolbarIds = listOf(R.id.btnToggleKeyboard, R.id.btnHistory, R.id.btnSwitchIme, R.id.btnCycleTheme)
         for (id in toolbarIds) {
-            val btn = rootRootView.findViewById<Button>(id)
-            if (btn != null) {
-                if (themeKey != "sky") {
-                    btn.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
-                } else {
-                    btn.backgroundTintList = null
-                }
-                btn.setTextColor(palette.ctrlKeyText)
-                val iconTint = if (themeKey == "sky") android.graphics.Color.parseColor("#1D4ED8") else palette.ctrlKeyText
-                btn.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(iconTint)
+            val view = rootRootView.findViewById<View>(id) ?: continue
+            if (themeKey != "sky") {
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
+            } else {
+                view.backgroundTintList = null
+            }
+            val iconTint = if (themeKey == "sky") android.graphics.Color.parseColor("#1D4ED8") else palette.ctrlKeyText
+            if (view is TextView) {
+                view.setTextColor(palette.ctrlKeyText)
+                view.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(iconTint)
+            }
+            if (view is ImageView) {
+                view.imageTintList = android.content.res.ColorStateList.valueOf(iconTint)
             }
         }
 
