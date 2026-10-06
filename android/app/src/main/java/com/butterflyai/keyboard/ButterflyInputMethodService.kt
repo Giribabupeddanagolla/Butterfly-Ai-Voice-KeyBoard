@@ -84,10 +84,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnCopyText: Button
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
-    private var btnOpenWeb: Button? = null
-    private var layoutWebLink: LinearLayout? = null
-    private var tvWebLinkTitle: TextView? = null
-    private var currentAiSourceUrl: String? = null
     private var currentAiQuestion: String = ""
 
     private var isAiAnswerLoading = false
@@ -413,9 +409,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         btnCopyText = inputView.findViewById(R.id.btnCopyText)
         btnSpeakText = inputView.findViewById(R.id.btnSpeakText)
         btnDismissResult = inputView.findViewById(R.id.btnDismissResult)
-        btnOpenWeb = inputView.findViewById(R.id.btnOpenWeb)
-        layoutWebLink = inputView.findViewById(R.id.layoutWebLink)
-        tvWebLinkTitle = inputView.findViewById(R.id.tvWebLinkTitle)
+
 
         btnToggleKeyboard = inputView.findViewById(R.id.btnToggleKeyboard)
         keyboardKeysLayout = inputView.findViewById(R.id.keyboardKeysLayout)
@@ -667,13 +661,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             setKeyboardState(KeyboardState.IDLE)
         }
 
-        btnOpenWeb?.setOnClickListener {
-            openRelatedWebsite()
-        }
 
-        layoutWebLink?.setOnClickListener {
-            openRelatedWebsite()
-        }
 
         // Toggle QWERTY Grid
         btnToggleKeyboard.setOnClickListener {
@@ -1887,30 +1875,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
-    private fun openRelatedWebsite(fallbackQuery: String = "") {
-        val q = when {
-            fallbackQuery.isNotBlank() -> fallbackQuery
-            currentAiQuestion.isNotBlank() -> currentAiQuestion
-            lastOriginalText.isNotBlank() -> lastOriginalText
-            else -> lastFinalText
-        }.trim()
-
-        val targetUrl = when {
-            !currentAiSourceUrl.isNullOrBlank() -> currentAiSourceUrl!!
-            q.isNotBlank() -> "https://www.google.com/search?q=" + java.net.URLEncoder.encode(q, "UTF-8")
-            else -> "https://www.google.com"
-        }
-
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e("ButterflyIME", "Failed to open URL $targetUrl: ${e.message}", e)
-            Toast.makeText(this, "Could not open browser", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     private fun detectScriptLanguage(text: String): String {
         for (ch in text) {
@@ -1978,8 +1942,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         tvOriginalText.visibility = View.VISIBLE
 
         currentAiQuestion = question
-        currentAiSourceUrl = null
-        layoutWebLink?.visibility = View.GONE
+
 
         val selectedSrcCode = languages.getOrNull(spinnerSourceLang.selectedItemPosition)?.first ?: "auto"
         val selectedTgtCode = languages.getOrNull(spinnerTargetLang.selectedItemPosition)?.first ?: "en"
@@ -2018,11 +1981,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     tvTranslatedText.text = res.answer
                     lastFinalText = res.answer
                     currentAiQuestion = question
-                    currentAiSourceUrl = res.source_url ?: ("https://www.google.com/search?q=" + java.net.URLEncoder.encode(question, "UTF-8"))
 
-                    val siteTitle = res.source_title?.takeIf { it.isNotBlank() } ?: "Search Web: $question"
-                    tvWebLinkTitle?.text = siteTitle
-                    layoutWebLink?.visibility = View.VISIBLE
 
                     tvInsertedNotice.text = "✓ AI Response Ready ($targetLangName)"
                     tvInsertedNotice.visibility = View.VISIBLE
@@ -2494,9 +2453,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             val btnCopyText = rootRootView.findViewById<Button>(R.id.btnCopyText)
             val btnSpeakText = rootRootView.findViewById<Button>(R.id.btnSpeakText)
             val btnDismissResult = rootRootView.findViewById<Button>(R.id.btnDismissResult)
-            val btnOpenWeb = rootRootView.findViewById<Button>(R.id.btnOpenWeb)
-            val layoutWebLink = rootRootView.findViewById<View>(R.id.layoutWebLink)
-            val tvWebLinkTitle = rootRootView.findViewById<TextView>(R.id.tvWebLinkTitle)
 
             for (resBtn in listOf(btnCopyText, btnSpeakText, btnDismissResult)) {
                 if (resBtn != null) {
@@ -2510,26 +2466,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     } else {
                         resBtn.setTextColor(palette.ctrlKeyText)
                     }
-                }
-            }
-
-            if (btnOpenWeb != null) {
-                if (themeKey != "sky") {
-                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.accentColor)
-                    btnOpenWeb.setTextColor(if (palette.isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-                } else {
-                    btnOpenWeb.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
-                    btnOpenWeb.setTextColor(android.graphics.Color.WHITE)
-                }
-            }
-
-            if (layoutWebLink != null) {
-                if (palette.isDark) {
-                    layoutWebLink.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.ctrlKeyBg)
-                    tvWebLinkTitle?.setTextColor(if (themeKey == "cyber") android.graphics.Color.parseColor("#00F0FF") else android.graphics.Color.parseColor("#60A5FA"))
-                } else {
-                    layoutWebLink.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EFF6FF"))
-                    tvWebLinkTitle?.setTextColor(android.graphics.Color.parseColor("#1D4ED8"))
                 }
             }
         }
