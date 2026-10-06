@@ -640,7 +640,7 @@
             android:text="..."
             android:textColor="#334155"
             android:textSize="12sp"
-            android:maxLines="2"
+            android:maxLines="3"
             android:ellipsize="end"
             android:layout_marginTop="1dp" />
 
@@ -654,17 +654,26 @@
             android:textStyle="bold"
             android:layout_marginTop="2dp" />
 
-        <TextView
-            android:id="@+id/tvTranslatedText"
+        <ScrollView
+            android:id="@+id/scrollVoiceResultAnswer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="..."
-            android:textColor="#0F172A"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:layout_marginTop="1dp" />
+            android:maxHeight="160dp"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false"
+            android:fillViewport="true"
+            android:nestedScrollingEnabled="true"
+            android:layout_marginTop="1dp">
+
+            <TextView
+                android:id="@+id/tvTranslatedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="..."
+                android:textColor="#0F172A"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </ScrollView>
 
         <TextView
             android:id="@+id/tvInsertedNotice"

@@ -84,6 +84,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     private lateinit var btnCopyText: Button
     private lateinit var btnSpeakText: Button
     private lateinit var btnDismissResult: Button
+    private var scrollVoiceResultAnswer: ScrollView? = null
     private var currentAiQuestion: String = ""
 
     private var isAiAnswerLoading = false
@@ -403,6 +404,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         lblOriginalHeader = inputView.findViewById(R.id.lblOriginalHeader)
         tvOriginalText = inputView.findViewById(R.id.tvOriginalText)
         tvTranslatedText = inputView.findViewById(R.id.tvTranslatedText)
+        scrollVoiceResultAnswer = inputView.findViewById(R.id.scrollVoiceResultAnswer)
         lblTranslationHeader = inputView.findViewById(R.id.lblTranslationHeader)
         tvInsertedNotice = inputView.findViewById(R.id.tvInsertedNotice)
         btnInsertText = inputView.findViewById(R.id.btnInsertText)
@@ -1571,6 +1573,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                             lblTranslationHeader.visibility = View.VISIBLE
                             tvTranslatedText.visibility = View.VISIBLE
                             tvTranslatedText.text = if (lastTranslatedText.isNotBlank()) lastTranslatedText else lastOriginalText
+                            scrollVoiceResultAnswer?.post { scrollVoiceResultAnswer?.scrollTo(0, 0) }
                         } else {
                             lastFinalText = lastOriginalText
                             val spokenHeader = if (lastSpokenLanguageName.isNotBlank() && lastSpokenLanguageName != "Auto Detect") {
@@ -1979,6 +1982,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
                 if (res.success && res.answer.isNotBlank()) {
                     tvTranslatedText.text = res.answer
+                    scrollVoiceResultAnswer?.post { scrollVoiceResultAnswer?.scrollTo(0, 0) }
                     lastFinalText = res.answer
                     currentAiQuestion = question
 
