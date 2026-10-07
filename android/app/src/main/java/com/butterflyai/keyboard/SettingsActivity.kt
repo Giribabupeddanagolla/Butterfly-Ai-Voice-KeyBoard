@@ -97,34 +97,11 @@ class SettingsActivity : AppCompatActivity() {
         btnOpenHistory = findViewById(R.id.btnOpenHistory)
 
         val imgSettingsLogo = findViewById<android.widget.ImageView>(R.id.imgSettingsLogo)
-        imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
+        imgSettingsLogo?.imageTintList = null
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
         val currentUrl = networkService.getBaseUrl()
         etServerUrl.setText(currentUrl)
-
-        val btnPresetCloud = findViewById<Button?>(R.id.btnPresetCloud)
-        val btnPresetEmulator = findViewById<Button?>(R.id.btnPresetEmulator)
-        val btnPresetLocal = findViewById<Button?>(R.id.btnPresetLocal)
-
-        btnPresetCloud?.setOnClickListener {
-            etServerUrl.setText(NetworkService.DEFAULT_CLOUD_URL)
-            prefs.edit().putString("server_url", NetworkService.DEFAULT_CLOUD_URL).apply()
-            Toast.makeText(this, "Set to Render Cloud", Toast.LENGTH_SHORT).show()
-        }
-
-        btnPresetEmulator?.setOnClickListener {
-            etServerUrl.setText(NetworkService.EMULATOR_LOCAL_URL)
-            prefs.edit().putString("server_url", NetworkService.EMULATOR_LOCAL_URL).apply()
-            Toast.makeText(this, "Set to Android Emulator (10.0.2.2:8000)", Toast.LENGTH_SHORT).show()
-        }
-
-        btnPresetLocal?.setOnClickListener {
-            val localDefault = "http://192.168.1.100:8000"
-            etServerUrl.setText(localDefault)
-            prefs.edit().putString("server_url", localDefault).apply()
-            Toast.makeText(this, "Set to Local Wi-Fi (update IP to match your PC)", Toast.LENGTH_SHORT).show()
-        }
 
         btnGrantMicPermission.setOnClickListener {
             val isGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
