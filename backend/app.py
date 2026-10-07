@@ -28,7 +28,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from config import config
+from config import config, is_openai_active, mark_openai_failed
 from memory import memory_manager
 from ai_agent import ai_agent, get_mock_response
 from speech_to_text import stt_service, detect_language_from_text, translate_text
@@ -52,17 +52,16 @@ class EndpointFilter(logging.Filter):
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 # Startup Validation
-if config.OPENAI_API_KEY and config.OPENAI_API_KEY.startswith("sk-"):
+if is_openai_active():
     logger.info("OpenAI API configuration loaded successfully.")
 else:
-    logger.warning("WARNING: OPENAI_API_KEY is not configured.")
+    logger.warning("WARNING: OPENAI_API_KEY is not configured or using placeholder. Fallback STT/translation enabled.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import threading
     def check_openai():
-        from config import config, mark_openai_failed
-        if config.OPENAI_API_KEY and config.OPENAI_API_KEY.startswith("sk-"):
+        if is_openai_active():
             try:
                 from openai import OpenAI
                 client = OpenAI(api_key=config.OPENAI_API_KEY, timeout=2.5, max_retries=0)
@@ -459,6 +458,8 @@ async def transcribe_endpoint(
                     spoken_text = clean_fallback
             else:
                 logger.warning("Uploaded audio file is empty (0 bytes)")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Whisper transcription endpoint error: {e}")
             if clean_fallback:
@@ -1172,6 +1173,8 @@ async def audio_upload_endpoint(
             "translated_text": translated_text,
             "language": det_lang
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Audio upload endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

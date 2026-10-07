@@ -42,7 +42,7 @@ class Config:
     
     # Audio Upload Limits & Safety
     MAX_AUDIO_FILE_SIZE: int = int(os.getenv("MAX_AUDIO_FILE_SIZE", 25 * 1024 * 1024)) # 25MB
-    ALLOWED_AUDIO_EXTENSIONS: set = {".webm", ".wav", ".mp3", ".m4a", ".ogg", ".aac", ".flac", ".mp4"}
+    ALLOWED_AUDIO_EXTENSIONS: set = {".webm", ".wav", ".mp3", ".m4a", ".ogg", ".aac", ".flac", ".mp4", ".3gp"}
 
     def get_allowed_origins(self) -> list:
         raw = os.getenv("ALLOWED_ORIGINS", "")
@@ -77,7 +77,17 @@ def is_openai_active() -> bool:
     if getattr(config, "OPENAI_FAILED", False):
         return False
     key = config.OPENAI_API_KEY
-    return bool(key and key.strip().startswith("sk-"))
+    if not key or not key.strip().startswith("sk-"):
+        return False
+    cleaned = key.strip()
+    if (
+        cleaned in {"sk-validkey1234567890123", "sk-dummy", "sk-placeholder", "sk-yourkeyhere"}
+        or "placeholder" in cleaned.lower()
+        or "your_openai_api_key" in cleaned.lower()
+        or len(cleaned) < 20
+    ):
+        return False
+    return True
 
 def mark_openai_failed(reason: str = ""):
     config.OPENAI_FAILED = True

@@ -57,6 +57,30 @@ def test_openai_status(client):
     assert res.status_code == 200
     data = res.json()
     assert "configured" in data
+    assert data["configured"] is False
+
+def test_is_openai_active_placeholder_keys(monkeypatch):
+    from config import is_openai_active
+    monkeypatch.setattr(config, "OPENAI_FAILED", False)
+
+    # Empty key
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "")
+    assert is_openai_active() is False
+
+    # Dummy placeholder keys
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "sk-validkey1234567890123")
+    assert is_openai_active() is False
+
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "sk-placeholder-test")
+    assert is_openai_active() is False
+
+    # Valid-format key
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "sk-proj-RealActualApiKeyFormat1234567890")
+    assert is_openai_active() is True
+
+    # Failed flag disables it
+    monkeypatch.setattr(config, "OPENAI_FAILED", True)
+    assert is_openai_active() is False
 
 # 2. Translation Endpoints & Fallback
 def test_text_translate_same_language(client):
@@ -110,6 +134,32 @@ def test_transcribe_with_audio_upload(client):
         data = res.json()
         assert data["success"] is True
         assert data["text"] == "Mock audio transcription"
+
+def test_transcribe_audio_file_size_exceeded(client, monkeypatch):
+    monkeypatch.setattr(config, "MAX_AUDIO_FILE_SIZE", 50)
+    fake_audio = io.BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00" * 5)
+    fake_audio.name = "test.wav"
+    res = client.post("/api/transcribe", files={"audio": ("test.wav", fake_audio, "audio/wav")}, data={"is_translate_on": "false"})
+    assert res.status_code == 413
+    assert "exceeds maximum allowed size" in res.json()["detail"]
+
+def test_voice_upload_audio_file_size_exceeded(client, monkeypatch):
+    monkeypatch.setattr(config, "MAX_AUDIO_FILE_SIZE", 50)
+    fake_audio = io.BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00" * 5)
+    fake_audio.name = "test.wav"
+    res = client.post("/api/voice/upload", files={"file": ("test.wav", fake_audio, "audio/wav")})
+    assert res.status_code == 413
+    assert "exceeds maximum allowed size" in res.json()["detail"]
+
+def test_transcribe_with_3gp_audio_upload(client):
+    fake_audio = io.BytesIO(b"fake 3gp audio payload")
+    fake_audio.name = "recording.3gp"
+    with patch("services.whisper_service.whisper_service.transcribe_audio", return_value={"success": True, "text": "3gp audio transcription", "language": "en"}):
+        res = client.post("/api/transcribe", files={"audio": ("recording.3gp", fake_audio, "audio/3gpp")}, data={"is_translate_on": "false"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["text"] == "3gp audio transcription"
 
 # 4. Text-to-Speech Endpoint
 def test_tts_endpoint_empty_text(client):
@@ -188,14 +238,17 @@ def test_settings_key_security(client):
     res = client.post("/api/settings/key", json={"api_key": "invalid_prefix", "admin_token": "test_admin_secret_999"})
     assert res.status_code == 400
 
-    # Valid token and valid format
-    res = client.post("/api/settings/key", json={"api_key": "sk-validkey1234567890123", "admin_token": "test_admin_secret_999"})
-    assert res.status_code == 200
-    assert res.json()["success"] is True
+    # Valid token and valid format (mock file write so .env is not mutated on disk)
+    with patch("pathlib.Path.write_text"):
+        res = client.post("/api/settings/key", json={"api_key": "sk-validkey1234567890123", "admin_token": "test_admin_secret_999"})
+        assert res.status_code == 200
+        assert res.json()["success"] is True
 
     # Reset config
     config.ENVIRONMENT = "development"
     config.ADMIN_SECRET_KEY = ""
+    config.OPENAI_API_KEY = ""
+    os.environ["OPENAI_API_KEY"] = ""
 
 # 10. Conversation Rename & Export Endpoints
 def test_conversation_rename(client, isolated_db):
