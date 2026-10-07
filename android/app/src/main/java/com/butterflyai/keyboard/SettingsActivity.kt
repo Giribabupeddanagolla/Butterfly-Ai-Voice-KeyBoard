@@ -97,7 +97,7 @@ class SettingsActivity : AppCompatActivity() {
         btnOpenHistory = findViewById(R.id.btnOpenHistory)
 
         val imgSettingsLogo = findViewById<android.widget.ImageView>(R.id.imgSettingsLogo)
-        imgSettingsLogo?.imageTintList = null
+        imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
         val currentUrl = networkService.getBaseUrl()
