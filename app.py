@@ -37,7 +37,7 @@ if __name__ == "__main__":
     threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{target_port}/")).start()
 
     uvicorn.run(
-        "app:app",
+        "backend.app:app",
         host=config.HOST,
         port=target_port,
         reload=True,

@@ -633,9 +633,28 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (lastFinalText.isNotBlank()) {
                 val ic = currentInputConnection
                 if (ic != null) {
+                    val before = ic.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                    val trimmedBefore = before.trimEnd()
+                    val toDelete = when {
+                        lastCommittedText.isNotBlank() && before.endsWith(lastCommittedText) -> lastCommittedText.length
+                        lastFinalText.isNotBlank() && before.endsWith(lastFinalText) -> lastFinalText.length
+                        lastCommittedText.isNotBlank() && trimmedBefore.endsWith(lastCommittedText) -> {
+                            lastCommittedText.length + (before.length - trimmedBefore.length)
+                        }
+                        lastFinalText.isNotBlank() && trimmedBefore.endsWith(lastFinalText) -> {
+                            lastFinalText.length + (before.length - trimmedBefore.length)
+                        }
+                        else -> 0
+                    }
+                    if (toDelete > 0) {
+                        ic.deleteSurroundingText(toDelete, 0)
+                    }
                     ic.commitText(lastFinalText, 1)
                     lastCommittedText = lastFinalText
-                    Toast.makeText(this, "Inserted to input field", Toast.LENGTH_SHORT).show()
+                    btnInsertText.text = "✓ RE-INSERT"
+                    tvInsertedNotice.text = if (toDelete > 0) "✓ Re-inserted: \"$lastFinalText\"" else "✓ Inserted into app: \"$lastFinalText\""
+                    tvInsertedNotice.visibility = View.VISIBLE
+                    Toast.makeText(this, if (toDelete > 0) "Re-inserted to input field" else "Inserted to input field", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Target text field not focused", Toast.LENGTH_SHORT).show()
                 }
@@ -703,7 +722,6 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         currentRootView = inputView
         btnCycleTheme = inputView.findViewById(R.id.btnCycleTheme)
         btnCycleTheme.setOnClickListener {
-            val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
             val currentTheme = prefs.getString("keyboard_theme", "sky") ?: "sky"
             val currentIndex = themeList.indexOf(currentTheme).let { if (it >= 0) it else 0 }
             val nextIndex = (currentIndex + 1) % themeList.size
@@ -736,6 +754,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.VISIBLE
                 tvTapToSpeak.text = "🎙  TAP TO SPEAK"
                 btnTapToSpeak.setBackgroundColor(getThemePalette(currentThemeKey).accentColor)
+                if (::btnInsertText.isInitialized) btnInsertText.text = "✓ INSERT"
             }
             KeyboardState.RECORDING -> {
                 layoutActionButtons.visibility = View.GONE
@@ -744,6 +763,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                 layoutVoiceResult.visibility = View.GONE
                 if (::layoutSearchPanel.isInitialized) layoutSearchPanel.visibility = View.GONE
                 if (::keyboardKeysLayout.isInitialized) keyboardKeysLayout.visibility = View.GONE
+                if (::btnInsertText.isInitialized) btnInsertText.text = "✓ INSERT"
             }
             KeyboardState.PROCESSING -> {
                 layoutActionButtons.visibility = View.GONE
@@ -785,9 +805,15 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
             if (view != null && view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)) {
                 return
             }
-            val v = getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
+                vm?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            }
             if (v != null && v.hasVibrator()) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     v.vibrate(android.os.VibrationEffect.createOneShot(18, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
                 } else {
                     @Suppress("DEPRECATION")
@@ -1033,6 +1059,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        networkService.preWarmServer()
         currentTypingWord.setLength(0)
         hideSuggestions()
         if (!isCapsLock) {
@@ -1599,10 +1626,16 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                             Log.d("ButterflyIME", "Text committed: $lastFinalText (success: $committed)")
                             tvInsertedNotice.text = "✓ Inserted into app: \"$lastFinalText\""
                             tvInsertedNotice.visibility = View.VISIBLE
+                            if (::btnInsertText.isInitialized) {
+                                btnInsertText.text = "✓ RE-INSERT"
+                            }
                         } else {
                             Log.w("ButterflyIME", "InputConnection is null")
                             tvInsertedNotice.text = "⚠️ Focused text field lost; tap 'Insert Again'"
                             tvInsertedNotice.visibility = View.VISIBLE
+                            if (::btnInsertText.isInitialized) {
+                                btnInsertText.text = "✓ INSERT"
+                            }
                         }
 
                         // 2. Transition to RESULT state (Keyboard remains open)
@@ -1651,12 +1684,65 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         mediaRecorder = null
     }
 
+    /**
+     * Extracts only the current active sentence or line before the cursor rather than
+     * the entire preceding buffer (up to 1,000 characters).
+     * Returns Pair(textToPolish, charsToDelete).
+     */
+    private fun extractSentenceToPolish(beforeCursor: String): Pair<String, Int> {
+        if (beforeCursor.isBlank()) {
+            return Pair("", 0)
+        }
+
+        val trimmed = beforeCursor.trimEnd()
+        val contentBeforeEnd = trimmed.trimEnd { it == '.' || it == '?' || it == '!' || it == ' ' }
+        val searchRegion = if (contentBeforeEnd.isNotEmpty()) contentBeforeEnd else trimmed
+
+        var lastBoundaryIndex = -1
+        for (i in searchRegion.indices.reversed()) {
+            val c = searchRegion[i]
+            if (c == '\n') {
+                lastBoundaryIndex = i + 1
+                break
+            }
+            if (c == '.' || c == '?' || c == '!') {
+                if (i + 1 < beforeCursor.length && beforeCursor[i + 1].isWhitespace()) {
+                    lastBoundaryIndex = i + 1
+                    break
+                }
+            }
+        }
+
+        var startIdx = if (lastBoundaryIndex >= 0) lastBoundaryIndex else 0
+        while (startIdx < beforeCursor.length && (beforeCursor[startIdx] == ' ' || beforeCursor[startIdx] == '\t')) {
+            startIdx++
+        }
+
+        val targetSlice = beforeCursor.substring(startIdx)
+        val textToPolish = targetSlice.trim()
+        val charsToDelete = beforeCursor.length - startIdx
+
+        if (textToPolish.isBlank() || charsToDelete <= 0) {
+            return Pair(beforeCursor.trim(), beforeCursor.length)
+        }
+
+        return Pair(textToPolish, charsToDelete)
+    }
+
     private fun handleAiPolish() {
         val ic = currentInputConnection
         val selectedText = ic?.getSelectedText(0)?.toString() ?: ""
         val beforeCursor = ic?.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+
+        val (extractedSentence, sentenceCharsToDelete) = if (selectedText.isBlank() && beforeCursor.isNotBlank()) {
+            extractSentenceToPolish(beforeCursor)
+        } else {
+            Pair("", 0)
+        }
+
         val textToPolish = when {
             selectedText.isNotBlank() -> selectedText
+            extractedSentence.isNotBlank() -> extractedSentence
             beforeCursor.isNotBlank() -> beforeCursor.trim()
             else -> lastFinalText
         }
@@ -1671,6 +1757,18 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         val currentIc = currentInputConnection
                         if (currentIc != null) {
                             if (selectedText.isNotBlank()) {
+                                currentIc.commitText(res.polishedText, 1)
+                            } else if (sentenceCharsToDelete > 0) {
+                                val activeBefore = currentIc.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                                val deleteCount = when {
+                                    activeBefore.endsWith(textToPolish) -> textToPolish.length
+                                    activeBefore.trimEnd().endsWith(textToPolish) -> {
+                                        val trimmedBefore = activeBefore.trimEnd()
+                                        textToPolish.length + (activeBefore.length - trimmedBefore.length)
+                                    }
+                                    else -> sentenceCharsToDelete
+                                }
+                                currentIc.deleteSurroundingText(deleteCount, 0)
                                 currentIc.commitText(res.polishedText, 1)
                             } else if (beforeCursor.isNotBlank()) {
                                 currentIc.deleteSurroundingText(beforeCursor.length, 0)
@@ -2108,6 +2206,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     lastCommittedText = textToRestore
                     tvInsertedNotice.text = "✓ Showing original text (Trans: OFF)"
                     tvInsertedNotice.visibility = View.VISIBLE
+                    if (::btnInsertText.isInitialized) {
+                        btnInsertText.text = "✓ RE-INSERT"
+                    }
                 }
             }
             return
@@ -2281,6 +2382,9 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                         }
                         tvInsertedNotice.text = "✓ Automatically translated to $targetLangName"
                         tvInsertedNotice.visibility = View.VISIBLE
+                        if (::btnInsertText.isInitialized) {
+                            btnInsertText.text = "✓ RE-INSERT"
+                        }
                     }
                     setKeyboardState(KeyboardState.RESULT)
                 } else {

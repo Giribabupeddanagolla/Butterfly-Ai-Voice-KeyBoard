@@ -100,10 +100,31 @@ class SettingsActivity : AppCompatActivity() {
         imgSettingsLogo?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#3B82F6"))
 
         val prefs = getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        // Priority: 1. User-configured/saved URL. 2. Safe default Render URL only if none configured.
-        // NOTE: Local/LAN URLs (e.g. 192.168.x.x, localhost, 127.0.0.1) MUST NOT be overwritten.
-        val currentUrl = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com") ?: "https://butterfly-ai-voice-keyboard.onrender.com"
+        val currentUrl = networkService.getBaseUrl()
         etServerUrl.setText(currentUrl)
+
+        val btnPresetCloud = findViewById<Button?>(R.id.btnPresetCloud)
+        val btnPresetEmulator = findViewById<Button?>(R.id.btnPresetEmulator)
+        val btnPresetLocal = findViewById<Button?>(R.id.btnPresetLocal)
+
+        btnPresetCloud?.setOnClickListener {
+            etServerUrl.setText(NetworkService.DEFAULT_CLOUD_URL)
+            prefs.edit().putString("server_url", NetworkService.DEFAULT_CLOUD_URL).apply()
+            Toast.makeText(this, "Set to Render Cloud", Toast.LENGTH_SHORT).show()
+        }
+
+        btnPresetEmulator?.setOnClickListener {
+            etServerUrl.setText(NetworkService.EMULATOR_LOCAL_URL)
+            prefs.edit().putString("server_url", NetworkService.EMULATOR_LOCAL_URL).apply()
+            Toast.makeText(this, "Set to Android Emulator (10.0.2.2:8000)", Toast.LENGTH_SHORT).show()
+        }
+
+        btnPresetLocal?.setOnClickListener {
+            val localDefault = "http://192.168.1.100:8000"
+            etServerUrl.setText(localDefault)
+            prefs.edit().putString("server_url", localDefault).apply()
+            Toast.makeText(this, "Set to Local Wi-Fi (update IP to match your PC)", Toast.LENGTH_SHORT).show()
+        }
 
         btnGrantMicPermission.setOnClickListener {
             val isGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
@@ -255,8 +276,6 @@ class SettingsActivity : AppCompatActivity() {
         if (isGranted) {
             updateMicPermissionUI(true)
         } else {
-            val isPermanentlyDenied = !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
-            // If the user has denied and shouldShowRequestPermissionRationale is false, it's permanently disabled or not yet requested
             updateMicPermissionUI(false, isPermanentlyDenied = false)
         }
     }

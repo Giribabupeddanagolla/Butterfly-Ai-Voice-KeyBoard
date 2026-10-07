@@ -1,13 +1,18 @@
 package com.butterflyai.keyboard
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -147,12 +152,68 @@ class NetworkService(private val context: Context) {
 
     private val gson = Gson()
 
+    companion object {
+        const val DEFAULT_CLOUD_URL = "https://butterfly-ai-voice-keyboard.onrender.com"
+        const val EMULATOR_LOCAL_URL = "http://10.0.2.2:8000"
+
+        fun isEmulator(): Boolean {
+            val fingerprint = Build.FINGERPRINT.lowercase()
+            val model = Build.MODEL.lowercase()
+            val hardware = Build.HARDWARE.lowercase()
+            val product = Build.PRODUCT.lowercase()
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            return fingerprint.startsWith("generic") ||
+                    fingerprint.startsWith("unknown") ||
+                    model.contains("google_sdk") ||
+                    model.contains("emulator") ||
+                    model.contains("android sdk built for x86") ||
+                    manufacturer.contains("genymotion") ||
+                    hardware.contains("goldfish") ||
+                    hardware.contains("ranchu") ||
+                    product.contains("sdk_gphone") ||
+                    product.contains("google_sdk")
+        }
+    }
+
+    private var lastPreWarmTime = 0L
+
+    /**
+     * Non-blocking fire-and-forget pre-warming ping.
+     * Render free containers sleep after 15m of inactivity and take 30-50s to wake up.
+     * Calling this when the keyboard opens starts warming the backend container early.
+     */
+    fun preWarmServer() {
+        val baseUrl = getBaseUrl()
+        val now = System.currentTimeMillis()
+        if (now - lastPreWarmTime < 5 * 60 * 1000L) return
+        lastPreWarmTime = now
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                Log.d("NetworkService", "Pre-warming backend at $baseUrl...")
+                val request = Request.Builder()
+                    .url("$baseUrl/health")
+                    .get()
+                    .build()
+                client.newCall(request).execute().use { resp ->
+                    Log.d("NetworkService", "Pre-warm ping returned HTTP ${resp.code}")
+                }
+            } catch (e: Exception) {
+                Log.d("NetworkService", "Pre-warm ping in progress/cold start: ${e.message}")
+            }
+        }
+    }
+
     fun getBaseUrl(): String {
         val prefs = context.getSharedPreferences("butterfly_prefs", Context.MODE_PRIVATE)
-        // Priority: 1. User-configured/saved URL. 2. Safe default Render URL only if none configured.
-        // NOTE: Local/LAN URLs (e.g. 192.168.x.x, localhost, 127.0.0.1) MUST NOT be overwritten.
-        var url = prefs.getString("server_url", "https://butterfly-ai-voice-keyboard.onrender.com")
-            ?: "https://butterfly-ai-voice-keyboard.onrender.com"
+        // Priority:
+        // 1. User-configured/saved URL in settings.
+        // 2. Android emulator default (http://10.0.2.2:8000) if no custom URL saved.
+        // 3. Render cloud default (https://butterfly-ai-voice-keyboard.onrender.com) for physical devices.
+        var url = prefs.getString("server_url", null)
+        if (url.isNullOrBlank()) {
+            url = if (isEmulator()) EMULATOR_LOCAL_URL else DEFAULT_CLOUD_URL
+        }
         url = url.trim()
         if (url.endsWith("/")) {
             url = url.substring(0, url.length - 1)
@@ -177,10 +238,16 @@ class NetworkService(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e("NetworkService", "Test connection error: ${e.message}", e)
-            val errorMsg = if (baseUrl.contains("onrender.com", ignoreCase = true)) {
-                "Unable to connect to backend ($baseUrl). Free cloud servers take ~30-50s to wake up from sleep. Please wait a moment and try again."
-            } else {
-                "Unable to connect to backend ($baseUrl). Ensure your PC and phone are on the same Wi-Fi network and the backend is running."
+            val errorMsg = when {
+                baseUrl.contains("onrender.com", ignoreCase = true) -> {
+                    "Unable to connect to cloud backend ($baseUrl). Free cloud servers take ~30-50s to wake up from sleep. If testing locally, switch to Emulator (10.0.2.2) or local PC in Settings."
+                }
+                baseUrl.contains("10.0.2.2") -> {
+                    "Unable to connect to local backend ($baseUrl). Ensure your local server is running (e.g. uvicorn app:app --host 0.0.0.0 --port 8000)."
+                }
+                else -> {
+                    "Unable to connect to backend ($baseUrl). Ensure your PC and phone are on the same Wi-Fi network and the backend is running."
+                }
             }
             ConnectionTestResult(false, errorMsg)
         }
@@ -207,7 +274,7 @@ class NetworkService(private val context: Context) {
                 .addFormDataPart(
                     "audio",
                     audioFile.name,
-                    RequestBody.create(mediaType.toMediaTypeOrNull(), audioFile)
+                    audioFile.asRequestBody(mediaType.toMediaTypeOrNull())
                 )
                 .addFormDataPart("source_language", sourceLanguage)
                 .addFormDataPart("translation_language", targetLanguage)
@@ -309,7 +376,7 @@ class NetworkService(private val context: Context) {
                 addProperty("translation_language", targetLang)
             }
 
-            val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody.toString())
+            val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url("$baseUrl/api/translate")
                 .post(requestBody)
@@ -337,7 +404,7 @@ class NetworkService(private val context: Context) {
             val jsonBody = JsonObject().apply {
                 addProperty("text", text)
             }
-            val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody.toString())
+            val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url("$baseUrl/api/polish")
                 .post(requestBody)
@@ -389,7 +456,7 @@ class NetworkService(private val context: Context) {
                 addProperty("target_language", targetLanguage)
                 addProperty("language", targetLanguage)
             }
-            val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody.toString())
+            val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url("$baseUrl/api/ask")
                 .post(requestBody)
