@@ -285,3 +285,57 @@ def test_get_project_context_helper():
     assert "STRICT LANGUAGE PRESERVATION" in ctx
     assert ctx == PROJECT_CONTEXT.strip()
 
+def test_get_all_sessions_search_returns_most_recent_message(isolated_db, client):
+    """Verify searching for an older message returns the most recent message as last_message."""
+    sess_id = "test_search_latest_msg_sess"
+    isolated_db.get_or_create_session(sess_id, title="Search Test Session")
+    
+    # Message 1 contains matching keyword
+    isolated_db.save_message(
+        session_id=sess_id,
+        role="user",
+        content="First query with unique_keyword_xyz",
+        language="en"
+    )
+    # Message 2 is newer
+    isolated_db.save_message(
+        session_id=sess_id,
+        role="assistant",
+        content="Intermediate response",
+        language="en"
+    )
+    # Message 3 is the latest message
+    isolated_db.save_message(
+        session_id=sess_id,
+        role="user",
+        content="Final and most recent message in the chat",
+        language="en"
+    )
+
+    # 1. Search directly via memory manager
+    search_results = isolated_db.get_all_sessions(search_query="unique_keyword_xyz")
+    assert len(search_results) == 1
+    session_result = search_results[0]
+    assert session_result["session_id"] == sess_id
+    assert session_result["last_message"] == "Final and most recent message in the chat"
+
+    # 2. Search via API endpoint /api/voice/history?q=...
+    api_resp = client.get("/api/voice/history?q=unique_keyword_xyz")
+    assert api_resp.status_code == 200
+    data = api_resp.json()
+    assert data["success"] is True
+    assert len(data["sessions"]) == 1
+    assert data["sessions"][0]["last_message"] == "Final and most recent message in the chat"
+
+def test_get_all_sessions_search_title_empty_messages(isolated_db):
+    """Verify sessions matching by title without any messages are properly included."""
+    sess_id = "test_empty_session_id"
+    isolated_db.get_or_create_session(sess_id, title="Butterfly Special Topic")
+    
+    results = isolated_db.get_all_sessions(search_query="Special Topic")
+    assert len(results) == 1
+    assert results[0]["session_id"] == sess_id
+    assert results[0]["title"] == "Butterfly Special Topic"
+    assert results[0]["last_message"] is None
+
+

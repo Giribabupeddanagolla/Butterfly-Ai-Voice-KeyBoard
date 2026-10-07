@@ -361,6 +361,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
     override fun onCreate() {
         super.onCreate()
         networkService = NetworkService(this)
+        cleanupVoiceCache()
         try {
             tts = TextToSpeech(this, this)
         } catch (e: Exception) {
@@ -1502,6 +1503,8 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         layoutRecordingDotContainer?.alpha = 1f
         cleanupRecorder()
         try { audioFile?.delete() } catch (e: Exception) {}
+        audioFile = null
+        cleanupVoiceCache()
         setKeyboardState(KeyboardState.IDLE)
         Toast.makeText(this, "Recording cancelled", Toast.LENGTH_SHORT).show()
     }
@@ -1524,6 +1527,7 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         mediaRecorder = null
 
         val currentAudio = audioFile
+        audioFile = null
         setKeyboardState(KeyboardState.PROCESSING)
 
         val srcLang = languages[spinnerSourceLang.selectedItemPosition].first
@@ -1654,9 +1658,12 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
                     setKeyboardState(KeyboardState.IDLE)
                 } finally {
                     try { currentAudio.delete() } catch (e: Exception) {}
+                    cleanupVoiceCache()
                 }
             }
         } else {
+            try { currentAudio?.delete() } catch (e: Exception) {}
+            cleanupVoiceCache()
             Toast.makeText(this, "Empty speech recording", Toast.LENGTH_SHORT).show()
             setKeyboardState(KeyboardState.IDLE)
         }
@@ -2865,10 +2872,31 @@ class ButterflyInputMethodService : InputMethodService(), TextToSpeech.OnInitLis
         }
     }
 
+    /**
+     * Purges orphaned voice recording files from the app cache directory to prevent disk leaks.
+     */
+    private fun cleanupVoiceCache() {
+        try {
+            val cacheFiles = cacheDir.listFiles { file ->
+                file.name.startsWith("butterfly_voice_") && file.name.endsWith(".m4a")
+            }
+            cacheFiles?.forEach { file ->
+                if (file.absolutePath != audioFile?.absolutePath) {
+                    try { file.delete() } catch (_: Exception) {}
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("ButterflyIME", "Error cleaning voice cache: ${e.message}")
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         recordingTimerJob?.cancel()
         cleanupRecorder()
+        try { audioFile?.delete() } catch (e: Exception) {}
+        audioFile = null
+        cleanupVoiceCache()
         serviceScope.cancel()
         try {
             tts?.stop()

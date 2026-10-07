@@ -251,29 +251,30 @@ class MemoryManager:
     def get_all_sessions(self, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            base_select = """
+                SELECT s.session_id, s.title, s.created_at, s.updated_at,
+                       (SELECT content FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as last_message,
+                       (SELECT original_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as original_text,
+                       (SELECT translated_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translated_text,
+                       (SELECT source_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as source_language,
+                       (SELECT translation_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translation_language
+                FROM sessions s
+            """
             if search_query and search_query.strip():
                 q = f"%{search_query.strip()}%"
-                cursor.execute("""
-                    SELECT s.session_id, s.title, s.created_at, s.updated_at,
-                           m.content as last_message, m.original_text, m.translated_text,
-                           m.source_language, m.translation_language
-                    FROM sessions s
-                    JOIN messages m ON s.session_id = m.session_id
-                    WHERE s.title LIKE ? OR m.content LIKE ? OR m.original_text LIKE ? OR m.translated_text LIKE ?
-                    GROUP BY s.session_id
+                cursor.execute(
+                    base_select + """
+                    WHERE s.title LIKE ? OR EXISTS (
+                        SELECT 1 FROM messages m
+                        WHERE m.session_id = s.session_id
+                          AND (m.content LIKE ? OR m.original_text LIKE ? OR m.translated_text LIKE ?)
+                    )
                     ORDER BY s.updated_at DESC
-                """, (q, q, q, q))
+                    """,
+                    (q, q, q, q)
+                )
             else:
-                cursor.execute("""
-                    SELECT s.session_id, s.title, s.created_at, s.updated_at,
-                           (SELECT content FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as last_message,
-                           (SELECT original_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as original_text,
-                           (SELECT translated_text FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translated_text,
-                           (SELECT source_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as source_language,
-                           (SELECT translation_language FROM messages WHERE session_id = s.session_id ORDER BY id DESC LIMIT 1) as translation_language
-                    FROM sessions s
-                    ORDER BY s.updated_at DESC
-                """)
+                cursor.execute(base_select + " ORDER BY s.updated_at DESC")
             rows = cursor.fetchall()
             results = []
             for r in rows:

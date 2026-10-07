@@ -59,6 +59,12 @@ else:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Purge stale temporary audio files on startup
+    try:
+        tts_service.cleanup_output_cache(force=True)
+    except Exception as e:
+        logger.warning(f"Initial audio cache cleanup error: {e}")
+
     import threading
     def check_openai():
         if is_openai_active():
@@ -468,6 +474,10 @@ async def transcribe_endpoint(
             if os.path.exists(temp_path):
                 try: os.remove(temp_path)
                 except Exception: pass
+            try:
+                tts_service.cleanup_output_cache()
+            except Exception:
+                pass
 
     if not spoken_text and clean_fallback:
         spoken_text = clean_fallback
@@ -1180,8 +1190,14 @@ async def audio_upload_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if os.path.exists(temp_path):
-            try: os.remove(temp_path)
-            except Exception: pass
+            try:
+                os.remove(temp_path)
+            except Exception as e:
+                logger.warning(f"Could not remove temporary upload audio file {temp_path}: {e}")
+        try:
+            tts_service.cleanup_output_cache()
+        except Exception:
+            pass
 
 @app.get("/api/voice/history")
 @app.get("/conversations")
